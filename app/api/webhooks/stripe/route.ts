@@ -48,7 +48,8 @@ async function upsertSubscriptionFromIds({
       currency: stripeSubscription.currency,
       interval: stripeSubscription.items.data[0]?.price.recurring?.interval || "month",
       interval_count: stripeSubscription.items.data[0]?.price.recurring?.interval_count || 1,
-      price_id: stripeSubscription.items.data[0]?.price.id || null,
+      billing_cycle: stripeSubscription.items.data[0]?.price.recurring?.interval || "monthly",
+      stripe_price_id: stripeSubscription.items.data[0]?.price.id || null,
       cancel_at_period_end: stripeSubscription.cancel_at_period_end || false,
       canceled_at: stripeSubscription.canceled_at
         ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
@@ -302,6 +303,7 @@ export async function POST(req: Request) {
         currency: sub.currency,
         interval: sub.items.data[0]?.price.recurring?.interval || "month",
         interval_count: sub.items.data[0]?.price.recurring?.interval_count || 1,
+        billing_cycle: sub.items.data[0]?.price.recurring?.interval || "monthly",
         metadata: sub.metadata || {},
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

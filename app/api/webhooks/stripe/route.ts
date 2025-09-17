@@ -38,8 +38,25 @@ async function upsertSubscriptionFromIds({
 
     const planId = session.metadata?.plan_id || session.client_reference_id
 
+    // Get user_id from the plan if not available in session metadata
+    let userId = session.metadata?.user_id
+    if (!userId && planId) {
+      const { data: planData } = await supabaseAdmin
+        .from("plans")
+        .select("user_id")
+        .eq("id", planId)
+        .single()
+      userId = planData?.user_id
+    }
+
+    // Skip subscription creation if we don't have a user_id
+    if (!userId) {
+      console.log("[v0] Skipping subscription creation - no user_id found for plan:", planId)
+      return
+    }
+
     const subscriptionData = {
-      user_id: session.metadata?.user_id || null,
+      user_id: userId,
       plan_id: planId,
       stripe_subscription_id: subscriptionId,
       status: "active",

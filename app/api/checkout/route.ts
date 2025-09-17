@@ -66,7 +66,7 @@ export async function POST() {
     console.log("[v0] Line items data:", JSON.stringify(lines, null, 2))
 
     // All plan_items must have a Stripe price id
-    const line_items = lines.map((li, index) => {
+    const raw_line_items = lines.map((li, index) => {
       console.log(`[v0] Processing line item ${index}:`, JSON.stringify(li, null, 2))
       if (!li.stripe_price_id) {
         console.log(`[v0] Missing stripe_price_id on line item ${index}`)
@@ -74,6 +74,20 @@ export async function POST() {
       }
       return { price: li.stripe_price_id as string, quantity: li.qty ?? 1 }
     })
+
+    // Consolidate line items by price ID to avoid duplicates
+    const line_items_map = new Map<string, number>()
+    raw_line_items.forEach(item => {
+      const existing = line_items_map.get(item.price) || 0
+      line_items_map.set(item.price, existing + item.quantity)
+    })
+
+    const line_items = Array.from(line_items_map.entries()).map(([price, quantity]) => ({
+      price,
+      quantity
+    }))
+
+    console.log("[v0] Consolidated line items:", line_items)
 
     console.log("[v0] Line items for Stripe:", line_items)
 

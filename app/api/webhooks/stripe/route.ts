@@ -26,6 +26,21 @@ async function resolvePlanIdFromPrice(stripePriceId: string) {
   return error ? null : (data?.plan_id ?? null)
 }
 
+// Helper function to map Stripe interval to our billing_cycle constraint values
+function mapStripeIntervalToBillingCycle(stripeInterval: string | undefined): string {
+  if (!stripeInterval) return "monthly"
+  
+  const mapping: Record<string, string> = {
+    'day': 'day',
+    'week': 'weekly', 
+    'month': 'monthly',
+    'quarter': 'quarterly',
+    'year': 'yearly'
+  }
+  
+  return mapping[stripeInterval] || "monthly"
+}
+
 // Helper function for upserting subscription from IDs
 async function upsertSubscriptionFromIds({
   subscriptionId,
@@ -65,7 +80,7 @@ async function upsertSubscriptionFromIds({
       currency: stripeSubscription.currency,
       interval: stripeSubscription.items.data[0]?.price.recurring?.interval || "month",
       interval_count: stripeSubscription.items.data[0]?.price.recurring?.interval_count || 1,
-      billing_cycle: stripeSubscription.items.data[0]?.price.recurring?.interval || "monthly",
+        billing_cycle: mapStripeIntervalToBillingCycle(stripeSubscription.items.data[0]?.price.recurring?.interval) || "monthly",
       stripe_price_id: stripeSubscription.items.data[0]?.price.id || null,
       cancel_at_period_end: stripeSubscription.cancel_at_period_end || false,
       canceled_at: stripeSubscription.canceled_at
@@ -340,7 +355,7 @@ export async function POST(req: Request) {
         currency: sub.currency,
         interval: sub.items.data[0]?.price.recurring?.interval || "month",
         interval_count: sub.items.data[0]?.price.recurring?.interval_count || 1,
-        billing_cycle: sub.items.data[0]?.price.recurring?.interval || "monthly",
+        billing_cycle: mapStripeIntervalToBillingCycle(sub.items.data[0]?.price.recurring?.interval) || "monthly",
         metadata: sub.metadata || {},
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

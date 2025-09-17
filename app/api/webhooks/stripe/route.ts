@@ -239,12 +239,13 @@ export async function POST(req: Request) {
 
         console.log("[v0] Found plan:", existingPlan.id, "user_id:", existingPlan.user_id, "status:", existingPlan.status)
 
-        // Update plan to active
+        // Update plan to active and set user_id
         const { error: updateError } = await supabaseAdmin
           .from("plans")
           .update({
             status: "active",
             stripe_subscription_id: subscriptionId,
+            user_id: s.metadata?.user_id || existingPlan.user_id,
             updated_at: new Date().toISOString(),
           })
           .eq("id", planId)

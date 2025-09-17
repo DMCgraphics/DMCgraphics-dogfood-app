@@ -12,6 +12,7 @@ export default function OrderSuccessPage() {
   const sessionId = searchParams.get("session_id")
   const [orderData, setOrderData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { user, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
@@ -23,8 +24,10 @@ export default function OrderSuccessPage() {
 
       try {
         console.log("[v0] Processing successful payment for session:", sessionId)
+        console.log("[v0] User authenticated:", !!user, "User ID:", user?.id)
 
         // First, verify the session and update plan status
+        console.log("[v0] Calling /api/verify-payment endpoint...")
         const verifyResponse = await fetch("/api/verify-payment", {
           method: "POST",
           headers: {
@@ -60,7 +63,9 @@ export default function OrderSuccessPage() {
             console.log("[v0] Subscription creation backup error (this is OK if webhook already handled it):", createError)
           }
         } else {
-          console.error("Failed to verify payment:", await verifyResponse.text())
+          const errorText = await verifyResponse.text()
+          console.error("[v0] Verify payment failed:", verifyResponse.status, errorText)
+          setError(`Payment verification failed: ${errorText}`)
         }
       } catch (error) {
         console.error("Error verifying payment:", error)
@@ -78,6 +83,28 @@ export default function OrderSuccessPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Confirming your order...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-destructive mb-4">
+            <Package className="h-16 w-16 mx-auto mb-4" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Order Processing Error</h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="space-y-4">
+            <Button asChild size="lg" className="w-full">
+              <Link href="/dashboard">Go to Dashboard</Link>
+            </Button>
+            <Button variant="outline" asChild className="w-full bg-transparent">
+              <Link href="/">Return Home</Link>
+            </Button>
+          </div>
         </div>
       </div>
     )

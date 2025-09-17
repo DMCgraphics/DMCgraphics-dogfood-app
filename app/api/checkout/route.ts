@@ -75,7 +75,7 @@ export async function POST() {
     console.log("[v0] Line items for Stripe:", line_items)
 
     const baseUrl = reqEnv("NEXT_PUBLIC_APP_URL")
-    const successUrl = `${baseUrl}/order/confirmation?orderId=${planId}&session_id={CHECKOUT_SESSION_ID}`
+    const successUrl = `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl = `${baseUrl}/checkout/cancelled`
 
     console.log("[v0] Creating Stripe checkout session")

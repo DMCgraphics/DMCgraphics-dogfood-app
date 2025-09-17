@@ -47,8 +47,27 @@ export async function POST(req: Request) {
       // Get plan ID from session metadata
       const planId = session.metadata?.plan_id || session.client_reference_id
       
+      console.log("[v0] Session metadata:", session.metadata)
+      console.log("[v0] Session client_reference_id:", session.client_reference_id)
+      console.log("[v0] Resolved plan ID:", planId)
+      
       if (planId) {
         console.log("[v0] Plan ID from session:", planId)
+
+        // First, check if the plan exists and belongs to the current user
+        const { data: planData, error: planError } = await supabase
+          .from("plans")
+          .select("id, user_id, status")
+          .eq("id", planId)
+          .eq("user_id", user.id)
+          .single()
+
+        if (planError || !planData) {
+          console.error("[v0] Plan not found or doesn't belong to user:", planError)
+          return NextResponse.json({ error: "Plan not found" }, { status: 404 })
+        }
+
+        console.log("[v0] Found plan:", planData)
 
         // Check if subscription already exists
         const { data: existingSubscription } = await supabase
@@ -113,7 +132,7 @@ export async function POST(req: Request) {
             stripe_subscription_id: subscriptionId,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", planId)
+          .eq("id", planData.id)
           .eq("user_id", user.id)
 
         if (planUpdateError) {

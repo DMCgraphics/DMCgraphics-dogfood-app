@@ -5,16 +5,21 @@ import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Package, Calendar } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function OrderSuccessPage() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
   const [orderData, setOrderData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { user, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
     const handleSuccessfulPayment = async () => {
-      if (!sessionId) return
+      if (!sessionId || authLoading || !user) {
+        console.log("[v0] Waiting for authentication or session ID...", { sessionId, authLoading, user: !!user })
+        return
+      }
 
       try {
         console.log("[v0] Processing successful payment for session:", sessionId)
@@ -65,7 +70,7 @@ export default function OrderSuccessPage() {
     }
 
     handleSuccessfulPayment()
-  }, [sessionId])
+  }, [sessionId, authLoading, user])
 
   if (isLoading) {
     return (

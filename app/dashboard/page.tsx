@@ -180,12 +180,11 @@ export default function DashboardPage() {
 
         console.log("[v0] Orders data:", ordersData)
 
-        // Fetch real stool entries
+        // Fetch real stool entries (using dog_id since user_id doesn't exist in dog_notes)
         const { data: stoolEntriesData } = await supabase
           .from("dog_notes")
           .select("*")
-          .eq("user_id", user.id)
-          .eq("type", "stool")
+          .in("dog_id", dogsData?.map(dog => dog.id) || [])
           .order("created_at", { ascending: false })
           .limit(10)
 
@@ -239,6 +238,7 @@ export default function DashboardPage() {
             let currentRecipe = "No Recipe Selected"
             let nextDelivery = "No Active Subscription"
             let subscriptionStatus: "active" | "inactive" = "inactive"
+            let hasMedicalItems = false
 
             const latestMetric = dog.dog_metrics?.[0]
             if (latestMetric && latestMetric.weight_kg) {
@@ -253,13 +253,24 @@ export default function DashboardPage() {
                 currentRecipe = planItem.recipes.name
                 console.log("[v0] Found recipe from plan:", currentRecipe, "for", dog.name)
               }
+
+              // Check if plan includes medical or prescription items
+              if (dogPlan.plan_items && dogPlan.plan_items.length > 0) {
+                hasMedicalItems = dogPlan.plan_items.some(item => {
+                  const recipeName = item.recipes?.name?.toLowerCase() || ''
+                  return recipeName.includes('medical') ||
+                         recipeName.includes('prescription') ||
+                         recipeName.includes('renal') ||
+                         recipeName.includes('kidney') ||
+                         recipeName.includes('therapeutic') ||
+                         recipeName.includes('veterinary')
+                })
+                console.log("[v0] Has medical items for", dog.name, ":", hasMedicalItems)
+              }
             }
 
             const dogSubscription = subscriptionsData?.find((sub) => {
-              if (sub.metadata && sub.metadata.plan_id) {
-                return dogPlan && dogPlan.id === sub.metadata.plan_id
-              }
-              return false
+              return dogPlan && dogPlan.id === sub.plan_id
             })
 
             const isActivePlan = dogPlan && dogPlan.status === "active"
@@ -267,16 +278,29 @@ export default function DashboardPage() {
             if (dogSubscription || isActivePlan) {
               subscriptionStatus = "active"
 
-              const subscriptionDate = dogSubscription
-                ? new Date(dogSubscription.created_at)
-                : new Date(dogPlan.updated_at)
-              const nextDeliveryDate = new Date(subscriptionDate)
-              nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
-              nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
+              // Use the subscription's current_period_end for next delivery date
+              if (dogSubscription && dogSubscription.current_period_end) {
+                const nextDeliveryDate = new Date(dogSubscription.current_period_end)
+                nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+                console.log("[v0] Using subscription current_period_end for next delivery:", nextDelivery)
+              } else {
+                // Fallback to calculating from subscription date
+                const subscriptionDate = dogSubscription
+                  ? new Date(dogSubscription.created_at)
+                  : new Date(dogPlan.updated_at)
+                const nextDeliveryDate = new Date(subscriptionDate)
+                nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
+                nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+                console.log("[v0] Calculated next delivery from subscription date:", nextDelivery)
+              }
               console.log("[v0] Active subscription/plan found for", dog.name, "next delivery:", nextDelivery)
             } else {
               const savedPlanData = localStorage.getItem(`nouripet-saved-plan-${dog.id}`)
@@ -310,6 +334,7 @@ export default function DashboardPage() {
               currentRecipe: currentRecipe,
               nextDelivery: nextDelivery,
               subscriptionStatus: subscriptionStatus,
+              hasMedicalItems: hasMedicalItems,
             }
           }) || []
 
@@ -326,15 +351,21 @@ export default function DashboardPage() {
           date: order.created_at,
           status: order.status === "completed" ? "delivered" : "upcoming",
           items: order.plan?.plan_items?.map((item: any) => 
-            item.recipe ? `${item.recipe.name} (${item.qty || 1} weeks)` : item.name
+            item.recipes ? `${item.recipes.name} (${item.qty || 1} weeks)` : item.name
           ) || [],
         }))
 
-        const realStoolEntries = (stoolEntriesData || []).map((entry: any) => ({
-          date: entry.created_at.split('T')[0],
-          score: entry.score || 4,
-          notes: entry.notes || "",
-        }))
+        const realStoolEntries = (stoolEntriesData || []).map((entry: any) => {
+          // Extract score from note text (e.g., "Score 4 - Ideal consistency")
+          const scoreMatch = entry.note?.match(/Score (\d+)/i)
+          const score = scoreMatch ? parseInt(scoreMatch[1]) : 4
+          
+          return {
+            date: entry.created_at.split('T')[0],
+            score: score,
+            notes: entry.note || "",
+          }
+        })
 
         setStoolEntries(realStoolEntries.length > 0 ? realStoolEntries : mockStoolEntries)
         setDeliveries(realDeliveries.length > 0 ? realDeliveries : mockDeliveries)
@@ -684,21 +715,25 @@ export default function DashboardPage() {
 
                 <StoolLog dogName={selectedDog.name} entries={stoolEntries} onAddEntry={handleAddStoolEntry} />
 
-                <MedicalConditionTracker
-                  conditions={medicalConditions}
-                  onScheduleCheckup={handleScheduleCheckup}
-                  onUpdateCondition={handleUpdateCondition}
-                />
+                {selectedDog.hasMedicalItems && (
+                  <MedicalConditionTracker
+                    conditions={medicalConditions}
+                    onScheduleCheckup={handleScheduleCheckup}
+                    onUpdateCondition={handleUpdateCondition}
+                  />
+                )}
               </div>
 
               <div className="space-y-8">
-                <PrescriptionStatusCard
-                  verificationRequest={currentVerificationRequest}
-                  prescriptionDietName="Renal Support Formula"
-                  expirationDate={currentVerificationRequest?.expiresAt}
-                  onContactVet={handleContactVet}
-                  onRenewPrescription={handleRenewPrescription}
-                />
+                {selectedDog.hasMedicalItems && (
+                  <PrescriptionStatusCard
+                    verificationRequest={currentVerificationRequest}
+                    prescriptionDietName="Renal Support Formula"
+                    expirationDate={currentVerificationRequest?.expiresAt}
+                    onContactVet={handleContactVet}
+                    onRenewPrescription={handleRenewPrescription}
+                  />
+                )}
 
                 <SubscriptionControls
                   subscriptionStatus={subscriptionStatus}

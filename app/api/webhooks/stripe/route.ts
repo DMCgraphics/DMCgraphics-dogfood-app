@@ -73,6 +73,7 @@ async function upsertSubscriptionFromIds({
     if (subError) {
       console.error("[v0] Failed to upsert subscription:", subError)
       console.error("[v0] Subscription data that failed:", JSON.stringify(subscriptionData, null, 2))
+      throw new Error(`Failed to create subscription: ${subError.message}`)
     } else {
       console.log("[v0] Subscription upserted successfully")
     }
@@ -198,6 +199,27 @@ export async function POST(req: Request) {
       }
 
       if (s.payment_status === "paid") {
+        console.log("[v0] Payment is paid, processing subscription creation")
+        
+        // First, check if the plan exists and get its current state
+        const { data: existingPlan, error: planFetchError } = await supabaseAdmin
+          .from("plans")
+          .select("*")
+          .eq("id", planId)
+          .single()
+
+        if (planFetchError) {
+          console.error("[v0] Failed to fetch plan:", planFetchError)
+          return NextResponse.json({ error: "Plan not found" }, { status: 400 })
+        }
+
+        if (!existingPlan) {
+          console.error("[v0] Plan not found:", planId)
+          return NextResponse.json({ error: "Plan not found" }, { status: 400 })
+        }
+
+        console.log("[v0] Found plan:", existingPlan.id, "user_id:", existingPlan.user_id, "status:", existingPlan.status)
+
         // Update plan to active
         const { error: updateError } = await supabaseAdmin
           .from("plans")
@@ -210,11 +232,13 @@ export async function POST(req: Request) {
 
         if (updateError) {
           console.error("[v0] Failed to update plan status:", updateError)
+          console.error("[v0] Plan update error details:", JSON.stringify(updateError, null, 2))
         } else {
-          console.log("[v0] Plan status updated to active")
+          console.log("[v0] Plan status updated to active successfully")
         }
 
         // Upsert subscription with the subscription id we now have
+        console.log("[v0] Creating subscription for plan:", planId)
         await upsertSubscriptionFromIds({ subscriptionId, session: s })
 
         // Create order (existing order creation logic)

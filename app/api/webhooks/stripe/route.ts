@@ -60,8 +60,8 @@ async function upsertSubscriptionFromIds({
       plan_id: planId,
       stripe_subscription_id: subscriptionId,
       status: "active",
-      current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+      current_period_start: stripeSubscription.current_period_start ? new Date(stripeSubscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
+      current_period_end: stripeSubscription.current_period_end ? new Date(stripeSubscription.current_period_end * 1000).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       currency: stripeSubscription.currency,
       interval: stripeSubscription.items.data[0]?.price.recurring?.interval || "month",
       interval_count: stripeSubscription.items.data[0]?.price.recurring?.interval_count || 1,
@@ -309,14 +309,33 @@ export async function POST(req: Request) {
         console.log("[v0] Resolved plan ID from price:", resolvedPlanId)
       }
 
+      // Get user_id from the plan if not available in subscription metadata
+      let userId = sub.metadata?.user_id
+      if (!userId && resolvedPlanId) {
+        const { data: planData } = await supabaseAdmin
+          .from("plans")
+          .select("user_id")
+          .eq("id", resolvedPlanId)
+          .single()
+        userId = planData?.user_id
+        console.log("[v0] Resolved user_id from plan:", userId)
+      }
+
+      // Skip subscription creation if we don't have a user_id
+      if (!userId) {
+        console.log("[v0] Skipping subscription creation - no user_id found for subscription:", sub.id)
+        return NextResponse.json({ received: true })
+      }
+
       const subscriptionData = {
+        user_id: userId,
         stripe_subscription_id: sub.id,
         stripe_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
         stripe_price_id: sub.items.data[0]?.price?.id || null,
         plan_id: resolvedPlanId,
         status: sub.status,
-        current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+        current_period_start: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString(),
+        current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         cancel_at_period_end: sub.cancel_at_period_end ?? false,
         currency: sub.currency,
         interval: sub.items.data[0]?.price.recurring?.interval || "month",

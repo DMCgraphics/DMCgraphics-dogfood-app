@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic" // prevent static evaluation
 
 import Stripe from "stripe"
 import { NextResponse } from "next/server"
+import { createServerSupabase } from "@/lib/supabase/server"
 
 type VerifyBody = { sessionId?: string }
 
@@ -14,12 +15,126 @@ export async function POST(req: Request) {
   if (!sessionId) return NextResponse.json({ error: "Missing sessionId" }, { status: 400 })
 
   const stripe = new Stripe(secret, { apiVersion: "2024-06-20" })
+  const supabase = await createServerSupabase()
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId)
-  return NextResponse.json({
-    status: session.payment_status,
-    mode: session.mode,
-  })
+  try {
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Retrieve the Stripe session
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription']
+    })
+
+    console.log("[v0] Verifying payment for session:", sessionId)
+    console.log("[v0] Session payment status:", session.payment_status)
+    console.log("[v0] Session mode:", session.mode)
+
+    // If payment is successful and we have a subscription, ensure it's saved to our database
+    if (session.payment_status === "paid" && session.subscription) {
+      const subscriptionId = typeof session.subscription === 'string' 
+        ? session.subscription 
+        : session.subscription.id
+
+      console.log("[v0] Payment successful, ensuring subscription is saved:", subscriptionId)
+
+      // Get the subscription details from Stripe
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+      
+      // Get plan ID from session metadata
+      const planId = session.metadata?.plan_id || session.client_reference_id
+      
+      if (planId) {
+        console.log("[v0] Plan ID from session:", planId)
+
+        // Check if subscription already exists
+        const { data: existingSubscription } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("stripe_subscription_id", subscriptionId)
+          .single()
+
+        if (!existingSubscription) {
+          console.log("[v0] Subscription not found in database, creating it...")
+          
+          // Create subscription record
+          const subscriptionData = {
+            user_id: user.id,
+            plan_id: planId,
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+            stripe_price_id: stripeSubscription.items.data[0]?.price.id || null,
+            status: stripeSubscription.status,
+            current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+            currency: stripeSubscription.currency,
+            interval: stripeSubscription.items.data[0]?.price.recurring?.interval || "month",
+            interval_count: stripeSubscription.items.data[0]?.price.recurring?.interval_count || 1,
+            cancel_at_period_end: stripeSubscription.cancel_at_period_end || false,
+            canceled_at: stripeSubscription.canceled_at
+              ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
+              : null,
+            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string' 
+              ? stripeSubscription.default_payment_method 
+              : stripeSubscription.default_payment_method?.id || null,
+            metadata: {
+              checkout_session_id: session.id,
+              stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+              plan_id: planId,
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+
+          console.log("[v0] Creating subscription with data:", JSON.stringify(subscriptionData, null, 2))
+
+          const { error: subError } = await supabase
+            .from("subscriptions")
+            .insert(subscriptionData)
+
+          if (subError) {
+            console.error("[v0] Failed to create subscription:", subError)
+            console.error("[v0] Subscription data that failed:", JSON.stringify(subscriptionData, null, 2))
+          } else {
+            console.log("[v0] Subscription created successfully in verify-payment endpoint")
+          }
+        } else {
+          console.log("[v0] Subscription already exists in database")
+        }
+
+        // Also ensure the plan status is updated to active
+        const { error: planUpdateError } = await supabase
+          .from("plans")
+          .update({
+            status: "active",
+            stripe_subscription_id: subscriptionId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", planId)
+          .eq("user_id", user.id)
+
+        if (planUpdateError) {
+          console.error("[v0] Failed to update plan status:", planUpdateError)
+        } else {
+          console.log("[v0] Plan status updated to active")
+        }
+      } else {
+        console.warn("[v0] No plan ID found in session metadata")
+      }
+    }
+
+    return NextResponse.json({
+      status: session.payment_status,
+      mode: session.mode,
+      subscriptionId: session.subscription ? (typeof session.subscription === 'string' ? session.subscription : session.subscription.id) : null,
+    })
+  } catch (error) {
+    console.error("[v0] Error in verify-payment:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }
 
 export function GET() {

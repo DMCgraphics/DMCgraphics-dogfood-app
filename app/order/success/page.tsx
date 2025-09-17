@@ -19,8 +19,8 @@ export default function OrderSuccessPage() {
       try {
         console.log("[v0] Processing successful payment for session:", sessionId)
 
-        // Verify the session and update plan status
-        const response = await fetch("/api/verify-payment", {
+        // First, verify the session and update plan status
+        const verifyResponse = await fetch("/api/verify-payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -28,10 +28,34 @@ export default function OrderSuccessPage() {
           body: JSON.stringify({ sessionId }),
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          setOrderData(data)
-          console.log("[v0] Payment verified successfully:", data)
+        if (verifyResponse.ok) {
+          const verifyData = await verifyResponse.json()
+          setOrderData(verifyData)
+          console.log("[v0] Payment verified successfully:", verifyData)
+
+          // As a backup, also try to create the subscription directly
+          // This ensures the subscription is saved even if the webhook failed
+          try {
+            const createResponse = await fetch("/api/subscriptions/create", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ sessionId }),
+            })
+
+            if (createResponse.ok) {
+              const createData = await createResponse.json()
+              console.log("[v0] Subscription creation backup successful:", createData)
+            } else {
+              const errorData = await createResponse.json()
+              console.log("[v0] Subscription creation backup failed (this is OK if webhook already handled it):", errorData)
+            }
+          } catch (createError) {
+            console.log("[v0] Subscription creation backup error (this is OK if webhook already handled it):", createError)
+          }
+        } else {
+          console.error("Failed to verify payment:", await verifyResponse.text())
         }
       } catch (error) {
         console.error("Error verifying payment:", error)

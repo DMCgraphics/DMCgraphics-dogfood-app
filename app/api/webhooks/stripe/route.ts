@@ -378,6 +378,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true })
     }
 
+    case "customer.subscription.updated": {
+      const sub = event.data.object as Stripe.Subscription
+      console.log("[v0] Processing customer.subscription.updated:", sub.id, "status:", sub.status)
+
+      // Update the subscription status in our database
+      const { error: updateError } = await supabaseAdmin
+        .from("subscriptions")
+        .update({
+          status: sub.status,
+          current_period_start: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+          current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+          canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("stripe_subscription_id", sub.id)
+
+      if (updateError) {
+        console.error("[v0] Failed to update subscription status:", updateError)
+      } else {
+        console.log("[v0] Subscription status updated to:", sub.status)
+      }
+
+      return NextResponse.json({ received: true })
+    }
+
     default:
       console.log("[v0] Unhandled event type:", event.type)
       break

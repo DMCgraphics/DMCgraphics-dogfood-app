@@ -1,5 +1,6 @@
 // Nutritional calculation utilities for NouriPet
 export interface DogProfile {
+  name?: string
   weight: number
   weightUnit: "lb" | "kg"
   age: number

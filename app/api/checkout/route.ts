@@ -38,19 +38,21 @@ export async function POST() {
 
     // Pull the current plan + line items prepared by the DB view
     console.log("[v0] Fetching checkout lines from database")
-    const { data: checkout, error } = await supabase.from("current_user_checkout_lines").select("*").single()
+    const { data: checkoutData, error } = await supabase.from("current_user_checkout_lines").select("*")
 
     if (error) {
       console.log("[v0] Database error fetching checkout lines:", error)
       return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 400 })
     }
 
-    if (!checkout) {
+    if (!checkoutData || checkoutData.length === 0) {
       console.log("[v0] No checkout data found")
       return NextResponse.json({ error: "No checkout lines found" }, { status: 400 })
     }
 
-    console.log("[v0] Checkout data:", checkout)
+    // Get the most recent checkout (first in the ordered list)
+    const checkout = checkoutData[0]
+    console.log("[v0] Using checkout data:", JSON.stringify(checkout, null, 2))
 
     const planId: string = checkout.plan_id
     const lines = (checkout.line_items ?? []) as any[]
@@ -61,10 +63,11 @@ export async function POST() {
     }
 
     console.log("[v0] Processing", lines.length, "line items")
+    console.log("[v0] Line items data:", JSON.stringify(lines, null, 2))
 
     // All plan_items must have a Stripe price id
     const line_items = lines.map((li, index) => {
-      console.log(`[v0] Processing line item ${index}:`, li)
+      console.log(`[v0] Processing line item ${index}:`, JSON.stringify(li, null, 2))
       if (!li.stripe_price_id) {
         console.log(`[v0] Missing stripe_price_id on line item ${index}`)
         throw new Error(`Missing stripe_price_id on plan item ${index}; run price sync / set_plan_item_price.`)
@@ -74,7 +77,7 @@ export async function POST() {
 
     console.log("[v0] Line items for Stripe:", line_items)
 
-    const baseUrl = reqEnv("NEXT_PUBLIC_APP_URL")
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"
     const successUrl = `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl = `${baseUrl}/checkout/cancelled`
 
@@ -118,11 +121,13 @@ export async function POST() {
   } catch (error) {
     console.error("[v0] Checkout API error:", error)
     console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+    console.error("[v0] Error details:", JSON.stringify(error, null, 2))
 
     return NextResponse.json(
       {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 },
     )

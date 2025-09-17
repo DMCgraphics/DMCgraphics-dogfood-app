@@ -63,6 +63,8 @@ async function upsertSubscriptionFromIds({
       updated_at: new Date().toISOString(),
     }
 
+    console.log("[v0] Attempting to upsert subscription with data:", JSON.stringify(subscriptionData, null, 2))
+    
     const { error: subError } = await supabaseAdmin.from("subscriptions").upsert(subscriptionData, {
       onConflict: "stripe_subscription_id",
       ignoreDuplicates: false,
@@ -70,6 +72,7 @@ async function upsertSubscriptionFromIds({
 
     if (subError) {
       console.error("[v0] Failed to upsert subscription:", subError)
+      console.error("[v0] Subscription data that failed:", JSON.stringify(subscriptionData, null, 2))
     } else {
       console.log("[v0] Subscription upserted successfully")
     }
@@ -279,6 +282,8 @@ export async function POST(req: Request) {
         updated_at: new Date().toISOString(),
       }
 
+      console.log("[v0] Attempting to upsert subscription from customer.subscription.created with data:", JSON.stringify(subscriptionData, null, 2))
+      
       const { error: subError } = await supabaseAdmin.from("subscriptions").upsert(subscriptionData, {
         onConflict: "stripe_subscription_id",
         ignoreDuplicates: false,
@@ -286,6 +291,7 @@ export async function POST(req: Request) {
 
       if (subError) {
         console.error("[v0] Failed to upsert subscription from customer.subscription.created:", subError)
+        console.error("[v0] Subscription data that failed:", JSON.stringify(subscriptionData, null, 2))
       } else {
         console.log("[v0] Subscription upserted from customer.subscription.created")
       }

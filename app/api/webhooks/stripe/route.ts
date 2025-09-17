@@ -73,7 +73,8 @@ async function upsertSubscriptionFromIds({
     if (subError) {
       console.error("[v0] Failed to upsert subscription:", subError)
       console.error("[v0] Subscription data that failed:", JSON.stringify(subscriptionData, null, 2))
-      throw new Error(`Failed to create subscription: ${subError.message}`)
+      // Don't throw error in webhook - just log it to avoid breaking the webhook flow
+      return
     } else {
       console.log("[v0] Subscription upserted successfully")
     }

@@ -76,6 +76,24 @@ export default function OrderConfirmationPage() {
 
         console.log("[v0] Plan data:", plan)
 
+        // Get the actual subscription data
+        const { data: subscription } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("plan_id", plan.id)
+          .single()
+
+        console.log("[v0] Subscription data:", subscription)
+
+        // Get user profile data for shipping information
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", plan.user_id)
+          .single()
+
+        console.log("[v0] Profile data:", profile)
+
         const subtotal = (plan.subtotal_cents || 0) / 100
         const discount = (plan.discount_cents || 0) / 100
         const shipping = 0 // Free shipping
@@ -85,7 +103,7 @@ export default function OrderConfirmationPage() {
         // Create order data structure
         const orderData: OrderData = {
           orderId: plan.id,
-          subscriptionId: plan.stripe_session_id || sessionId || "",
+          subscriptionId: subscription?.stripe_subscription_id || plan.stripe_session_id || sessionId || "",
           planPayload: {
             dogs: [{ name: plan.dog_name || "Your Dog" }],
             recipes: plan.plan_items?.filter((item: any) => item.recipe) || [],
@@ -93,13 +111,13 @@ export default function OrderConfirmationPage() {
             addOns: plan.plan_items?.filter((item: any) => !item.recipe).map((item: any) => item.name) || [],
           },
           shippingData: {
-            firstName: "Customer", // Would come from user profile
-            lastName: "",
-            email: "",
-            address: "",
-            city: "",
-            state: "",
-            zipCode: "",
+            firstName: profile?.first_name || "Customer",
+            lastName: profile?.last_name || "",
+            email: profile?.email || "",
+            address: profile?.address || "",
+            city: profile?.city || "",
+            state: profile?.state || "",
+            zipCode: profile?.zip_code || "",
           },
           paymentData: {},
           pricing: {
@@ -109,7 +127,7 @@ export default function OrderConfirmationPage() {
             tax,
             total,
           },
-          nextDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
+          nextDeliveryDate: subscription?.current_period_end || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           timestamp: plan.created_at || new Date().toISOString(),
         }
 

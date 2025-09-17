@@ -91,6 +91,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [weightEntries, setWeightEntries] = useState([])
   const [stoolEntries, setStoolEntries] = useState(mockStoolEntries)
+  const [deliveries, setDeliveries] = useState(mockDeliveries)
   const [subscriptionStatus, setSubscriptionStatus] = useState<"active" | "paused" | "cancelled">("active")
   const [planStatus, setPlanStatus] = useState<"none" | "draft" | "saved" | "checkout" | "active">("none")
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
@@ -160,6 +161,35 @@ export default function DashboardPage() {
           .eq("status", "active")
 
         console.log("[v0] Active plans data:", activePlansData)
+
+        // Fetch real delivery data from orders
+        const { data: ordersData } = await supabase
+          .from("orders")
+          .select(`
+            *,
+            plan:plans (
+              *,
+              plan_items (
+                *,
+                recipes (name)
+              )
+            )
+          `)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+
+        console.log("[v0] Orders data:", ordersData)
+
+        // Fetch real stool entries
+        const { data: stoolEntriesData } = await supabase
+          .from("dog_notes")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("type", "stool")
+          .order("created_at", { ascending: false })
+          .limit(10)
+
+        console.log("[v0] Stool entries data:", stoolEntriesData)
 
         let overallPlanStatus: "none" | "draft" | "saved" | "checkout" | "active" = "none"
         let hasActiveSub = false
@@ -289,6 +319,25 @@ export default function DashboardPage() {
         }
         console.log("[v0] Fetched dogs with plan data:", transformedDogs)
         console.log("[v0] Subscription status - hasActiveSub:", hasActiveSub, "planStatus:", overallPlanStatus)
+
+        // Convert real data to the format expected by components
+        const realDeliveries = (ordersData || []).map((order: any) => ({
+          id: order.id,
+          date: order.created_at,
+          status: order.status === "completed" ? "delivered" : "upcoming",
+          items: order.plan?.plan_items?.map((item: any) => 
+            item.recipe ? `${item.recipe.name} (${item.qty || 1} weeks)` : item.name
+          ) || [],
+        }))
+
+        const realStoolEntries = (stoolEntriesData || []).map((entry: any) => ({
+          date: entry.created_at.split('T')[0],
+          score: entry.score || 4,
+          notes: entry.notes || "",
+        }))
+
+        setStoolEntries(realStoolEntries.length > 0 ? realStoolEntries : mockStoolEntries)
+        setDeliveries(realDeliveries.length > 0 ? realDeliveries : mockDeliveries)
       } catch (error) {
         console.error("[v0] Error in fetchDogs:", error)
       } finally {
@@ -654,7 +703,7 @@ export default function DashboardPage() {
                 <SubscriptionControls
                   subscriptionStatus={subscriptionStatus}
                   nextDelivery={selectedDog.nextDelivery}
-                  deliveries={mockDeliveries}
+                  deliveries={deliveries}
                   onPauseResume={handlePauseResume}
                   onSkipDelivery={handleSkipDelivery}
                   onManageSubscription={handleManageSubscription}

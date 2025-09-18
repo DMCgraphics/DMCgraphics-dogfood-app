@@ -31,7 +31,7 @@ const mockOrders: Order[] = [
     status: "delivered",
     total: 89.99,
     items: [
-      { name: "Chicken & Greens (2 weeks)", quantity: 1, price: 79.99 },
+      { name: "Low-Fat Chicken & Garden Veggie (2 weeks)", quantity: 1, price: 79.99 },
       { name: "Probiotic Supplement", quantity: 1, price: 10.0 },
     ],
     trackingNumber: "1Z999AA1234567890",
@@ -51,7 +51,7 @@ const mockOrders: Order[] = [
     status: "delivered",
     total: 89.99,
     items: [
-      { name: "Turkey & Pumpkin (2 weeks)", quantity: 1, price: 79.99 },
+      { name: "Turkey & Brown Rice Comfort (2 weeks)", quantity: 1, price: 79.99 },
       { name: "Joint Support Supplement", quantity: 1, price: 10.0 },
     ],
   },

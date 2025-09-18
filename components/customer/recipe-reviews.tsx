@@ -38,7 +38,7 @@ export function RecipeReviews({ recipeId, recipeName }: RecipeReviewsProps) {
       rating: 5,
       title: "Max loves this recipe!",
       content:
-        "My Golden Retriever absolutely loves the Chicken & Greens recipe. His coat is shinier and he has more energy. The portion sizes are perfect and the ingredients look so fresh!",
+        "My Golden Retriever absolutely loves the Low-Fat Chicken & Garden Veggie recipe. His coat is shinier and he has more energy. The portion sizes are perfect and the ingredients look so fresh!",
       date: new Date("2024-11-15"),
       helpful: 12,
       dogName: "Max",

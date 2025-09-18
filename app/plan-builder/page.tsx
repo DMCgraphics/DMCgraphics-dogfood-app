@@ -812,6 +812,7 @@ export default function PlanBuilderPage() {
 
           if (!recipeData) {
             console.error(`[v0] Recipe not found in database: ${recipeId}`)
+            alert(`Recipe not found in database: ${recipeId}`)
             continue
           }
 
@@ -822,6 +823,7 @@ export default function PlanBuilderPage() {
 
           if (!stripePricing) {
             console.error(`[v0] No Stripe pricing found for recipe ${recipeId}`)
+            alert(`No Stripe pricing found for recipe ${recipeId}`)
             continue
           }
 

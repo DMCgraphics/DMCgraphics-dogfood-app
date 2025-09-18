@@ -32,35 +32,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getSession()
 
         if (session?.user) {
-          // Load profile data from database (optional - don't fail if profile doesn't exist)
-          let profile = null
-          try {
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', session.user.id)
-              .single()
-
-            if (!profileError) {
-              profile = profileData
-            } else {
-              console.log("[v0] No profile found for user, using defaults:", profileError.message)
-            }
-          } catch (error) {
-            console.log("[v0] Error loading profile, using defaults:", error)
-          }
-
           const userData: User = {
             id: session.user.id,
             email: session.user.email!,
-            name: profile?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
-            avatar_url: profile?.avatar_url,
+            name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+            avatar_url: undefined, // Will be loaded separately when needed
             createdAt: session.user.created_at,
             subscriptionStatus: "none",
           }
           setUser(userData)
           setApiStatus("connected")
-          console.log("[v0] auth_supabase_session_found", { userId: userData.id, profileLoaded: !!profile })
+          console.log("[v0] auth_supabase_session_found", { userId: userData.id })
         } else {
           console.log("[v0] auth_no_session")
           setApiStatus("disconnected")
@@ -81,29 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[v0] auth_state_change", { event, hasSession: !!session })
 
       if (event === "SIGNED_IN" && session?.user) {
-        // Load profile data from database (optional - don't fail if profile doesn't exist)
-        let profile = null
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', session.user.id)
-            .single()
-
-          if (!profileError) {
-            profile = profileData
-          } else {
-            console.log("[v0] No profile found for user during sign-in, using defaults:", profileError.message)
-          }
-        } catch (error) {
-          console.log("[v0] Error loading profile during sign-in, using defaults:", error)
-        }
-
         const userData: User = {
           id: session.user.id,
           email: session.user.email!,
-          name: profile?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
-          avatar_url: profile?.avatar_url,
+          name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+          avatar_url: undefined, // Will be loaded separately when needed
           createdAt: session.user.created_at,
           subscriptionStatus: "none",
         }
@@ -121,33 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []) // Removed supabase dependency since it's now a stable import
 
   const login = async (userData: User, token: string) => {
-    // Load profile data from database (optional - don't fail if profile doesn't exist)
-    let profile = null
-    try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', userData.id)
-        .single()
-
-      if (!profileError) {
-        profile = profileData
-      } else {
-        console.log("[v0] No profile found for user during login, using defaults:", profileError.message)
-      }
-    } catch (error) {
-      console.log("[v0] Error loading profile during login, using defaults:", error)
-    }
-
-    const userWithProfile: User = {
-      ...userData,
-      name: profile?.full_name || userData.name,
-      avatar_url: profile?.avatar_url,
-    }
-
-    setUser(userWithProfile)
+    setUser(userData)
     setApiStatus("connected")
-    console.log("[v0] auth_login", { userId: userData.id, profileLoaded: !!profile })
+    console.log("[v0] auth_login", { userId: userData.id })
   }
 
   const logout = async () => {

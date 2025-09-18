@@ -101,8 +101,31 @@ export default function ProfilePage() {
     if (user?.id) {
       loadDogs()
       loadPaymentMethods()
+      loadUserProfile()
     }
   }, [user?.id])
+
+  const loadUserProfile = async () => {
+    if (!user?.id) return
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .single()
+
+      if (!error && profile) {
+        // Update the user context with profile data
+        updateUser({
+          name: profile.full_name || user.name,
+          avatar_url: profile.avatar_url
+        })
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error)
+    }
+  }
 
   const loadDogs = async () => {
     if (!user?.id) return

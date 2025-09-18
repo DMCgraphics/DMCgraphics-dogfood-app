@@ -80,7 +80,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
 
         login(userData, "supabase-session")
         console.log("[v0] user_signup_success", { email: formData.email, name: formData.name })
-        onSuccess?.()
+        
+        // Add a small delay to ensure auth state has propagated before calling onSuccess
+        setTimeout(() => {
+          onSuccess?.()
+        }, 500)
       }
     } catch (err: any) {
       console.log("[v0] user_signup_failed", {

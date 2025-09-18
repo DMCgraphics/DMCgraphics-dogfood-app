@@ -922,6 +922,8 @@ export default function PlanBuilderPage() {
       router.push("/checkout")
     } catch (error) {
       console.error("[v0] Error in handleAuthSuccess:", error)
+      // Show user-friendly error message
+      alert("There was an error saving your plan. Please try again.")
     }
   }
 

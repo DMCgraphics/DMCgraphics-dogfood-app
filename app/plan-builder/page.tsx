@@ -88,6 +88,34 @@ export default function PlanBuilderPage() {
     }
   }, [])
 
+  // Check for add-dog-mode parameters
+  useEffect(() => {
+    const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
+    const totalDogsFromStorage = localStorage.getItem("nouripet-total-dogs")
+    
+    if (isAddDogMode && totalDogsFromStorage) {
+      const dogCount = parseInt(totalDogsFromStorage)
+      setTotalDogs(dogCount)
+      setShowDogCountSelector(false)
+      setCurrentStep(1) // Skip to step 1 (Dog Basics)
+      
+      // Initialize with existing dog data + new dog
+      const newDogsData = Array.from({ length: dogCount }, (_, index) => {
+        if (index === 0) {
+          // Keep existing dog data if available
+          return allDogsData[index] || getDefaultDogData()
+        }
+        return getDefaultDogData()
+      })
+      setAllDogsData(newDogsData)
+      setCurrentDogIndex(1) // Start with the new dog (index 1)
+      
+      // Clean up localStorage
+      localStorage.removeItem("nouripet-add-dog-mode")
+      localStorage.removeItem("nouripet-total-dogs")
+    }
+  }, [])
+
   // Current dog's data (derived from allDogsData)
   const currentDogData = allDogsData[currentDogIndex] || getDefaultDogData()
 
@@ -789,6 +817,12 @@ export default function PlanBuilderPage() {
   }
 
   const getStepContent = () => {
+    // Check if we're in add-dog-mode and skip step 0
+    const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
+    if (currentStep === 0 && isAddDogMode) {
+      return null // Skip the dog count selector
+    }
+
     switch (currentStep) {
       case 0:
         return (

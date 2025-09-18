@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -15,12 +15,23 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     const dogId = formData.get('dogId') as string
     
+    console.log('Dog photo upload:', { 
+      fileName: file?.name, 
+      fileSize: file?.size, 
+      fileType: file?.type,
+      hasFile: !!file,
+      dogId 
+    })
+    
     if (!file) {
+      console.log('No file provided in request')
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
+    // For new dogs, dogId might be empty - we'll handle this case
     if (!dogId) {
-      return NextResponse.json({ error: 'Dog ID is required' }, { status: 400 })
+      console.log('No dogId provided - this might be a new dog')
+      // We'll still allow the upload but won't update any dog record
     }
 
     // Validate file type
@@ -35,24 +46,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
     }
 
-    // Verify the dog belongs to the user
-    const { data: dog, error: dogError } = await supabase
-      .from('dogs')
-      .select('id, name')
-      .eq('id', dogId)
-      .eq('user_id', user.id)
-      .single()
+    // Verify the dog belongs to the user (only if dogId is provided)
+    let dog = null
+    if (dogId) {
+      const { data: dogData, error: dogError } = await supabase
+        .from('dogs')
+        .select('id, name')
+        .eq('id', dogId)
+        .eq('user_id', user.id)
+        .single()
 
-    if (dogError || !dog) {
-      return NextResponse.json({ error: 'Dog not found or access denied' }, { status: 404 })
+      if (dogError || !dogData) {
+        console.log('Dog not found or access denied:', dogError)
+        return NextResponse.json({ error: 'Dog not found or access denied' }, { status: 404 })
+      }
+      dog = dogData
     }
 
     // Create unique filename
     const fileExt = file.name.split('.').pop()
-    const fileName = `${user.id}/${dogId}-${Date.now()}.${fileExt}`
+    const fileName = `${user.id}/${dogId || 'new'}-${Date.now()}.${fileExt}`
     
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload to Supabase Storage using admin client
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('dog-photos')
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -65,27 +81,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('dog-photos')
       .getPublicUrl(fileName)
 
-    // Update dog profile with new avatar URL
-    const { error: updateError } = await supabase
-      .from('dogs')
-      .update({ avatar_url: publicUrl })
-      .eq('id', dogId)
-      .eq('user_id', user.id)
+    // Update dog profile with new avatar URL (only if dogId is provided)
+    if (dogId && dog) {
+      const { error: updateError } = await supabase
+        .from('dogs')
+        .update({ avatar_url: publicUrl })
+        .eq('id', dogId)
+        .eq('user_id', user.id)
 
-    if (updateError) {
-      console.error('Update error:', updateError)
-      return NextResponse.json({ error: 'Failed to update dog profile' }, { status: 500 })
+      if (updateError) {
+        console.error('Update error:', updateError)
+        return NextResponse.json({ error: 'Failed to update dog profile' }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ 
       success: true, 
       avatarUrl: publicUrl,
-      dogName: dog.name,
-      message: 'Dog photo uploaded successfully' 
+      dogName: dog?.name || 'New Dog',
+      message: dogId ? 'Dog photo uploaded successfully' : 'Photo uploaded successfully (will be saved when dog is created)'
     })
 
   } catch (error) {

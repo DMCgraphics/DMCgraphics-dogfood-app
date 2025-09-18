@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    console.log('Profile photo upload endpoint called')
+    const supabase = createClient()
     
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
+    console.log('Auth check:', { user: user?.id, authError })
+    
     if (authError || !user) {
+      console.log('Unauthorized access attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const formData = await request.formData()
     const file = formData.get('file') as File
     
+    console.log('File received:', { 
+      fileName: file?.name, 
+      fileSize: file?.size, 
+      fileType: file?.type,
+      hasFile: !!file 
+    })
+    
     if (!file) {
+      console.log('No file provided in request')
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
@@ -34,21 +46,24 @@ export async function POST(request: NextRequest) {
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}/profile-${Date.now()}.${fileExt}`
     
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload to Supabase Storage using admin client
+    console.log('Uploading to storage:', { fileName, bucket: 'profile-photos' })
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('profile-photos')
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false
       })
 
+    console.log('Storage upload result:', { uploadData, uploadError })
+
     if (uploadError) {
       console.error('Upload error:', uploadError)
-      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to upload file: ${uploadError.message}` }, { status: 500 })
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('profile-photos')
       .getPublicUrl(fileName)
 

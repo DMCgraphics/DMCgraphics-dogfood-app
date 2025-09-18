@@ -45,11 +45,22 @@ export function PhotoUpload({
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    console.log('File selected:', { 
+      fileName: file?.name, 
+      fileSize: file?.size, 
+      fileType: file?.type,
+      hasFile: !!file 
+    })
+    
+    if (!file) {
+      console.log('No file selected')
+      return
+    }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
+      console.log('Invalid file type:', file.type)
       setError('Invalid file type. Only JPEG, PNG, and WebP are allowed.')
       return
     }
@@ -57,10 +68,12 @@ export function PhotoUpload({
     // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
+      console.log('File too large:', file.size)
       setError('File too large. Maximum size is 5MB.')
       return
     }
 
+    console.log('File validation passed, proceeding with upload')
     setError(null)
     
     // Create preview
@@ -79,23 +92,37 @@ export function PhotoUpload({
     setError(null)
 
     try {
+      console.log('Starting file upload:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        uploadEndpoint,
+        additionalData
+      })
+
       const formData = new FormData()
       formData.append('file', file)
       
       // Add any additional data
       Object.entries(additionalData).forEach(([key, value]) => {
         formData.append(key, value)
+        console.log(`Added form data: ${key} = ${value}`)
       })
 
+      console.log('Sending request to:', uploadEndpoint)
       const response = await fetch(uploadEndpoint, {
         method: 'POST',
         body: formData,
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
       const result = await response.json()
+      console.log('Response data:', result)
 
       if (!response.ok) {
-        throw new Error(result.error || 'Upload failed')
+        throw new Error(result.error || `Upload failed with status ${response.status}`)
       }
 
       onPhotoUploaded(result.avatarUrl)

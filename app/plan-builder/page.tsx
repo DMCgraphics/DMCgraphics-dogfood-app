@@ -622,15 +622,34 @@ export default function PlanBuilderPage() {
 
       localStorage.removeItem("x-plan-token")
 
-      const { data: existingPlan, error: planFetchError } = await supabase
-        .from("current_user_plan")
-        .select("id")
-        .single()
+      // Check for existing active plan directly instead of using the broken view
+      const { data: existingPlans, error: planFetchError } = await supabase
+        .from("plans")
+        .select("id, status")
+        .eq("user_id", session.user.id)
+        .in("status", ["draft", "active", "checkout_in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+      
+      const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
 
       let planId
       if (existingPlan) {
         planId = existingPlan.id
         console.log("[v0] Using existing plan:", planId)
+        
+        // Clean up any existing plan items to prevent duplicates
+        console.log("[v0] Cleaning up existing plan items...")
+        const { error: deleteItemsError } = await supabase
+          .from("plan_items")
+          .delete()
+          .eq("plan_id", planId)
+        
+        if (deleteItemsError) {
+          console.error("[v0] Error deleting existing plan items:", deleteItemsError)
+        } else {
+          console.log("[v0] Existing plan items cleaned up")
+        }
       } else {
         // Get the first dog's ID to link to the plan
         const firstDogData = allDogsData[0]

@@ -90,6 +90,9 @@ export default function PlanBuilderPage() {
 
   // Check for add-dog-mode parameters
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === "undefined") return
+    
     const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
     const totalDogsFromStorage = localStorage.getItem("nouripet-total-dogs")
     
@@ -817,10 +820,12 @@ export default function PlanBuilderPage() {
   }
 
   const getStepContent = () => {
-    // Check if we're in add-dog-mode and skip step 0
-    const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
-    if (currentStep === 0 && isAddDogMode) {
-      return null // Skip the dog count selector
+    // Check if we're in add-dog-mode and skip step 0 (only on client side)
+    if (typeof window !== "undefined") {
+      const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
+      if (currentStep === 0 && isAddDogMode) {
+        return null // Skip the dog count selector
+      }
     }
 
     switch (currentStep) {

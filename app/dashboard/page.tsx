@@ -84,6 +84,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [weightEntries, setWeightEntries] = useState([])
   const [stoolEntries, setStoolEntries] = useState([])
+  const [isStoolLoading, setIsStoolLoading] = useState(false)
   const [deliveries, setDeliveries] = useState(mockDeliveries)
   const [subscriptionStatus, setSubscriptionStatus] = useState<"active" | "paused" | "cancelled">("active")
   const [planStatus, setPlanStatus] = useState<"none" | "draft" | "saved" | "checkout" | "active">("none")
@@ -457,6 +458,7 @@ export default function DashboardPage() {
   const handleAddStoolEntry = async (entry: { score: number; notes?: string }) => {
     if (!selectedDogId) return
 
+    setIsStoolLoading(true)
     try {
       // Create the note text with score and notes
       const noteText = `Score ${entry.score} - ${entry.notes || 'No additional notes'}`
@@ -476,17 +478,19 @@ export default function DashboardPage() {
         return
       }
 
-      // Update local state
+      // Update local state - add new entry at the beginning (newest first)
       const newEntry = {
         date: new Date().toISOString().split("T")[0],
         score: entry.score,
         notes: entry.notes || "",
       }
-      setStoolEntries([...stoolEntries, newEntry])
+      setStoolEntries([newEntry, ...stoolEntries])
       
       console.log("[v0] Stool entry saved successfully:", data)
     } catch (error) {
       console.error("[v0] Error in handleAddStoolEntry:", error)
+    } finally {
+      setIsStoolLoading(false)
     }
   }
 
@@ -733,7 +737,7 @@ export default function DashboardPage() {
                   onAddEntry={handleAddWeightEntry}
                 />
 
-                <StoolLog dogName={selectedDog.name} entries={stoolEntries} onAddEntry={handleAddStoolEntry} />
+                <StoolLog dogName={selectedDog.name} entries={stoolEntries} onAddEntry={handleAddStoolEntry} isLoading={isStoolLoading} />
 
                 {selectedDog.hasMedicalItems && (
                   <MedicalConditionTracker

@@ -17,6 +17,7 @@ interface StoolLogProps {
   dogName: string
   entries: StoolEntry[]
   onAddEntry: (entry: Omit<StoolEntry, "date">) => void
+  isLoading?: boolean
 }
 
 const stoolScores = [
@@ -29,7 +30,7 @@ const stoolScores = [
   { score: 7, label: "Very Loose", description: "Liquid, no form", color: "bg-red-500" },
 ]
 
-export function StoolLog({ dogName, entries, onAddEntry }: StoolLogProps) {
+export function StoolLog({ dogName, entries, onAddEntry, isLoading = false }: StoolLogProps) {
   const [selectedScore, setSelectedScore] = useState<number | null>(null)
   const [notes, setNotes] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -109,8 +110,8 @@ export function StoolLog({ dogName, entries, onAddEntry }: StoolLogProps) {
                     onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
-                <Button onClick={handleAddEntry} disabled={selectedScore === null} className="w-full">
-                  Add Entry
+                <Button onClick={handleAddEntry} disabled={selectedScore === null || isLoading} className="w-full">
+                  {isLoading ? "Saving..." : "Add Entry"}
                 </Button>
               </div>
             </DialogContent>

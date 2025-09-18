@@ -639,6 +639,8 @@ export default function PlanBuilderPage() {
       const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
 
       let planId
+      let firstDogDbData = null // Declare outside the if/else block
+      
       if (existingPlan) {
         planId = existingPlan.id
         console.log("[v0] Using existing plan:", planId)
@@ -667,7 +669,7 @@ export default function PlanBuilderPage() {
         const weight = firstDogData.dogProfile.weight || 0
         const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
 
-        const { data: firstDogDbData, error: firstDogError } = await supabase
+        const { data: firstDogDataResult, error: firstDogError } = await supabase
           .from("dogs")
           .insert({
             user_id: session.user.id,
@@ -688,6 +690,7 @@ export default function PlanBuilderPage() {
           return
         }
 
+        firstDogDbData = firstDogDataResult // Assign to the scoped variable
         console.log("[v0] Created first dog with ID:", firstDogDbData.id, "user_id:", firstDogDbData.user_id)
         
         // Validate that the dog was created with the correct user_id
@@ -750,7 +753,7 @@ export default function PlanBuilderPage() {
       const startIndex = existingPlan ? 0 : 1
       let firstDogId = null
 
-      if (!existingPlan) {
+      if (!existingPlan && firstDogDbData) {
         // We already created the first dog above, get its ID
         firstDogId = firstDogDbData.id
         console.log(`[v0] First dog already created with ID: ${firstDogId}`)

@@ -11,6 +11,7 @@ import { SubscriptionControls } from "@/components/dashboard/subscription-contro
 import { Recommendations } from "@/components/dashboard/recommendations"
 import { PrescriptionStatusCard } from "@/components/dashboard/prescription-status-card"
 import { MedicalConditionTracker } from "@/components/dashboard/medical-condition-tracker"
+import { NutrientInfo } from "@/components/dashboard/nutrient-info"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { mockVerificationRequests } from "@/lib/vet-verification"
@@ -125,7 +126,7 @@ export default function DashboardPage() {
             *,
             plan_items (
               *,
-              recipes (name)
+              recipes (name, macros)
             )
           `)
           .eq("user_id", user.id)
@@ -301,6 +302,34 @@ export default function DashboardPage() {
               }
             }
 
+            // Get nutritional data from recipe
+            let nutritionalData = {
+              dailyCalories: 0,
+              protein: 0,
+              fat: 0,
+              carbs: 0,
+              fiber: 0,
+              moisture: 0
+            }
+
+            if (dogPlan) {
+              const planItem = dogPlan.plan_items?.[0]
+              if (planItem?.recipes) {
+                const recipe = planItem.recipes
+                // Calculate daily calories based on dog weight and recipe
+                const dailyGrams = Math.max(50, planWeight * 2) // 2g per lb minimum
+                const caloriesPer100g = recipe.macros?.calories || 175 // Default calories per 100g
+                nutritionalData = {
+                  dailyCalories: Math.round((dailyGrams / 100) * caloriesPer100g),
+                  protein: recipe.macros?.protein || 0,
+                  fat: recipe.macros?.fat || 0,
+                  carbs: recipe.macros?.carbs || 0,
+                  fiber: recipe.macros?.fiber || 0,
+                  moisture: recipe.macros?.moisture || 0
+                }
+              }
+            }
+
             return {
               id: dog.id,
               name: dog.name,
@@ -316,6 +345,7 @@ export default function DashboardPage() {
               nextDelivery: nextDelivery,
               subscriptionStatus: subscriptionStatus,
               hasMedicalItems: hasMedicalItems,
+              ...nutritionalData,
             }
           }) || []
 
@@ -838,6 +868,17 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-8">
+                <NutrientInfo
+                  dogName={selectedDog.name}
+                  recipeName={selectedDog.currentRecipe}
+                  dailyCalories={selectedDog.dailyCalories}
+                  protein={selectedDog.protein}
+                  fat={selectedDog.fat}
+                  carbs={selectedDog.carbs}
+                  fiber={selectedDog.fiber}
+                  moisture={selectedDog.moisture}
+                />
+
                 {selectedDog.hasMedicalItems && (
                   <PrescriptionStatusCard
                     verificationRequest={currentVerificationRequest}

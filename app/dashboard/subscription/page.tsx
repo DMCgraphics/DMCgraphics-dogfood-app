@@ -6,11 +6,99 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Calendar, Package, Pause, Play, Settings } from "lucide-react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase/client"
 import Link from "next/link"
+
+interface SubscriptionCardProps {
+  subscription: any
+  onPause: (subscriptionId: string) => void
+  onResume: (subscriptionId: string) => void
+}
+
+function SubscriptionCard({ subscription, onPause, onResume }: SubscriptionCardProps) {
+  const planData = subscription.planData
+  const dogData = subscription.dogData
+  const planItem = planData?.plan_items?.[0]
+  const recipeName = planItem?.recipes?.name || "Custom Recipe"
+
+  const nextDeliveryDate = subscription.current_period_end 
+    ? new Date(subscription.current_period_end)
+    : new Date(subscription.created_at)
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              {dogData?.name || "Unknown Dog"}'s Subscription
+              <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
+                {subscription.status}
+              </Badge>
+            </CardTitle>
+            <CardDescription>{recipeName} • Weekly Delivery</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            {subscription.status === "active" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPause(subscription.stripe_subscription_id)}
+              >
+                <Pause className="h-4 w-4 mr-2" />
+                Pause
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onResume(subscription.stripe_subscription_id)}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Resume
+              </Button>
+            )}
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <h4 className="font-medium mb-2">Next Delivery</h4>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              {nextDeliveryDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
+          </div>
+          <div>
+            <h4 className="font-medium mb-2">Dog Details</h4>
+            <p className="text-sm text-muted-foreground">
+              {dogData?.breed || "Unknown breed"} • {dogData?.age || "Unknown age"} years old
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium mb-2">Plan Weight</h4>
+            <p className="text-sm text-muted-foreground">
+              {dogData?.weight || "Unknown"} {dogData?.weight_unit || "lbs"}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function SubscriptionManagementPage() {
   const { user } = useAuth()
@@ -41,7 +129,8 @@ export default function SubscriptionManagementPage() {
             let planData = null
             let dogData = null
 
-            if (subscription.metadata && subscription.metadata.plan_id) {
+            // Use plan_id directly from subscription
+            if (subscription.plan_id) {
               // Get plan data
               const { data: plan } = await supabase
                 .from("plans")
@@ -52,7 +141,7 @@ export default function SubscriptionManagementPage() {
                     recipes (name)
                   )
                 `)
-                .eq("id", subscription.metadata.plan_id)
+                .eq("id", subscription.plan_id)
                 .single()
 
               if (plan) {
@@ -163,102 +252,52 @@ export default function SubscriptionManagementPage() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            {subscriptions.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Active Subscriptions</h3>
-                  <p className="text-muted-foreground mb-4">
-                    You don't have any active subscriptions yet. Start by building a plan for your dog.
-                  </p>
-                  <Link href="/plan-builder">
-                    <Button>Build Your Dog's Plan</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ) : (
-              subscriptions.map((subscription) => {
-                const planData = subscription.planData
-                const dogData = subscription.dogData
-                const planItem = planData?.plan_items?.[0]
-                const recipeName = planItem?.recipes?.name || "Custom Recipe"
-
-                const nextDeliveryDate = new Date(subscription.created_at)
-                nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
-
-                return (
-                  <Card key={subscription.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            {dogData?.name || "Unknown Dog"}'s Subscription
-                            <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
-                              {subscription.status}
-                            </Badge>
-                          </CardTitle>
-                          <CardDescription>{recipeName} • Weekly Delivery</CardDescription>
-                        </div>
-                        <div className="flex gap-2">
-                          {subscription.status === "active" ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePauseSubscription(subscription.stripe_subscription_id)}
-                            >
-                              <Pause className="h-4 w-4 mr-2" />
-                              Pause
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleResumeSubscription(subscription.stripe_subscription_id)}
-                            >
-                              <Play className="h-4 w-4 mr-2" />
-                              Resume
-                            </Button>
-                          )}
-                          <Button variant="outline" size="sm">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Settings
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <div>
-                          <h4 className="font-medium mb-2">Next Delivery</h4>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            {nextDeliveryDate.toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </div>
-                        </div>
-                        <div>
-                          <h4 className="font-medium mb-2">Dog Details</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {dogData?.breed || "Unknown breed"} • {dogData?.age || "Unknown age"} years old
-                          </p>
-                        </div>
-                        <div>
-                          <h4 className="font-medium mb-2">Plan Weight</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {planData?.target_weight ? Math.round(planData.target_weight * 2.20462) : "Unknown"} lbs
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })
-            )}
-          </div>
+          {subscriptions.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Active Subscriptions</h3>
+                <p className="text-muted-foreground mb-4">
+                  You don't have any active subscriptions yet. Start by building a plan for your dog.
+                </p>
+                <Link href="/plan-builder">
+                  <Button>Build Your Dog's Plan</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <Tabs defaultValue={subscriptions[0]?.dogData?.name || "all"} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="all">All Subscriptions</TabsTrigger>
+                {subscriptions.map((subscription) => (
+                  <TabsTrigger key={subscription.id} value={subscription.dogData?.name || "unknown"}>
+                    {subscription.dogData?.name || "Unknown Dog"}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              <TabsContent value="all" className="space-y-6">
+                {subscriptions.map((subscription) => (
+                  <SubscriptionCard 
+                    key={subscription.id} 
+                    subscription={subscription} 
+                    onPause={handlePauseSubscription}
+                    onResume={handleResumeSubscription}
+                  />
+                ))}
+              </TabsContent>
+              
+              {subscriptions.map((subscription) => (
+                <TabsContent key={subscription.id} value={subscription.dogData?.name || "unknown"}>
+                  <SubscriptionCard 
+                    subscription={subscription} 
+                    onPause={handlePauseSubscription}
+                    onResume={handleResumeSubscription}
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
+          )}
         </main>
         <Footer />
       </div>

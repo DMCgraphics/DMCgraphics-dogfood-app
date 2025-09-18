@@ -668,7 +668,7 @@ export default function ProfilePage() {
                             <CardContent className="pt-6">
                               <div className="flex items-center gap-4">
                                 <img
-                                  src="/happy-golden-retriever.png"
+                                  src={dog.avatar_url || "/happy-golden-retriever.png"}
                                   alt={dog.name}
                                   className="w-16 h-16 rounded-full object-cover"
                                 />
@@ -722,6 +722,10 @@ export default function ProfilePage() {
                           setEditingDog(null)
                         }}
                         isLoading={isLoading}
+                        editingDog={editingDog}
+                        setDogProfiles={setDogProfiles}
+                        user={user}
+                        loadDogs={loadDogs}
                       />
                     </CardContent>
                   </Card>
@@ -831,11 +835,19 @@ function DogForm({
   onSave,
   onCancel,
   isLoading,
+  editingDog,
+  setDogProfiles,
+  user,
+  loadDogs,
 }: {
   dog: DogProfile | null
   onSave: (dog: Partial<DogProfile>) => void
   onCancel: () => void
   isLoading: boolean
+  editingDog: DogProfile | null
+  setDogProfiles: React.Dispatch<React.SetStateAction<DogProfile[]>>
+  user: any
+  loadDogs: () => void
 }) {
   const [formData, setFormData] = useState({
     name: dog?.name || "",

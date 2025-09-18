@@ -616,6 +616,11 @@ export default function PlanBuilderPage() {
       console.log("[v0] Waiting for authenticated session...")
       const session = await waitForSession()
       console.log("[v0] Session confirmed:", session.user.id)
+      
+      // Validate session user ID
+      if (!session?.user?.id) {
+        throw new Error("No valid user ID found in session")
+      }
 
       console.log("[v0] Claiming guest plan...")
       await claimGuestPlan()
@@ -675,7 +680,7 @@ export default function PlanBuilderPage() {
             allergies: firstDogData.selectedAllergens,
             conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
           })
-          .select("id")
+          .select("id, user_id")
           .single()
 
         if (firstDogError) {
@@ -683,8 +688,15 @@ export default function PlanBuilderPage() {
           return
         }
 
-        console.log("[v0] Created first dog with ID:", firstDogDbData.id)
+        console.log("[v0] Created first dog with ID:", firstDogDbData.id, "user_id:", firstDogDbData.user_id)
+        
+        // Validate that the dog was created with the correct user_id
+        if (!firstDogDbData.user_id || firstDogDbData.user_id !== session.user.id) {
+          throw new Error(`Dog created with incorrect user_id. Expected: ${session.user.id}, Got: ${firstDogDbData.user_id}`)
+        }
 
+        console.log("[v0] Creating plan with user_id:", session.user.id, "and dog_id:", firstDogDbData.id)
+        
         const { data: planData, error: planError } = await supabase
           .from("plans")
           .insert({
@@ -696,7 +708,7 @@ export default function PlanBuilderPage() {
             discount_cents: 0,
             total_cents: 0,
           })
-          .select("id")
+          .select("id, user_id")
           .single()
 
         if (planError) {
@@ -705,7 +717,12 @@ export default function PlanBuilderPage() {
           return
         }
         planId = planData.id
-        console.log("[v0] Created new plan with UUID:", planId, "linked to dog:", firstDogDbData.id)
+        console.log("[v0] Created new plan with UUID:", planId, "linked to dog:", firstDogDbData.id, "user_id:", planData.user_id)
+        
+        // Validate that the plan was created with the correct user_id
+        if (!planData.user_id || planData.user_id !== session.user.id) {
+          throw new Error(`Plan created with incorrect user_id. Expected: ${session.user.id}, Got: ${planData.user_id}`)
+        }
 
         // Create plan-dog relationship for the first dog
         const { error: firstPlanDogError } = await supabase.rpc("upsert_plan_dog", {
@@ -758,7 +775,7 @@ export default function PlanBuilderPage() {
             allergies: dogData.selectedAllergens,
             conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
           })
-          .select()
+          .select("id, user_id")
           .single()
 
         if (dogError) {
@@ -768,6 +785,13 @@ export default function PlanBuilderPage() {
         }
 
         console.log(`[v0] Dog ${i + 1} saved successfully:`, dogDbData)
+        
+        // Validate that the dog was created with the correct user_id
+        if (!dogDbData.user_id || dogDbData.user_id !== session.user.id) {
+          console.error(`[v0] Dog ${i + 1} created with incorrect user_id. Expected: ${session.user.id}, Got: ${dogDbData.user_id}`)
+          alert(`Error: Dog created with incorrect user ID`)
+          continue
+        }
 
         const { error: planDogError } = await supabase.rpc("upsert_plan_dog", {
           p_plan_id: planId,
@@ -949,8 +973,8 @@ export default function PlanBuilderPage() {
       router.push("/checkout")
     } catch (error) {
       console.error("[v0] Error in handleAuthSuccess:", error)
-      // Show user-friendly error message
-      alert("There was an error saving your plan. Please try again.")
+      // Show specific error message for debugging
+      alert(`Error saving plan: ${error.message || error.toString()}`)
     }
   }
 

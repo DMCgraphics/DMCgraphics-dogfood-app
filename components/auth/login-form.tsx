@@ -33,7 +33,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
 
     try {
       const userData = await login(email, password)
-      authLogin(userData, "supabase-session")
+      await authLogin(userData, "supabase-session")
       console.log("[v0] user_login_success", { email })
       onSuccess?.()
     } catch (err) {

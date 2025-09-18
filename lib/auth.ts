@@ -38,7 +38,12 @@ export async function signup(email: string, password: string, name?: string) {
 export async function login(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
-  const profile: User = { id: data.user.id, email: data.user.email!, name: (data.user.user_metadata as any)?.name }
+  const profile: User = { 
+    id: data.user.id, 
+    email: data.user.email!, 
+    name: (data.user.user_metadata as any)?.name,
+    avatar_url: undefined // Will be loaded by auth context
+  }
   localStorage.setItem("nouripet_user", JSON.stringify(profile))
   document.cookie = `auth_token=${data.session?.access_token ?? ""}; path=/; SameSite=Lax`
   return profile

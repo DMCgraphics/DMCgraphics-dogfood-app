@@ -32,12 +32,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getSession()
 
         if (session?.user) {
-          // Load profile data from database
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', session.user.id)
-            .single()
+          // Load profile data from database (optional - don't fail if profile doesn't exist)
+          let profile = null
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('id', session.user.id)
+              .single()
+
+            if (!profileError) {
+              profile = profileData
+            } else {
+              console.log("[v0] No profile found for user, using defaults:", profileError.message)
+            }
+          } catch (error) {
+            console.log("[v0] Error loading profile, using defaults:", error)
+          }
 
           const userData: User = {
             id: session.user.id,
@@ -70,12 +81,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[v0] auth_state_change", { event, hasSession: !!session })
 
       if (event === "SIGNED_IN" && session?.user) {
-        // Load profile data from database
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', session.user.id)
-          .single()
+        // Load profile data from database (optional - don't fail if profile doesn't exist)
+        let profile = null
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', session.user.id)
+            .single()
+
+          if (!profileError) {
+            profile = profileData
+          } else {
+            console.log("[v0] No profile found for user during sign-in, using defaults:", profileError.message)
+          }
+        } catch (error) {
+          console.log("[v0] Error loading profile during sign-in, using defaults:", error)
+        }
 
         const userData: User = {
           id: session.user.id,
@@ -99,9 +121,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []) // Removed supabase dependency since it's now a stable import
 
   const login = async (userData: User, token: string) => {
-    setUser(userData)
+    // Load profile data from database (optional - don't fail if profile doesn't exist)
+    let profile = null
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', userData.id)
+        .single()
+
+      if (!profileError) {
+        profile = profileData
+      } else {
+        console.log("[v0] No profile found for user during login, using defaults:", profileError.message)
+      }
+    } catch (error) {
+      console.log("[v0] Error loading profile during login, using defaults:", error)
+    }
+
+    const userWithProfile: User = {
+      ...userData,
+      name: profile?.full_name || userData.name,
+      avatar_url: profile?.avatar_url,
+    }
+
+    setUser(userWithProfile)
     setApiStatus("connected")
-    console.log("[v0] auth_login", { userId: userData.id })
+    console.log("[v0] auth_login", { userId: userData.id, profileLoaded: !!profile })
   }
 
   const logout = async () => {
@@ -141,6 +187,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setUser(updatedUser)
         console.log("[v0] auth_profile_refreshed", { userId: user.id })
+      } else {
+        console.log("[v0] No profile found during refresh:", profileError?.message)
       }
     } catch (error) {
       console.error("Error refreshing user profile:", error)

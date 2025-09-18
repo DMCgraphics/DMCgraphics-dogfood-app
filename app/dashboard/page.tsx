@@ -90,7 +90,7 @@ export default function DashboardPage() {
   const [dogs, setDogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [weightEntries, setWeightEntries] = useState([])
-  const [stoolEntries, setStoolEntries] = useState(mockStoolEntries)
+  const [stoolEntries, setStoolEntries] = useState([])
   const [deliveries, setDeliveries] = useState(mockDeliveries)
   const [subscriptionStatus, setSubscriptionStatus] = useState<"active" | "paused" | "cancelled">("active")
   const [planStatus, setPlanStatus] = useState<"none" | "draft" | "saved" | "checkout" | "active">("none")
@@ -367,7 +367,7 @@ export default function DashboardPage() {
           }
         })
 
-        setStoolEntries(realStoolEntries.length > 0 ? realStoolEntries : mockStoolEntries)
+        setStoolEntries(realStoolEntries)
         setDeliveries(realDeliveries.length > 0 ? realDeliveries : mockDeliveries)
       } catch (error) {
         console.error("[v0] Error in fetchDogs:", error)
@@ -461,13 +461,40 @@ export default function DashboardPage() {
     }
   }
 
-  const handleAddStoolEntry = (entry: { score: number; notes?: string }) => {
-    const newEntry = {
-      date: new Date().toISOString().split("T")[0],
-      score: entry.score,
-      notes: entry.notes,
+  const handleAddStoolEntry = async (entry: { score: number; notes?: string }) => {
+    if (!selectedDogId) return
+
+    try {
+      // Create the note text with score and notes
+      const noteText = `Score ${entry.score} - ${entry.notes || 'No additional notes'}`
+      
+      // Save to database
+      const { data, error } = await supabase
+        .from("dog_notes")
+        .insert({
+          dog_id: selectedDogId,
+          note: noteText,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+
+      if (error) {
+        console.error("[v0] Error saving stool entry:", error)
+        return
+      }
+
+      // Update local state
+      const newEntry = {
+        date: new Date().toISOString().split("T")[0],
+        score: entry.score,
+        notes: entry.notes || "",
+      }
+      setStoolEntries([...stoolEntries, newEntry])
+      
+      console.log("[v0] Stool entry saved successfully:", data)
+    } catch (error) {
+      console.error("[v0] Error in handleAddStoolEntry:", error)
     }
-    setStoolEntries([...stoolEntries, newEntry])
   }
 
   const handlePauseResume = () => {

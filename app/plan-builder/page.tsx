@@ -102,16 +102,72 @@ export default function PlanBuilderPage() {
       setShowDogCountSelector(false)
       setCurrentStep(1) // Skip to step 1 (Dog Basics)
       
-      // Initialize with existing dog data + new dog
-      const newDogsData = Array.from({ length: dogCount }, (_, index) => {
-        if (index === 0) {
-          // Keep existing dog data if available
-          return allDogsData[index] || getDefaultDogData()
+      // Fetch existing dog data from database
+      const fetchExistingDogs = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+
+          const { data: existingDogs, error } = await supabase
+            .from('dogs')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true })
+
+          if (error) {
+            console.error('Error fetching existing dogs:', error)
+            return
+          }
+
+          // Initialize with existing dog data + new dog
+          const newDogsData = Array.from({ length: dogCount }, (_, index) => {
+            if (index === 0 && existingDogs && existingDogs.length > 0) {
+              // Use existing dog data for the first dog
+              const existingDog = existingDogs[0]
+              return {
+                dogProfile: {
+                  name: existingDog.name,
+                  weight: existingDog.weight,
+                  weightUnit: existingDog.weight_unit || "lb",
+                  age: existingDog.age,
+                  ageUnit: existingDog.age_unit || "years",
+                  sex: existingDog.sex,
+                  breed: existingDog.breed,
+                  activity: existingDog.activity_level || "moderate",
+                  bodyCondition: existingDog.body_condition_score || 5,
+                  isNeutered: existingDog.is_neutered,
+                },
+                healthGoals: { stoolScore: 4 },
+                selectedAllergens: [],
+                selectedRecipe: null,
+                selectedRecipes: [],
+                allowMultipleSelection: false,
+                mealsPerDay: 2,
+                selectedAddOns: [],
+                medicalNeeds: {
+                  hasMedicalNeeds: null,
+                  email: "",
+                  selectedCondition: null,
+                  selectedPrescriptionDiet: null,
+                  verificationRequired: false,
+                },
+                foodCostPerWeek: 0,
+                addOnsCostPerWeek: 0,
+                totalWeeklyCost: 0,
+                subtotal_cents: 0,
+              }
+            }
+            return getDefaultDogData()
+          })
+          
+          setAllDogsData(newDogsData)
+          setCurrentDogIndex(1) // Start with the new dog (index 1)
+        } catch (error) {
+          console.error('Error in fetchExistingDogs:', error)
         }
-        return getDefaultDogData()
-      })
-      setAllDogsData(newDogsData)
-      setCurrentDogIndex(1) // Start with the new dog (index 1)
+      }
+
+      fetchExistingDogs()
       
       // Clean up localStorage
       localStorage.removeItem("nouripet-add-dog-mode")

@@ -632,10 +632,45 @@ export default function PlanBuilderPage() {
         planId = existingPlan.id
         console.log("[v0] Using existing plan:", planId)
       } else {
+        // Get the first dog's ID to link to the plan
+        const firstDogData = allDogsData[0]
+        if (!firstDogData || !firstDogData.dogProfile.name) {
+          console.error("[v0] No dog data available for plan creation")
+          return
+        }
+
+        // Create the first dog first to get its ID
+        const weight = firstDogData.dogProfile.weight || 0
+        const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
+
+        const { data: firstDogDbData, error: firstDogError } = await supabase
+          .from("dogs")
+          .insert({
+            user_id: session.user.id,
+            name: firstDogData.dogProfile.name,
+            breed: firstDogData.dogProfile.breed,
+            age: firstDogData.dogProfile.age,
+            weight: weight,
+            weight_unit: weightUnit,
+            weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight,
+            allergies: firstDogData.selectedAllergens,
+            conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
+          })
+          .select("id")
+          .single()
+
+        if (firstDogError) {
+          console.error("[v0] Error creating first dog:", firstDogError)
+          return
+        }
+
+        console.log("[v0] Created first dog with ID:", firstDogDbData.id)
+
         const { data: planData, error: planError } = await supabase
           .from("plans")
           .insert({
             user_id: session.user.id,
+            dog_id: firstDogDbData.id, // CRITICAL: Link plan to the first dog
             status: "draft",
             current_step: 4,
             subtotal_cents: 0,
@@ -650,12 +685,39 @@ export default function PlanBuilderPage() {
           return
         }
         planId = planData.id
-        console.log("[v0] Created new plan with UUID:", planId)
+        console.log("[v0] Created new plan with UUID:", planId, "linked to dog:", firstDogDbData.id)
+
+        // Create plan-dog relationship for the first dog
+        const { error: firstPlanDogError } = await supabase.rpc("upsert_plan_dog", {
+          p_plan_id: planId,
+          p_dog_id: firstDogDbData.id,
+          p_position: 1,
+          p_snapshot: null,
+          p_meals_per_day: firstDogData.mealsPerDay,
+          p_prescription: firstDogData.medicalNeeds.selectedPrescriptionDiet,
+          p_verify: false,
+        })
+
+        if (firstPlanDogError) {
+          console.error("[v0] Error creating plan_dog relationship for first dog:", firstPlanDogError)
+        } else {
+          console.log("[v0] Plan-dog relationship created for first dog")
+        }
       }
 
       console.log("[v0] Saving all dogs data...")
 
-      for (let i = 0; i < allDogsData.length; i++) {
+      // Start from index 1 if we created the first dog above, otherwise start from 0
+      const startIndex = existingPlan ? 0 : 1
+      let firstDogId = null
+
+      if (!existingPlan) {
+        // We already created the first dog above, get its ID
+        firstDogId = firstDogDbData.id
+        console.log(`[v0] First dog already created with ID: ${firstDogId}`)
+      }
+
+      for (let i = startIndex; i < allDogsData.length; i++) {
         const dogData = allDogsData[i]
 
         const weight = dogData.dogProfile.weight || 0

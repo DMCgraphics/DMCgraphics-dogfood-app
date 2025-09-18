@@ -899,7 +899,7 @@ export default function PlanBuilderPage() {
                 subtotal_cents: subtotalCents,
                 discount_cents: discountCents,
                 total_cents: totalCents,
-                status: "ready_for_checkout",
+                status: "active",
               })
               .eq("id", planId)
 
@@ -912,7 +912,7 @@ export default function PlanBuilderPage() {
         } else {
           console.log("[v0] RPC plan totals recalculated successfully")
           // Update plan status to ready for checkout
-          await supabase.from("plans").update({ status: "ready_for_checkout" }).eq("id", planId)
+          await supabase.from("plans").update({ status: "active" }).eq("id", planId)
         }
       } catch (error) {
         console.error("[v0] Error recalculating totals:", error)

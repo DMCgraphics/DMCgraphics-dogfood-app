@@ -35,7 +35,36 @@ export default async function CheckoutPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/sign-in?returnTo=/checkout")
 
-  const { data, error } = await supabase.from("current_user_checkout_lines").select("*").single()
+  // Query plans and plan items directly instead of using the view
+  const { data: plans, error: plansError } = await supabase
+    .from("plans")
+    .select(`
+      id,
+      total_cents,
+      plan_items (
+        id,
+        recipe_id,
+        qty,
+        unit_price_cents,
+        amount_cents,
+        billing_interval,
+        stripe_price_id,
+        recipes (name, slug),
+        dogs (name)
+      )
+    `)
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+
+  const data = plans && plans.length > 0 ? {
+    plan_id: plans[0].id,
+    total_cents: plans[0].total_cents,
+    line_items: plans[0].plan_items || []
+  } : null
+
+  const error = plansError
 
   if (error || !data || !Array.isArray(data.line_items) || data.line_items.length === 0) {
     return (
@@ -59,17 +88,17 @@ export default async function CheckoutPage() {
 
   const lineItems: CartItem[] = data.line_items.map((li: any) => ({
     id: li.id,
-    name: `${li.dog_name}'s Plan`,
-    description: li.recipe_name || "Custom Recipe",
-    price: (li.unit_amount_cents || 0) / 100,
+    name: `${li.dogs?.name || 'Dog'}'s Plan`,
+    description: li.recipes?.name || "Custom Recipe",
+    price: (li.unit_price_cents || 0) / 100,
     quantity: li.qty || 1,
     frequency: li.billing_interval === "week" ? "Weekly delivery" : li.billing_interval || "Weekly delivery",
     dogWeight: null,
     dogActivity: null,
-    foodCostPerWeek: (li.unit_amount_cents || 0) / 100,
+    foodCostPerWeek: (li.unit_price_cents || 0) / 100,
     addOnsCostPerWeek: 0,
-    totalWeeklyCost: (li.unit_amount_cents || 0) / 100,
-    recipes: li.recipe_name ? [li.recipe_name] : [],
+    totalWeeklyCost: (li.unit_price_cents || 0) / 100,
+    recipes: li.recipes?.name ? [li.recipes.name] : [],
     addOns: [],
   }))
 

@@ -36,22 +36,45 @@ export async function POST() {
     }
     console.log("[v0] User authenticated:", user.id)
 
-    // Pull the current plan + line items prepared by the DB view
+    // Query plans and plan items directly instead of using the view
     console.log("[v0] Fetching checkout lines from database")
-    const { data: checkoutData, error } = await supabase.from("current_user_checkout_lines").select("*")
+    const { data: plans, error: plansError } = await supabase
+      .from("plans")
+      .select(`
+        id,
+        total_cents,
+        plan_items (
+          id,
+          recipe_id,
+          qty,
+          unit_price_cents,
+          amount_cents,
+          billing_interval,
+          stripe_price_id,
+          recipes (name, slug)
+        )
+      `)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
 
-    if (error) {
-      console.log("[v0] Database error fetching checkout lines:", error)
-      return NextResponse.json({ error: `Database error: ${error.message}` }, { status: 400 })
+    if (plansError) {
+      console.log("[v0] Database error fetching plans:", plansError)
+      return NextResponse.json({ error: `Database error: ${plansError.message}` }, { status: 400 })
     }
 
-    if (!checkoutData || checkoutData.length === 0) {
+    if (!plans || plans.length === 0) {
       console.log("[v0] No checkout data found")
       return NextResponse.json({ error: "No checkout lines found" }, { status: 400 })
     }
 
-    // Get the most recent checkout (first in the ordered list)
-    const checkout = checkoutData[0]
+    // Get the most recent plan
+    const checkout = {
+      plan_id: plans[0].id,
+      total_cents: plans[0].total_cents,
+      line_items: plans[0].plan_items || []
+    }
     console.log("[v0] Using checkout data:", JSON.stringify(checkout, null, 2))
 
     const planId: string = checkout.plan_id

@@ -15,6 +15,7 @@ interface DogProfile {
   weight: number
   weightUnit: "lb" | "kg"
   avatar?: string
+  avatar_url?: string
   currentRecipe: string
   nextDelivery: string
   subscriptionStatus: "active" | "paused" | "cancelled" | "inactive"
@@ -64,7 +65,7 @@ export function DogCard({ dog, onEdit, onSelect, isSelected = false, showSelecti
           <div className="flex items-center gap-3">
             <div className="relative">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={dog.avatar || "/placeholder.svg"} alt={dog.name} />
+                <AvatarImage src={dog.avatar_url || dog.avatar || "/placeholder.svg"} alt={dog.name} />
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                   {dog.name.charAt(0).toUpperCase()}
                 </AvatarFallback>

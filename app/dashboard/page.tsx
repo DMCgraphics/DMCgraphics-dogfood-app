@@ -325,6 +325,7 @@ export default function DashboardPage() {
               weightGoal: weightGoal,
               weightUnit: "lb" as const,
               avatar: "/placeholder.svg?height=48&width=48",
+              avatar_url: dog.avatar_url,
               currentRecipe: currentRecipe,
               nextDelivery: nextDelivery,
               subscriptionStatus: subscriptionStatus,

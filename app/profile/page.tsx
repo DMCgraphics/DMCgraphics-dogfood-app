@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { ProtectedRoute } from "@/components/auth/protected-route"
+import { PhotoUpload } from "@/components/ui/photo-upload"
 import { useAuth } from "@/contexts/auth-context"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -38,6 +39,7 @@ interface DogProfile {
   breed: string
   age: number
   weight: number
+  avatar_url?: string
   allergies?: string[]
   conditions?: string[]
   user_id: string
@@ -160,6 +162,7 @@ export default function ProfilePage() {
             breed: dogData.breed,
             age: dogData.age,
             weight: dogData.weight,
+            avatar_url: dogData.avatar_url,
             allergies: dogData.allergies || [],
             conditions: dogData.conditions || [],
             updated_at: new Date().toISOString(),
@@ -176,6 +179,7 @@ export default function ProfilePage() {
           breed: dogData.breed,
           age: dogData.age,
           weight: dogData.weight,
+          avatar_url: dogData.avatar_url,
           allergies: dogData.allergies || [],
           conditions: dogData.conditions || [],
           user_id: user.id,
@@ -336,9 +340,17 @@ export default function ProfilePage() {
     }
   }
 
-  const handleAvatarUpload = () => {
-    console.log("[v0] avatar_upload_clicked")
-    alert("Avatar upload functionality would be implemented here")
+  const handleAvatarUpload = async (photoUrl: string) => {
+    try {
+      // Update the user context with the new avatar URL
+      if (user) {
+        updateUser({ ...user, avatar_url: photoUrl })
+      }
+      setMessage("Profile photo updated successfully!")
+    } catch (error) {
+      console.error("Error updating avatar:", error)
+      setMessage("Failed to update profile photo")
+    }
   }
 
   const handleAddDog = () => {
@@ -387,21 +399,14 @@ export default function ProfilePage() {
                   <CardContent className="space-y-6">
                     {/* Avatar Section */}
                     <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <img
-                          src="/placeholder.svg?height=80&width=80"
-                          alt="Profile"
-                          className="w-20 h-20 rounded-full object-cover"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0 bg-transparent"
-                          onClick={handleAvatarUpload}
-                        >
-                          <Camera className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <PhotoUpload
+                        currentPhotoUrl={user?.avatar_url}
+                        onPhotoUploaded={handleAvatarUpload}
+                        uploadEndpoint="/api/upload/profile-photo"
+                        size="lg"
+                        shape="circle"
+                        placeholder="Upload profile picture"
+                      />
                       <div>
                         <h3 className="font-medium">{user?.name}</h3>
                         <p className="text-sm text-muted-foreground">Upload a new profile picture</p>
@@ -808,11 +813,13 @@ function DogForm({
     allergies: dog?.allergies?.join(", ") || "",
     conditions: dog?.conditions?.join(", ") || "",
   })
+  const [dogPhotoUrl, setDogPhotoUrl] = useState(dog?.avatar_url || "")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSave({
       ...formData,
+      avatar_url: dogPhotoUrl,
       allergies: formData.allergies
         ? formData.allergies
             .split(",")
@@ -828,8 +835,29 @@ function DogForm({
     })
   }
 
+  const handleDogPhotoUpload = (photoUrl: string) => {
+    setDogPhotoUrl(photoUrl)
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Dog Photo Upload */}
+      <div className="flex items-center gap-4">
+        <PhotoUpload
+          currentPhotoUrl={dogPhotoUrl}
+          onPhotoUploaded={handleDogPhotoUpload}
+          uploadEndpoint="/api/upload/dog-photo"
+          additionalData={dog?.id ? { dogId: dog.id } : {}}
+          size="lg"
+          shape="circle"
+          placeholder="Upload dog photo"
+        />
+        <div>
+          <h3 className="font-medium">{dog ? `Edit ${dog.name}` : "Add New Dog"}</h3>
+          <p className="text-sm text-muted-foreground">Upload a photo of your dog</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="dogName">Name</Label>

@@ -764,6 +764,10 @@ export default function PlanBuilderPage() {
         const dogData = allDogsData[i]
         console.log(`[v0] Processing dog ${i + 1}: ${dogData.dogProfile.name}`)
 
+        // Define weight and weightUnit at the top level for use throughout the loop
+        const weight = dogData.dogProfile.weight || 0
+        const weightUnit = dogData.dogProfile.weightUnit || "lb"
+
         // Skip dog creation if this is the first dog and it was already created above
         let dogDbData
         if (i === 0 && !existingPlan && firstDogDbData) {
@@ -771,17 +775,15 @@ export default function PlanBuilderPage() {
           dogDbData = firstDogDbData
         } else {
           // Create new dog
-          const weight = dogData.dogProfile.weight || 0
-          const weightUnit = dogData.dogProfile.weightUnit || "lb"
 
           console.log(`[v0] Creating new dog ${i + 1}: ${dogData.dogProfile.name}`)
           const { data: newDogData, error: dogError } = await supabase
             .from("dogs")
             .insert({
-            user_id: session.user.id,
-            name: dogData.dogProfile.name,
-            breed: dogData.dogProfile.breed,
-            age: dogData.dogProfile.age,
+              user_id: session.user.id,
+              name: dogData.dogProfile.name,
+              breed: dogData.dogProfile.breed,
+              age: dogData.dogProfile.age,
               weight: weight, // Store in original unit
               weight_unit: weightUnit, // Store the unit
               weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight, // Also store converted weight
@@ -875,8 +877,6 @@ export default function PlanBuilderPage() {
             continue
           }
 
-          const weight = dogData.dogProfile?.weight || 20
-          const weightUnit = dogData.dogProfile?.weightUnit || "lb"
           const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
           const stripePricing = getStripePricingForDog(recipeData.slug, weightLbs)
 

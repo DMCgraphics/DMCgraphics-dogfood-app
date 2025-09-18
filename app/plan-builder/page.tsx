@@ -749,8 +749,8 @@ export default function PlanBuilderPage() {
 
       console.log("[v0] Saving all dogs data...")
 
-      // Start from index 1 if we created the first dog above, otherwise start from 0
-      const startIndex = existingPlan ? 0 : 1
+      // Start from index 0 to process all dogs (including the first one we created above)
+      const startIndex = 0
       let firstDogId = null
 
       if (!existingPlan && firstDogDbData) {
@@ -759,60 +759,77 @@ export default function PlanBuilderPage() {
         console.log(`[v0] First dog already created with ID: ${firstDogId}`)
       }
 
+      console.log(`[v0] Processing ${allDogsData.length} dogs, starting from index ${startIndex}`)
       for (let i = startIndex; i < allDogsData.length; i++) {
         const dogData = allDogsData[i]
+        console.log(`[v0] Processing dog ${i + 1}: ${dogData.dogProfile.name}`)
 
-        const weight = dogData.dogProfile.weight || 0
-        const weightUnit = dogData.dogProfile.weightUnit || "lb"
+        // Skip dog creation if this is the first dog and it was already created above
+        let dogDbData
+        if (i === 0 && !existingPlan && firstDogDbData) {
+          console.log(`[v0] Using already created first dog: ${firstDogDbData.id}`)
+          dogDbData = firstDogDbData
+        } else {
+          // Create new dog
+          const weight = dogData.dogProfile.weight || 0
+          const weightUnit = dogData.dogProfile.weightUnit || "lb"
 
-        const { data: dogDbData, error: dogError } = await supabase
-          .from("dogs")
-          .insert({
+          console.log(`[v0] Creating new dog ${i + 1}: ${dogData.dogProfile.name}`)
+          const { data: newDogData, error: dogError } = await supabase
+            .from("dogs")
+            .insert({
             user_id: session.user.id,
             name: dogData.dogProfile.name,
             breed: dogData.dogProfile.breed,
             age: dogData.dogProfile.age,
-            weight: weight, // Store in original unit
-            weight_unit: weightUnit, // Store the unit
-            weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight, // Also store converted weight
-            allergies: dogData.selectedAllergens,
-            conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
+              weight: weight, // Store in original unit
+              weight_unit: weightUnit, // Store the unit
+              weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight, // Also store converted weight
+              allergies: dogData.selectedAllergens,
+              conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
+            })
+            .select("id, user_id")
+            .single()
+
+          if (dogError) {
+            console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
+            alert(`Error saving dog ${i + 1}: ${dogError.message}`)
+            continue
+          }
+
+          dogDbData = newDogData
+          console.log(`[v0] Dog ${i + 1} saved successfully:`, dogDbData)
+          
+          // Validate that the dog was created with the correct user_id
+          if (!dogDbData.user_id || dogDbData.user_id !== session.user.id) {
+            console.error(`[v0] Dog ${i + 1} created with incorrect user_id. Expected: ${session.user.id}, Got: ${dogDbData.user_id}`)
+            alert(`Error: Dog created with incorrect user ID`)
+            continue
+          }
+        }
+
+        // Skip plan-dog relationship creation for the first dog since it was already created above
+        if (!(i === 0 && !existingPlan)) {
+          const { error: planDogError } = await supabase.rpc("upsert_plan_dog", {
+            p_plan_id: planId,
+            p_dog_id: dogDbData.id,
+            p_position: i + 1,
+            p_snapshot: null,
+            p_meals_per_day: dogData.mealsPerDay,
+            p_prescription: dogData.medicalNeeds.selectedPrescriptionDiet,
+            p_verify: false,
           })
-          .select("id, user_id")
-          .single()
 
-        if (dogError) {
-          console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
-          alert(`Error saving dog ${i + 1}: ${dogError.message}`)
-          continue
+          if (planDogError) {
+            console.error(`[v0] Error creating plan_dog relationship for dog ${i + 1}:`, planDogError)
+            alert(`Error creating plan-dog relationship for dog ${i + 1}: ${planDogError.message}`)
+            continue
+          }
+
+          console.log(`[v0] Plan-dog relationship created for dog ${i + 1}`)
+        } else {
+          console.log(`[v0] Skipping plan-dog relationship for first dog (already created above)`)
         }
-
-        console.log(`[v0] Dog ${i + 1} saved successfully:`, dogDbData)
-        
-        // Validate that the dog was created with the correct user_id
-        if (!dogDbData.user_id || dogDbData.user_id !== session.user.id) {
-          console.error(`[v0] Dog ${i + 1} created with incorrect user_id. Expected: ${session.user.id}, Got: ${dogDbData.user_id}`)
-          alert(`Error: Dog created with incorrect user ID`)
-          continue
-        }
-
-        const { error: planDogError } = await supabase.rpc("upsert_plan_dog", {
-          p_plan_id: planId,
-          p_dog_id: dogDbData.id,
-          p_position: i + 1,
-          p_snapshot: null,
-          p_meals_per_day: dogData.mealsPerDay,
-          p_prescription: dogData.medicalNeeds.selectedPrescriptionDiet,
-          p_verify: false,
-        })
-
-        if (planDogError) {
-          console.error(`[v0] Error creating plan_dog relationship for dog ${i + 1}:`, planDogError)
-          alert(`Error creating plan-dog relationship for dog ${i + 1}: ${planDogError.message}`)
-          continue
-        }
-
-        console.log(`[v0] Plan-dog relationship created for dog ${i + 1}`)
 
         console.log(`[v0] Dog data for recipe selection:`, {
           selectedRecipes: dogData.selectedRecipes,

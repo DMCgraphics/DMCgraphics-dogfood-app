@@ -814,8 +814,17 @@ export default function PlanBuilderPage() {
 
         console.log(`[v0] Plan-dog relationship created for dog ${i + 1}`)
 
+        console.log(`[v0] Dog data for recipe selection:`, {
+          selectedRecipes: dogData.selectedRecipes,
+          selectedRecipe: dogData.selectedRecipe,
+          hasSelectedRecipes: dogData.selectedRecipes?.length > 0,
+          hasSelectedRecipe: !!dogData.selectedRecipe
+        })
+
         const recipes =
           dogData.selectedRecipes.length > 0 ? dogData.selectedRecipes : [dogData.selectedRecipe].filter(Boolean)
+        
+        console.log(`[v0] Recipes to process for dog ${i + 1}:`, recipes)
 
         // Get all available recipes from database
         const { data: availableRecipes, error: recipesError } = await supabase
@@ -829,6 +838,12 @@ export default function PlanBuilderPage() {
         }
 
         console.log("[v0] Available recipes:", availableRecipes)
+
+        if (recipes.length === 0) {
+          console.log(`[v0] ⚠️ No recipes found for dog ${i + 1}, skipping plan item creation`)
+        } else {
+          console.log(`[v0] Starting recipe processing loop for dog ${i + 1} with ${recipes.length} recipes`)
+        }
 
         for (const recipeId of recipes) {
           console.log(`[v0] Processing recipe for dog ${i + 1}:`, recipeId)

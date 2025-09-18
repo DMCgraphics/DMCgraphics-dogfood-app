@@ -682,6 +682,7 @@ export default function PlanBuilderPage() {
 
         if (planError) {
           console.error("[v0] Error creating plan:", planError)
+          alert(`Error creating plan: ${planError.message}`)
           return
         }
         planId = planData.id
@@ -700,6 +701,8 @@ export default function PlanBuilderPage() {
 
         if (firstPlanDogError) {
           console.error("[v0] Error creating plan_dog relationship for first dog:", firstPlanDogError)
+          alert(`Error creating plan-dog relationship: ${firstPlanDogError.message}`)
+          return
         } else {
           console.log("[v0] Plan-dog relationship created for first dog")
         }
@@ -741,6 +744,7 @@ export default function PlanBuilderPage() {
 
         if (dogError) {
           console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
+          alert(`Error saving dog ${i + 1}: ${dogError.message}`)
           continue
         }
 
@@ -758,6 +762,7 @@ export default function PlanBuilderPage() {
 
         if (planDogError) {
           console.error(`[v0] Error creating plan_dog relationship for dog ${i + 1}:`, planDogError)
+          alert(`Error creating plan-dog relationship for dog ${i + 1}: ${planDogError.message}`)
           continue
         }
 
@@ -846,6 +851,7 @@ export default function PlanBuilderPage() {
 
           if (planItemError) {
             console.error(`[v0] Error saving plan item for dog ${i + 1}, recipe ${recipeId}:`, planItemError)
+            alert(`Error saving plan item for dog ${i + 1}, recipe ${recipeId}: ${planItemError.message}`)
             continue
           }
 

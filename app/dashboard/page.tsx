@@ -20,13 +20,6 @@ import { ArrowRight, PawPrint } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 
-const mockStoolEntries = [
-  { date: "2024-12-01", score: 4, notes: "Perfect consistency" },
-  { date: "2024-12-02", score: 4 },
-  { date: "2024-12-03", score: 3, notes: "Slightly firm" },
-  { date: "2024-12-04", score: 4 },
-  { date: "2024-12-05", score: 4 },
-]
 
 const mockDeliveries = [
   {

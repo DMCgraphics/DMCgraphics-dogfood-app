@@ -136,8 +136,7 @@ export function StoolLog({ dogName, entries, onAddEntry }: StoolLogProps) {
             <div className="text-sm font-medium">Recent entries:</div>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {entries
-                .slice(-5)
-                .reverse()
+                .slice(0, 5)
                 .map((entry, index) => {
                   const scoreInfo = getScoreInfo(entry.score)
                   return (

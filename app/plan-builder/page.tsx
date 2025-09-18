@@ -871,6 +871,7 @@ export default function PlanBuilderPage() {
             `[v0] Calculated portions for ${dogData.dogProfile.name}: ${dailyGrams}g/day, ${monthlyGrams}g/month, ${sizeG}g package size`,
           )
 
+          console.log(`[v0] Creating plan item for dog ${i + 1}, recipe ${recipeId}...`)
           const { data: planItem, error: planItemError } = await supabase
             .from("plan_items")
             .insert({
@@ -898,12 +899,23 @@ export default function PlanBuilderPage() {
             .single()
 
           if (planItemError) {
-            console.error(`[v0] Error saving plan item for dog ${i + 1}, recipe ${recipeId}:`, planItemError)
+            console.error(`[v0] ❌ Error saving plan item for dog ${i + 1}, recipe ${recipeId}:`, planItemError)
+            console.error(`[v0] Plan item data:`, {
+              plan_id: planId,
+              dog_id: dogDbData.id,
+              recipe_id: recipeData.id,
+              qty: 1,
+              size_g: sizeG,
+              billing_interval: "week",
+              stripe_price_id: stripePricing.priceId,
+              unit_price_cents: stripePricing.amountCents,
+              amount_cents: stripePricing.amountCents,
+            })
             alert(`Error saving plan item for dog ${i + 1}, recipe ${recipeId}: ${planItemError.message}`)
             continue
           }
 
-          console.log(`[v0] Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)
+          console.log(`[v0] ✅ Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)
           console.log(`[v0] Weekly price: $${((stripePricing?.amountCents || 2100) / 100).toFixed(2)}`)
 
           // The RPC function was causing issues and we have the correct Stripe pricing
@@ -970,6 +982,21 @@ export default function PlanBuilderPage() {
         }
       } catch (error) {
         console.error("[v0] Error recalculating totals:", error)
+      }
+
+      // Verify plan items were created
+      const { data: finalPlanItems, error: finalItemsError } = await supabase
+        .from("plan_items")
+        .select("id, recipe_id, unit_price_cents")
+        .eq("plan_id", planId)
+
+      if (finalItemsError) {
+        console.error("[v0] Error verifying plan items:", finalItemsError)
+      } else {
+        console.log(`[v0] ✅ Plan creation completed! Created ${finalPlanItems.length} plan items`)
+        finalPlanItems.forEach((item, index) => {
+          console.log(`   ${index + 1}. Plan item ${item.id} - $${(item.unit_price_cents / 100).toFixed(2)}`)
+        })
       }
 
       console.log("[v0] Proceeding to checkout...")

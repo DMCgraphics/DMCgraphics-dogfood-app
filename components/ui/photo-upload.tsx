@@ -177,13 +177,18 @@ export function PhotoUpload({
         </div>
 
         <Button
+          type="button"
           size="sm"
           variant="outline"
           className={cn(
             "absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0 bg-background border-2",
             isUploading && "opacity-50 cursor-not-allowed"
           )}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            fileInputRef.current?.click()
+          }}
           disabled={isUploading}
         >
           {displayUrl ? (
@@ -195,10 +200,15 @@ export function PhotoUpload({
 
         {displayUrl && !isUploading && (
           <Button
+            type="button"
             size="sm"
             variant="outline"
             className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 bg-background border-2"
-            onClick={handleRemovePhoto}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleRemovePhoto()
+            }}
           >
             <X className="h-3 w-3" />
           </Button>

@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (userData: User, token: string) => void
   logout: () => void
   updateUser: (userData: Partial<User>) => void
+  refreshUserProfile: () => Promise<void>
   apiStatus: "unknown" | "connected" | "disconnected"
 }
 
@@ -31,16 +32,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getSession()
 
         if (session?.user) {
+          // Load profile data from database
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', session.user.id)
+            .single()
+
           const userData: User = {
             id: session.user.id,
             email: session.user.email!,
-            name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+            name: profile?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
+            avatar_url: profile?.avatar_url,
             createdAt: session.user.created_at,
             subscriptionStatus: "none",
           }
           setUser(userData)
           setApiStatus("connected")
-          console.log("[v0] auth_supabase_session_found", { userId: userData.id })
+          console.log("[v0] auth_supabase_session_found", { userId: userData.id, profileLoaded: !!profile })
         } else {
           console.log("[v0] auth_no_session")
           setApiStatus("disconnected")
@@ -61,10 +70,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[v0] auth_state_change", { event, hasSession: !!session })
 
       if (event === "SIGNED_IN" && session?.user) {
+        // Load profile data from database
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', session.user.id)
+          .single()
+
         const userData: User = {
           id: session.user.id,
           email: session.user.email!,
-          name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+          name: profile?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
+          avatar_url: profile?.avatar_url,
           createdAt: session.user.created_at,
           subscriptionStatus: "none",
         }
@@ -106,6 +123,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const refreshUserProfile = async () => {
+    if (!user?.id) return
+
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .single()
+
+      if (!profileError && profile) {
+        const updatedUser = { 
+          ...user, 
+          name: profile.full_name || user.name,
+          avatar_url: profile.avatar_url 
+        }
+        setUser(updatedUser)
+        console.log("[v0] auth_profile_refreshed", { userId: user.id })
+      }
+    } catch (error) {
+      console.error("Error refreshing user profile:", error)
+    }
+  }
+
   const hasSubscription = user?.subscriptionStatus === "active"
 
   const value: AuthContextType = {
@@ -116,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     updateUser,
+    refreshUserProfile,
     apiStatus,
   }
 

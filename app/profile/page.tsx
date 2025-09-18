@@ -61,7 +61,7 @@ interface PaymentMethod {
 }
 
 export default function ProfilePage() {
-  const { user, updateUser, logout } = useAuth()
+  const { user, updateUser, refreshUserProfile, logout } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -346,7 +346,16 @@ export default function ProfilePage() {
       if (user) {
         updateUser({ ...user, avatar_url: photoUrl })
       }
+      
+      // Also refresh the profile data from the database to ensure consistency
+      await refreshUserProfile()
+      
       setMessage("Profile photo updated successfully!")
+      
+      // Clear the message after 3 seconds
+      setTimeout(() => {
+        setMessage("")
+      }, 3000)
     } catch (error) {
       console.error("Error updating avatar:", error)
       setMessage("Failed to update profile photo")
@@ -837,6 +846,10 @@ function DogForm({
 
   const handleDogPhotoUpload = (photoUrl: string) => {
     setDogPhotoUrl(photoUrl)
+    // Refresh the dog data to show the updated photo in the My Dogs section
+    if (user?.id) {
+      loadDogs()
+    }
   }
 
   return (

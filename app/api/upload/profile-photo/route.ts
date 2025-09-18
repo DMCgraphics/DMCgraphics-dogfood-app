@@ -68,15 +68,27 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(fileName)
 
     // Update user profile with new avatar URL
+    console.log('Updating profile with avatar URL:', { userId: user.id, avatarUrl: publicUrl })
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ avatar_url: publicUrl })
       .eq('id', user.id)
 
+    console.log('Profile update result:', { updateError })
+
     if (updateError) {
       console.error('Update error:', updateError)
-      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to update profile: ${updateError.message}` }, { status: 500 })
     }
+
+    // Verify the update worked
+    const { data: updatedProfile, error: verifyError } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .single()
+
+    console.log('Profile verification:', { updatedProfile, verifyError })
 
     return NextResponse.json({ 
       success: true, 

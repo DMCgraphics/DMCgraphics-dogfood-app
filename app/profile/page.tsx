@@ -139,8 +139,8 @@ export default function ProfilePage() {
         .order("created_at", { ascending: false })
 
       if (error) throw error
+      console.log("[v0] dogs_loaded from database:", { count: data?.length, dogs: data })
       setDogProfiles(data || [])
-      console.log("[v0] dogs_loaded", { count: data?.length })
     } catch (error) {
       console.error("Error loading dogs:", error)
       setMessage("Failed to load dogs")
@@ -868,10 +868,29 @@ function DogForm({
   }
 
   const handleDogPhotoUpload = (photoUrl: string) => {
+    console.log('Dog photo uploaded:', { photoUrl, editingDogId: editingDog?.id })
     setDogPhotoUrl(photoUrl)
-    // Refresh the dog data to show the updated photo in the My Dogs section
+    
+    // Update the local dog profiles state immediately to show the new photo
+    if (editingDog) {
+      console.log('Updating local dog profiles state for dog:', editingDog.id)
+      setDogProfiles(prevDogs => {
+        const updatedDogs = prevDogs.map(dog => 
+          dog.id === editingDog.id 
+            ? { ...dog, avatar_url: photoUrl }
+            : dog
+        )
+        console.log('Updated dogs state:', updatedDogs)
+        return updatedDogs
+      })
+    }
+    
+    // Also refresh from database after a short delay to ensure consistency
     if (user?.id) {
-      loadDogs()
+      setTimeout(() => {
+        console.log('Refreshing dogs from database...')
+        loadDogs()
+      }, 500)
     }
   }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import useSWR from "swr"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { DogCard } from "@/components/dashboard/dog-card"
@@ -20,6 +21,8 @@ import { ArrowRight, PawPrint } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 
+// SWR fetcher function
+const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
 
 const mockDeliveries = [
   {
@@ -42,26 +45,6 @@ const mockDeliveries = [
   },
 ]
 
-const mockRecommendations = [
-  {
-    id: "1",
-    type: "portion" as const,
-    title: "Consider reducing daily portions",
-    description: "Max has lost 2 lbs over the past month, which is great progress toward his target weight.",
-    action: "Adjust portions",
-    priority: "medium" as const,
-    reason: "Weight loss trend indicates current portions may be too large for maintenance",
-  },
-  {
-    id: "2",
-    type: "supplement" as const,
-    title: "Add joint support supplement",
-    description: "As a 4-year-old Golden Retriever, Max would benefit from proactive joint care.",
-    action: "Add joint blend",
-    priority: "low" as const,
-    reason: "Large breed dogs benefit from early joint support to prevent future issues",
-  },
-]
 
 const mockMedicalConditions = [
   {
@@ -97,6 +80,16 @@ export default function DashboardPage() {
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
 
   const selectedDog = dogs.find((dog) => dog.id === selectedDogId) || dogs[0]
+
+  // Fetch recommendations for the selected dog
+  const { data: recommendations, isLoading: recLoading, error: recError } = useSWR(
+    selectedDogId ? `/api/dogs/${selectedDogId}/recommendations` : null,
+    fetcher,
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+    }
+  )
 
   useEffect(() => {
     const fetchDogs = async () => {
@@ -508,7 +501,51 @@ export default function DashboardPage() {
   }
 
   const handleTakeAction = (recommendationId: string) => {
-    alert(`Take action on recommendation ${recommendationId} - this would navigate to the appropriate page`)
+    console.log('Taking action on recommendation:', recommendationId)
+    
+    switch (recommendationId) {
+      case 'portion-down':
+      case 'portion-up':
+      case 'activity-mismatch':
+        // Navigate to plan builder with portion adjustment
+        localStorage.setItem('nouripet-selected-dog', JSON.stringify(selectedDog))
+        window.location.href = '/plan-builder?step=portion'
+        break
+      
+      case 'stool-firm':
+      case 'stool-soft':
+      case 'medical-low-fat':
+        // Navigate to plan builder with recipe selection
+        localStorage.setItem('nouripet-selected-dog', JSON.stringify(selectedDog))
+        window.location.href = '/plan-builder?step=recipe'
+        break
+      
+      case 'joint-support':
+        // Navigate to plan builder with supplements
+        localStorage.setItem('nouripet-selected-dog', JSON.stringify(selectedDog))
+        window.location.href = '/plan-builder?step=supplements'
+        break
+      
+      case 'vet-advisory':
+        // Open vet finder or contact modal
+        alert('Consider scheduling a veterinary checkup. You can find local vets in your area or contact your current vet.')
+        break
+      
+      case 'log-nudge':
+        // Focus on the weight tracker or stool log
+        const weightTracker = document.querySelector('[data-testid="weight-tracker"]')
+        const stoolLog = document.querySelector('[data-testid="stool-log"]')
+        if (weightTracker) {
+          weightTracker.scrollIntoView({ behavior: 'smooth' })
+        } else if (stoolLog) {
+          stoolLog.scrollIntoView({ behavior: 'smooth' })
+        }
+        break
+      
+      default:
+        console.log('Unknown recommendation action:', recommendationId)
+        alert(`Action for ${recommendationId} would be implemented here`)
+    }
   }
 
   const handleAddDog = () => {
@@ -774,7 +811,7 @@ export default function DashboardPage() {
 
                 <Recommendations
                   dogName={selectedDog.name}
-                  recommendations={mockRecommendations}
+                  recommendations={recommendations || []}
                   onTakeAction={handleTakeAction}
                 />
               </div>

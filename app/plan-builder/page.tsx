@@ -669,29 +669,42 @@ export default function PlanBuilderPage() {
         const weight = firstDogData.dogProfile.weight || 0
         const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
 
-        const { data: firstDogDataResult, error: firstDogError } = await supabase
+        // Check for existing dog with same name to prevent duplicates
+        const { data: existingFirstDog, error: checkFirstError } = await supabase
           .from("dogs")
-          .insert({
-            user_id: session.user.id,
-            name: firstDogData.dogProfile.name,
-            breed: firstDogData.dogProfile.breed,
-            age: firstDogData.dogProfile.age,
-            weight: weight,
-            weight_unit: weightUnit,
-            weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight,
-            allergies: firstDogData.selectedAllergens,
-            conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
-          })
-          .select("id, user_id")
+          .select("id, name, user_id")
+          .eq("user_id", session.user.id)
+          .eq("name", firstDogData.dogProfile.name)
           .single()
+          
+        if (existingFirstDog) {
+          console.log(`[v0] ⚠️ First dog with name "${firstDogData.dogProfile.name}" already exists, using existing dog:`, existingFirstDog.id)
+          firstDogDbData = existingFirstDog
+        } else {
+          const { data: firstDogDataResult, error: firstDogError } = await supabase
+            .from("dogs")
+            .insert({
+              user_id: session.user.id,
+              name: firstDogData.dogProfile.name,
+              breed: firstDogData.dogProfile.breed,
+              age: firstDogData.dogProfile.age,
+              weight: weight,
+              weight_unit: weightUnit,
+              weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight,
+              allergies: firstDogData.selectedAllergens,
+              conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
+            })
+            .select("id, user_id")
+            .single()
 
-        if (firstDogError) {
-          console.error("[v0] Error creating first dog:", firstDogError)
-          return
+          if (firstDogError) {
+            console.error("[v0] Error creating first dog:", firstDogError)
+            return
+          }
+
+          firstDogDbData = firstDogDataResult // Assign to the scoped variable
+          console.log("[v0] Created first dog with ID:", firstDogDbData.id, "user_id:", firstDogDbData.user_id)
         }
-
-        firstDogDbData = firstDogDataResult // Assign to the scoped variable
-        console.log("[v0] Created first dog with ID:", firstDogDbData.id, "user_id:", firstDogDbData.user_id)
         
         // Validate that the dog was created with the correct user_id
         if (!firstDogDbData.user_id || firstDogDbData.user_id !== session.user.id) {
@@ -777,36 +790,50 @@ export default function PlanBuilderPage() {
           // Create new dog
 
           console.log(`[v0] Creating new dog ${i + 1}: ${dogData.dogProfile.name}`)
-          const { data: newDogData, error: dogError } = await supabase
-            .from("dogs")
-            .insert({
-              user_id: session.user.id,
-              name: dogData.dogProfile.name,
-              breed: dogData.dogProfile.breed,
-              age: dogData.dogProfile.age,
-              weight: weight, // Store in original unit
-              weight_unit: weightUnit, // Store the unit
-              weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight, // Also store converted weight
-              allergies: dogData.selectedAllergens,
-              conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
-            })
-            .select("id, user_id")
-            .single()
-
-          if (dogError) {
-            console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
-            alert(`Error saving dog ${i + 1}: ${dogError.message}`)
-            continue
-          }
-
-          dogDbData = newDogData
-          console.log(`[v0] Dog ${i + 1} saved successfully:`, dogDbData)
           
-          // Validate that the dog was created with the correct user_id
-          if (!dogDbData.user_id || dogDbData.user_id !== session.user.id) {
-            console.error(`[v0] Dog ${i + 1} created with incorrect user_id. Expected: ${session.user.id}, Got: ${dogDbData.user_id}`)
-            alert(`Error: Dog created with incorrect user ID`)
-            continue
+          // Check for existing dog with same name to prevent duplicates
+          const { data: existingDog, error: checkError } = await supabase
+            .from("dogs")
+            .select("id, name")
+            .eq("user_id", session.user.id)
+            .eq("name", dogData.dogProfile.name)
+            .single()
+            
+          if (existingDog) {
+            console.log(`[v0] ⚠️ Dog with name "${dogData.dogProfile.name}" already exists, using existing dog:`, existingDog.id)
+            dogDbData = existingDog
+          } else {
+            const { data: newDogData, error: dogError } = await supabase
+              .from("dogs")
+              .insert({
+                user_id: session.user.id,
+                name: dogData.dogProfile.name,
+                breed: dogData.dogProfile.breed,
+                age: dogData.dogProfile.age,
+                weight: weight, // Store in original unit
+                weight_unit: weightUnit, // Store the unit
+                weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight, // Also store converted weight
+                allergies: dogData.selectedAllergens,
+                conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
+              })
+              .select("id, user_id")
+              .single()
+
+            if (dogError) {
+              console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
+              alert(`Error saving dog ${i + 1}: ${dogError.message}`)
+              continue
+            }
+
+            dogDbData = newDogData
+            console.log(`[v0] Dog ${i + 1} saved successfully:`, dogDbData)
+
+            // Validate that the dog was created with the correct user_id
+            if (!dogDbData.user_id || dogDbData.user_id !== session.user.id) {
+              console.error(`[v0] Dog ${i + 1} created with incorrect user_id. Expected: ${session.user.id}, Got: ${dogDbData.user_id}`)
+              alert(`Error: Dog created with incorrect user ID`)
+              continue
+            }
           }
         }
 

@@ -167,15 +167,8 @@ export default function DashboardPage() {
 
         console.log("[v0] Orders data:", ordersData)
 
-        // Fetch real stool entries (using dog_id since user_id doesn't exist in dog_notes)
-        const { data: stoolEntriesData } = await supabase
-          .from("dog_notes")
-          .select("*")
-          .in("dog_id", dogsData?.map(dog => dog.id) || [])
-          .order("created_at", { ascending: false })
-          .limit(10)
-
-        console.log("[v0] Stool entries data:", stoolEntriesData)
+        // Note: Stool entries will be fetched per-dog when selectedDogId changes
+        console.log("[v0] Stool entries will be fetched per-dog")
 
         let overallPlanStatus: "none" | "draft" | "saved" | "checkout" | "active" = "none"
         let hasActiveSub = false
@@ -333,30 +326,7 @@ export default function DashboardPage() {
         console.log("[v0] Fetched dogs with plan data:", transformedDogs)
         console.log("[v0] Subscription status - hasActiveSub:", hasActiveSub, "planStatus:", overallPlanStatus)
 
-        // Convert real data to the format expected by components
-        const realDeliveries = (ordersData || []).map((order: any) => ({
-          id: order.id,
-          date: order.created_at,
-          status: order.status === "completed" ? "delivered" : "upcoming",
-          items: order.plan?.plan_items?.map((item: any) => 
-            item.recipes ? `${item.recipes.name} (${item.qty || 1} weeks)` : item.name
-          ) || [],
-        }))
-
-        const realStoolEntries = (stoolEntriesData || []).map((entry: any) => {
-          // Extract score from note text (e.g., "Score 4 - Ideal consistency")
-          const scoreMatch = entry.note?.match(/Score (\d+)/i)
-          const score = scoreMatch ? parseInt(scoreMatch[1]) : 4
-          
-          return {
-            date: entry.created_at.split('T')[0],
-            score: score,
-            notes: entry.note || "",
-          }
-        })
-
-        setStoolEntries(realStoolEntries)
-        setDeliveries(realDeliveries.length > 0 ? realDeliveries : mockDeliveries)
+        // Deliveries will be set per-dog in useEffect
       } catch (error) {
         console.error("[v0] Error in fetchDogs:", error)
       } finally {
@@ -401,8 +371,86 @@ export default function DashboardPage() {
       }
     }
 
+    const fetchStoolEntries = async () => {
+      if (!selectedDogId) return
+
+      try {
+        const { data: stoolData } = await supabase
+          .from("dog_notes")
+          .select("*")
+          .eq("dog_id", selectedDogId)
+          .order("created_at", { ascending: false })
+          .limit(10)
+
+        if (stoolData) {
+          const formattedStoolEntries = stoolData.map((entry: any) => {
+            // Extract score from note text (e.g., "Score 4 - Ideal consistency")
+            const scoreMatch = entry.note?.match(/Score (\d+)/i)
+            const score = scoreMatch ? parseInt(scoreMatch[1]) : 4
+            
+            return {
+              date: entry.created_at.split('T')[0],
+              score: score,
+              notes: entry.note || "",
+            }
+          })
+          setStoolEntries(formattedStoolEntries)
+          console.log("[v0] Loaded stool entries from database for dog:", selectedDogId, formattedStoolEntries)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching stool entries:", error)
+      }
+    }
+
+    const fetchDeliveries = async () => {
+      if (!selectedDogId || !user) return
+
+      try {
+        // Fetch orders for this specific dog
+        const { data: ordersData } = await supabase
+          .from("orders")
+          .select(`
+            *,
+            plan:plans (
+              *,
+              plan_items (
+                *,
+                recipes (name)
+              )
+            )
+          `)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+
+        if (ordersData) {
+          // Filter orders that include this specific dog
+          const dogOrders = ordersData.filter((order: any) => {
+            return order.plan?.plan_items?.some((item: any) => item.dog_id === selectedDogId)
+          })
+
+          const formattedDeliveries = dogOrders.map((order: any) => ({
+            id: order.id,
+            date: order.created_at,
+            status: order.status === "completed" ? "delivered" : "upcoming",
+            items: order.plan?.plan_items
+              ?.filter((item: any) => item.dog_id === selectedDogId)
+              ?.map((item: any) => 
+                item.recipes ? `${item.recipes.name} (${item.qty || 1} weeks)` : item.name
+              ) || [],
+          }))
+
+          setDeliveries(formattedDeliveries.length > 0 ? formattedDeliveries : mockDeliveries)
+          console.log("[v0] Loaded deliveries from database for dog:", selectedDogId, formattedDeliveries)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching deliveries:", error)
+      }
+    }
+
     fetchWeightEntries()
-  }, [selectedDogId])
+    fetchStoolEntries()
+    fetchDeliveries()
+  }, [selectedDogId, user])
 
   const handleEditDog = (dogId: string) => {
     alert(`Edit dog profile for ${dogId} - this would open an edit modal`)

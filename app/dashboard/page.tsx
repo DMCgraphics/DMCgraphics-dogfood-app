@@ -64,7 +64,7 @@ const mockMedicalConditions = [
 ]
 
 export default function DashboardPage() {
-  const { user, hasSubscription } = useAuth()
+  const { user, hasSubscription, refreshSubscriptionStatus } = useAuth()
   const [dogs, setDogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [weightEntries, setWeightEntries] = useState([])
@@ -151,6 +151,9 @@ export default function DashboardPage() {
           .eq("status", "active")
 
         console.log("[v0] Active plans data:", activePlansData)
+
+        // Refresh auth context subscription status to ensure consistency
+        await refreshSubscriptionStatus()
 
         // Fetch real delivery data from orders
         const { data: ordersData } = await supabase

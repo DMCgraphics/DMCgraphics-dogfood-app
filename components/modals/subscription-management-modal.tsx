@@ -16,7 +16,7 @@ interface SubscriptionManagementModalProps {
 }
 
 export function SubscriptionManagementModal({ open, onOpenChange }: SubscriptionManagementModalProps) {
-  const { user } = useAuth()
+  const { user, refreshSubscriptionStatus } = useAuth()
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -28,25 +28,74 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
 
   const fetchSubscriptions = async () => {
     try {
-      const { data: subscriptionsData } = await supabase
+      // First, get all subscriptions for the user
+      const { data: subscriptionsData, error } = await supabase
         .from("subscriptions")
-        .select(`
-          *,
-          plans (
-            *,
-            dogs (name, breed, weight),
-            plan_items (
-              *,
-              recipes (name)
-            )
-          )
-        `)
+        .select("*")
         .eq("user_id", user.id)
         .in("status", ["active", "trialing", "past_due", "paused"])
+        .order("created_at", { ascending: false })
 
-      setSubscriptions(subscriptionsData || [])
+      if (error) {
+        console.error("Error fetching subscriptions:", error)
+        setSubscriptions([])
+        return
+      }
+
+      console.log("[v0] Modal - Raw subscriptions data:", subscriptionsData)
+
+      // Enrich each subscription with plan and dog data
+      const enrichedSubscriptions = []
+      
+      for (const subscription of subscriptionsData || []) {
+        let planData = null
+        let dogData = null
+
+        // Get plan data using plan_id from subscription
+        if (subscription.plan_id) {
+          const { data: plan } = await supabase
+            .from("plans")
+            .select(`
+              *,
+              plan_items (
+                *,
+                recipes (name)
+              )
+            `)
+            .eq("id", subscription.plan_id)
+            .single()
+
+          if (plan) {
+            planData = plan
+
+            // Get dog data using dog_id from plan
+            const { data: dog } = await supabase
+              .from("dogs")
+              .select("*")
+              .eq("id", plan.dog_id)
+              .single()
+
+            if (dog) {
+              dogData = dog
+            }
+          }
+        }
+
+        enrichedSubscriptions.push({
+          ...subscription,
+          planData,
+          dogData,
+        })
+      }
+
+      console.log("[v0] Modal - Enriched subscriptions:", enrichedSubscriptions)
+      setSubscriptions(enrichedSubscriptions)
+      
+      // Refresh auth context subscription status to ensure consistency
+      await refreshSubscriptionStatus()
     } catch (error) {
       console.error("Error fetching subscriptions:", error)
+      setSubscriptions([])
     } finally {
       setLoading(false)
     }
@@ -54,15 +103,20 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
 
   const handlePauseSubscription = async (subscriptionId: string) => {
     try {
+      console.log("[v0] Modal - Pausing subscription:", subscriptionId)
       const response = await fetch("/api/subscriptions/pause", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptionId }),
+        body: JSON.stringify({ subscription_id: subscriptionId }),
       })
 
       if (response.ok) {
-        fetchSubscriptions() // Refresh data
+        console.log("[v0] Modal - Subscription paused successfully")
+        await fetchSubscriptions() // Refresh data
+        await refreshSubscriptionStatus() // Update auth context
       } else {
+        const errorText = await response.text()
+        console.error("[v0] Modal - Failed to pause subscription:", errorText)
         alert("Failed to pause subscription")
       }
     } catch (error) {
@@ -73,15 +127,20 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
 
   const handleResumeSubscription = async (subscriptionId: string) => {
     try {
+      console.log("[v0] Modal - Resuming subscription:", subscriptionId)
       const response = await fetch("/api/subscriptions/resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptionId }),
+        body: JSON.stringify({ subscription_id: subscriptionId }),
       })
 
       if (response.ok) {
-        fetchSubscriptions() // Refresh data
+        console.log("[v0] Modal - Subscription resumed successfully")
+        await fetchSubscriptions() // Refresh data
+        await refreshSubscriptionStatus() // Update auth context
       } else {
+        const errorText = await response.text()
+        console.error("[v0] Modal - Failed to resume subscription:", errorText)
         alert("Failed to resume subscription")
       }
     } catch (error) {
@@ -105,15 +164,26 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
     }
   }
 
-  const calculateNextDelivery = (createdAt: string) => {
-    const subscriptionDate = new Date(createdAt)
-    const nextDeliveryDate = new Date(subscriptionDate)
-    nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
-    return nextDeliveryDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
+  const calculateNextDelivery = (subscription: any) => {
+    // Use current_period_end if available, otherwise calculate from created_at
+    if (subscription.current_period_end) {
+      const nextDeliveryDate = new Date(subscription.current_period_end)
+      return nextDeliveryDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    } else {
+      // Fallback to calculating from created_at
+      const subscriptionDate = new Date(subscription.created_at)
+      const nextDeliveryDate = new Date(subscriptionDate)
+      nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
+      return nextDeliveryDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    }
   }
 
   return (
@@ -142,17 +212,21 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
           </div>
         ) : (
           <div className="space-y-6">
+            <div className="text-center py-4 border-b">
+              <h3 className="text-lg font-semibold">Found {subscriptions.length} subscription{subscriptions.length !== 1 ? 's' : ''}</h3>
+              <p className="text-sm text-muted-foreground">Manage your active subscriptions below</p>
+            </div>
             {subscriptions.map((subscription) => (
               <Card key={subscription.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2">
-                        {subscription.plans?.dogs?.name || "Unknown Dog"}
+                        {subscription.dogData?.name || "Unknown Dog"}
                         <Badge className={getStatusColor(subscription.status)}>{subscription.status}</Badge>
                       </CardTitle>
                       <CardDescription>
-                        {subscription.plans?.dogs?.breed} • {subscription.plans?.dogs?.weight} lbs
+                        {subscription.dogData?.breed} • {subscription.dogData?.weight} lbs
                       </CardDescription>
                     </div>
                     <div className="text-right">
@@ -167,12 +241,12 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
                       <div className="flex items-center gap-2 text-sm">
                         <Package className="h-4 w-4" />
                         <span className="font-medium">Recipe:</span>
-                        <span>{subscription.plans?.plan_items?.[0]?.recipes?.name || "No recipe selected"}</span>
+                        <span>{subscription.planData?.plan_items?.[0]?.recipes?.name || "No recipe selected"}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4" />
                         <span className="font-medium">Next Delivery:</span>
-                        <span>{calculateNextDelivery(subscription.created_at)}</span>
+                        <span>{calculateNextDelivery(subscription)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <CreditCard className="h-4 w-4" />

@@ -101,7 +101,7 @@ function SubscriptionCard({ subscription, onPause, onResume }: SubscriptionCardP
 }
 
 export default function SubscriptionManagementPage() {
-  const { user } = useAuth()
+  const { user, refreshSubscriptionStatus } = useAuth()
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -165,6 +165,9 @@ export default function SubscriptionManagementPage() {
 
           setSubscriptions(enrichedSubscriptions)
         }
+
+        // Refresh auth context subscription status to ensure consistency
+        await refreshSubscriptionStatus()
       } catch (error) {
         console.error("[v0] Error in fetchSubscriptions:", error)
         setSubscriptions([])
@@ -174,7 +177,7 @@ export default function SubscriptionManagementPage() {
     }
 
     fetchSubscriptions()
-  }, [user])
+  }, [user, refreshSubscriptionStatus])
 
   const handlePauseSubscription = async (subscriptionId: string) => {
     try {
@@ -185,8 +188,9 @@ export default function SubscriptionManagementPage() {
       })
 
       if (response.ok) {
-        // Refresh subscriptions
-        window.location.reload()
+        // Refresh subscriptions and auth context
+        await fetchSubscriptions()
+        await refreshSubscriptionStatus()
       } else {
         alert("Failed to pause subscription")
       }
@@ -205,8 +209,9 @@ export default function SubscriptionManagementPage() {
       })
 
       if (response.ok) {
-        // Refresh subscriptions
-        window.location.reload()
+        // Refresh subscriptions and auth context
+        await fetchSubscriptions()
+        await refreshSubscriptionStatus()
       } else {
         alert("Failed to resume subscription")
       }

@@ -617,7 +617,11 @@ export default function PlanBuilderPage() {
 
   const handleAuthSuccess = async () => {
     console.log("[v0] Auth success - starting reliable session handling")
-    setShowAuthModal(false)
+    
+    // Add a small delay to ensure the user has finished their action
+    setTimeout(() => {
+      setShowAuthModal(false)
+    }, 1000)
 
     try {
       console.log("[v0] Waiting for authenticated session...")

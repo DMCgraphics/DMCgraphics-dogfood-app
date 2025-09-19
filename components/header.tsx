@@ -11,7 +11,6 @@ import { AuthModal } from "@/components/auth/auth-modal"
 import { User, LogOut } from "lucide-react"
 import { UserMenu } from "@/components/nav/user-menu"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
-import { usePlanUiState } from "@/lib/plan-state"
 import { useRouter } from "next/navigation"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
 
@@ -25,7 +24,6 @@ export function Header() {
 
   const { user, isAuthenticated, hasSubscription, loading, logout, forceClearAuth } = useAuth()
   const router = useRouter()
-  const { state: planUiState } = usePlanUiState()
 
   useEffect(() => {
     setMounted(true)
@@ -158,13 +156,9 @@ export function Header() {
             )}
 
             {isAuthenticated ? (
-              planUiState === "active" ? (
+              hasSubscription ? (
                 <Button className="hidden lg:inline-flex" onClick={() => setShowSubscriptionModal(true)}>
                   Manage Subscription
-                </Button>
-              ) : planUiState === "in_progress" ? (
-                <Button className="hidden lg:inline-flex" onClick={() => setOpenDogModal(true)}>
-                  Resume Progress
                 </Button>
               ) : (
                 <Button asChild className="hidden lg:inline-flex">
@@ -213,13 +207,9 @@ export function Header() {
               )}
 
               {isAuthenticated ? (
-                planUiState === "active" ? (
+                hasSubscription ? (
                   <Button className="w-full" onClick={() => setShowSubscriptionModal(true)}>
                     Manage Subscription
-                  </Button>
-                ) : planUiState === "in_progress" ? (
-                  <Button className="w-full" onClick={() => setOpenDogModal(true)}>
-                    Resume Progress
                   </Button>
                 ) : (
                   <Button asChild className="w-full">

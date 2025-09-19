@@ -16,22 +16,29 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">(defaultMode)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (isOpen) {
       setMode(defaultMode)
+      setHasUserInteracted(false) // Reset interaction state when modal opens
     }
   }, [isOpen, defaultMode])
 
-  // Auto-close modal when user becomes authenticated
+  // Auto-close modal when user becomes authenticated (but only if they haven't recently interacted)
   useEffect(() => {
-    if (isAuthenticated && isOpen) {
-      console.log("[v0] auth_modal_auto_close", { isAuthenticated })
-      onSuccess?.()
-      onClose()
+    if (isAuthenticated && isOpen && !hasUserInteracted) {
+      console.log("[v0] auth_modal_auto_close", { isAuthenticated, hasUserInteracted })
+      // Add a delay to ensure the user has finished their action
+      const timeout = setTimeout(() => {
+        onSuccess?.()
+        onClose()
+      }, 1000)
+      
+      return () => clearTimeout(timeout)
     }
-  }, [isAuthenticated, isOpen, onSuccess, onClose])
+  }, [isAuthenticated, isOpen, hasUserInteracted, onSuccess, onClose])
 
   // Fallback timeout to close modal after 10 seconds if it gets stuck
   useEffect(() => {
@@ -61,9 +68,17 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
         </VisuallyHidden>
 
         {mode === "login" ? (
-          <LoginForm onSuccess={handleSuccess} onSwitchToSignup={() => setMode("signup")} />
+          <LoginForm 
+            onSuccess={handleSuccess} 
+            onSwitchToSignup={() => setMode("signup")} 
+            onUserInteraction={() => setHasUserInteracted(true)}
+          />
         ) : (
-          <SignupForm onSuccess={handleSuccess} onSwitchToLogin={() => setMode("login")} />
+          <SignupForm 
+            onSuccess={handleSuccess} 
+            onSwitchToLogin={() => setMode("login")} 
+            onUserInteraction={() => setHasUserInteracted(true)}
+          />
         )}
       </DialogContent>
     </Dialog>

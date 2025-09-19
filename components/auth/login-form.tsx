@@ -15,9 +15,10 @@ import { supabase } from "@/lib/supabase/client"
 interface LoginFormProps {
   onSuccess?: () => void
   onSwitchToSignup?: () => void
+  onUserInteraction?: () => void
 }
 
-export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
+export function LoginForm({ onSuccess, onSwitchToSignup, onUserInteraction }: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -96,7 +97,10 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  onUserInteraction?.()
+                }}
                 className="pl-10"
                 required
                 autoComplete="email"
@@ -113,7 +117,10 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  onUserInteraction?.()
+                }}
                 className="pl-10 pr-10"
                 required
                 autoComplete="current-password"

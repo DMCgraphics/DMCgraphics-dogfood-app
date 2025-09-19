@@ -162,9 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("[v0] auth_logout_starting")
       
-      // Clear all auth-related localStorage data
+      // Clear all auth-related localStorage data (but keep site_authenticated for gated access)
       const keysToRemove = [
-        'site_authenticated',
         'nouripet-order-confirmation',
         'nouripet-checkout-plan',
         'nouripet-selected-dog',

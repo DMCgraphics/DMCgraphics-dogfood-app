@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRight, MapPin, Leaf, Stethoscope, Ban } from "lucide-react"
+import { ArrowRight, Leaf, Stethoscope, Ban } from "lucide-react"
 import Link from "next/link"
 import { trackHeroCTAClick, initializeAnalytics } from "@/lib/analytics-utils"
 import { useEffect, useState } from "react"
@@ -148,15 +148,7 @@ export function HeroSection() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 pt-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <div className="font-serif text-2xl font-bold text-primary">3</div>
-                </div>
-                <div className="text-sm text-muted-foreground">Communities Served</div>
-                <div className="text-xs text-muted-foreground">(Stamford, Norwalk & Westchester)</div>
-              </div>
+            <div className="flex items-center gap-8 pt-4">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Leaf className="h-5 w-5 text-primary" />
@@ -167,9 +159,9 @@ export function HeroSection() {
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Stethoscope className="h-5 w-5 text-primary" />
-                  <div className="font-serif text-2xl font-bold text-primary">Vet-Formulated</div>
+                  <div className="font-serif text-2xl font-bold text-primary">Vet-Approved</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Balanced to AAFCO Standards</div>
+                <div className="text-sm text-muted-foreground">AAFCO Balanced</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">

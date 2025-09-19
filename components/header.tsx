@@ -23,7 +23,7 @@ export function Header() {
   const [openDogModal, setOpenDogModal] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
-  const { user, isAuthenticated, hasSubscription, loading, logout } = useAuth()
+  const { user, isAuthenticated, hasSubscription, loading, logout, forceClearAuth } = useAuth()
   const router = useRouter()
   const { state: planUiState } = usePlanUiState()
 
@@ -52,6 +52,21 @@ export function Header() {
     } catch (error) {
       console.error("[v0] Header - Logout error:", error)
       // Even if logout fails, redirect to clear any cached state
+      window.location.href = "/"
+    }
+  }
+
+  const handleForceClear = async () => {
+    try {
+      console.log("[v0] Header - Starting force clear")
+      await forceClearAuth()
+      setIsMenuOpen(false)
+      console.log("[v0] Header - Force clear completed, redirecting")
+      // Force a hard refresh to ensure all state is cleared
+      window.location.href = "/"
+    } catch (error) {
+      console.error("[v0] Header - Force clear error:", error)
+      // Even if force clear fails, redirect to clear any cached state
       window.location.href = "/"
     }
   }
@@ -233,6 +248,10 @@ export function Header() {
                     <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-red-600">
                       <LogOut className="h-4 w-4 mr-2" />
                       Sign Out
+                    </Button>
+                    <Button variant="ghost" onClick={handleForceClear} className="w-full justify-start text-orange-600">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Force Clear Auth
                     </Button>
                   </>
                 ) : (

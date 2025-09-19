@@ -15,6 +15,7 @@ interface AuthContextType {
   refreshUserProfile: () => Promise<void>
   refreshSubscriptionStatus: () => Promise<void>
   forceRefreshAuth: () => Promise<void>
+  forceClearAuth: () => Promise<void>
   apiStatus: "unknown" | "connected" | "disconnected"
 }
 
@@ -98,47 +99,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[v0] auth_state_change", { event, hasSession: !!session, userId: session?.user?.id, email: session?.user?.email })
 
       if (event === "SIGNED_IN" && session?.user) {
-        // Clear any existing user state first
-        setUser(null)
-        
-        // First, create user with default subscription status
-        const userData: User = {
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
-          avatar_url: undefined, // Will be loaded separately when needed
-          createdAt: session.user.created_at,
-          subscriptionStatus: "none",
-        }
-        setUser(userData)
-        setApiStatus("connected")
-        console.log("[v0] auth_signed_in", { userId: userData.id, email: userData.email })
-
-        // Then, fetch real subscription status from database
-        try {
-          const { data: subscriptionsData } = await supabase
-            .from("subscriptions")
-            .select("id, status")
-            .eq("user_id", session.user.id)
-            .in("status", ["active", "trialing", "past_due"])
-
-          const hasActiveSubscription = subscriptionsData && subscriptionsData.length > 0
+        // Only process if we don't already have this user
+        if (user?.id !== session.user.id) {
+          // Clear any existing user state first
+          setUser(null)
           
-          if (hasActiveSubscription) {
-            const updatedUser = { ...userData, subscriptionStatus: "active" as const }
-            setUser(updatedUser)
-            console.log("[v0] auth_subscription_status_updated_on_signin", { 
-              userId: userData.id, 
-              email: userData.email,
-              hasActiveSubscription: true,
-              subscriptionCount: subscriptionsData.length 
-            })
-          } else {
-            console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
+          // First, create user with default subscription status
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email!,
+            name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+            avatar_url: undefined, // Will be loaded separately when needed
+            createdAt: session.user.created_at,
+            subscriptionStatus: "none",
           }
-        } catch (subscriptionError) {
-          console.error("Error fetching subscription status on signin:", subscriptionError)
-          // Keep the default "none" status if there's an error
+          setUser(userData)
+          setApiStatus("connected")
+          console.log("[v0] auth_signed_in", { userId: userData.id, email: userData.email })
+
+          // Then, fetch real subscription status from database
+          try {
+            const { data: subscriptionsData } = await supabase
+              .from("subscriptions")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "trialing", "past_due"])
+
+            const hasActiveSubscription = subscriptionsData && subscriptionsData.length > 0
+            
+            if (hasActiveSubscription) {
+              const updatedUser = { ...userData, subscriptionStatus: "active" as const }
+              setUser(updatedUser)
+              console.log("[v0] auth_subscription_status_updated_on_signin", { 
+                userId: userData.id, 
+                email: userData.email,
+                hasActiveSubscription: true,
+                subscriptionCount: subscriptionsData.length 
+              })
+            } else {
+              console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
+            }
+          } catch (subscriptionError) {
+            console.error("Error fetching subscription status on signin:", subscriptionError)
+            // Keep the default "none" status if there's an error
+          }
+        } else {
+          console.log("[v0] auth_signed_in_duplicate_ignored", { userId: session.user.id, email: session.user.email })
         }
       } else if (event === "SIGNED_OUT") {
         console.log("[v0] auth_state_change_signed_out")
@@ -162,6 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("[v0] auth_logout_starting")
       
+      // Clear local state immediately to prevent race conditions
+      setUser(null)
+      setApiStatus("disconnected")
+      
       // Clear all auth-related localStorage data (but keep site_authenticated for gated access)
       const keysToRemove = [
         'nouripet-order-confirmation',
@@ -184,18 +194,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       
-      // Clear cookies
-      document.cookie = "auth_token=; Max-Age=0; path=/; SameSite=Lax"
+      // Clear all cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      })
       
-      // Clear local state immediately
-      setUser(null)
-      setApiStatus("disconnected")
-      
+      // Force sign out from Supabase
       await supabase.auth.signOut()
+      
+      // Additional cleanup - clear any remaining session data
+      try {
+        await supabase.auth.getSession()
+      } catch (e) {
+        // Ignore errors here, we're just trying to clear the session
+      }
+      
       console.log("[v0] auth_logout_completed")
     } catch (error) {
       console.error("Error during logout:", error)
-      // Even if there's an error, clear the local state
+      // Even if there's an error, ensure local state is cleared
       setUser(null)
       setApiStatus("disconnected")
     }
@@ -298,6 +315,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const forceClearAuth = async () => {
+    try {
+      console.log("[v0] force_clear_auth_starting")
+      
+      // Clear local state
+      setUser(null)
+      setApiStatus("disconnected")
+      
+      // Clear all localStorage
+      const keysToRemove = [
+        'nouripet-order-confirmation',
+        'nouripet-checkout-plan',
+        'nouripet-selected-dog',
+        'nouripet-add-dog-mode',
+        'nouripet-total-dogs',
+        'nouripet_user'
+      ]
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key)
+      })
+      
+      // Clear any saved plan data
+      const allKeys = Object.keys(localStorage)
+      allKeys.forEach(key => {
+        if (key.startsWith('nouripet-saved-plan-')) {
+          localStorage.removeItem(key)
+        }
+      })
+      
+      // Clear all cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      })
+      
+      // Force sign out from Supabase
+      await supabase.auth.signOut()
+      
+      console.log("[v0] force_clear_auth_completed")
+    } catch (error) {
+      console.error("Error in force clear auth:", error)
+      setUser(null)
+      setApiStatus("disconnected")
+    }
+  }
+
   const hasSubscription = user?.subscriptionStatus === "active"
 
   const value: AuthContextType = {
@@ -310,6 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUserProfile,
     refreshSubscriptionStatus,
     forceRefreshAuth,
+    forceClearAuth,
     apiStatus,
   }
 

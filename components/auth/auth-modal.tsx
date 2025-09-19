@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { LoginForm } from "./login-form"
 import { SignupForm } from "./signup-form"
+import { useAuth } from "@/contexts/auth-context"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -15,12 +16,34 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">(defaultMode)
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (isOpen) {
       setMode(defaultMode)
     }
   }, [isOpen, defaultMode])
+
+  // Auto-close modal when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && isOpen) {
+      console.log("[v0] auth_modal_auto_close", { isAuthenticated })
+      onSuccess?.()
+      onClose()
+    }
+  }, [isAuthenticated, isOpen, onSuccess, onClose])
+
+  // Fallback timeout to close modal after 10 seconds if it gets stuck
+  useEffect(() => {
+    if (isOpen) {
+      const timeout = setTimeout(() => {
+        console.log("[v0] auth_modal_timeout_fallback")
+        onClose()
+      }, 10000) // 10 seconds
+
+      return () => clearTimeout(timeout)
+    }
+  }, [isOpen, onClose])
 
   const handleSuccess = () => {
     onSuccess?.()

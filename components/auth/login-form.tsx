@@ -57,17 +57,19 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
         // The auth context will automatically handle the session change
         console.log("[v0] user_login_success", { email, userId: data.user.id })
         
-        // Add a small delay to ensure auth state has propagated
+        // Add a small delay to ensure auth state has propagated, then close modal
         setTimeout(() => {
+          setIsLoading(false)
           onSuccess?.()
         }, 1000)
+      } else {
+        setIsLoading(false)
       }
     } catch (err: any) {
       const errorMessage = err.message || "An error occurred during login"
       setError(errorMessage)
-      console.log("[v0] user_login_failed", { email, error: errorMessage })
-    } finally {
       setIsLoading(false)
+      console.log("[v0] user_login_failed", { email, error: errorMessage })
     }
   }
 

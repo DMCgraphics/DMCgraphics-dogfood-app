@@ -90,8 +90,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         // The auth context will automatically handle the session change
         // Add a small delay to ensure auth state has propagated before calling onSuccess
         setTimeout(() => {
+          setIsLoading(false)
           onSuccess?.()
         }, 1000)
+      } else {
+        setIsLoading(false)
       }
     } catch (err: any) {
       console.log("[v0] user_signup_failed", {
@@ -105,7 +108,6 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
           : err.message || "Sign up failed. Please try again."
 
       setError(errorMessage)
-    } finally {
       setIsLoading(false)
     }
   }

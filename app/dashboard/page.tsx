@@ -134,6 +134,7 @@ export default function DashboardPage() {
           .order("created_at", { ascending: false })
 
         console.log("[v0] Plan data:", planData)
+        console.log("[v0] Dogs data:", dogsData)
 
         const { data: subscriptionsData } = await supabase
           .from("subscriptions")
@@ -316,31 +317,47 @@ export default function DashboardPage() {
             if (dogPlan) {
               const planItem = dogPlan.plan_items?.[0]
               if (planItem?.recipes) {
-                const recipe = planItem.recipes
-                // Calculate DER using canonical formula
-                const dogProfile = {
-                  weight: planWeight,
-                  weightUnit: planWeightUnit,
-                  age: dog.age || 4,
-                  ageUnit: "years" as const,
-                  sex: "male" as const,
-                  breed: dog.breed || "mixed-breed",
-                  activity: "moderate" as const,
-                  bodyCondition: 5,
-                  isNeutered: true,
-                  lifeStage: "adult" as const
-                }
-                const der = calculateDERFromProfile(dogProfile)
-                const caloriesPer100g = recipe.macros?.calories || 175
-                const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
-                
-                nutritionalData = {
-                  dailyCalories: Math.round(der),
-                  protein: recipe.macros?.protein || 0,
-                  fat: recipe.macros?.fat || 0,
-                  carbs: recipe.macros?.carbs || 0,
-                  fiber: recipe.macros?.fiber || 0,
-                  moisture: recipe.macros?.moisture || 0
+                try {
+                  const recipe = planItem.recipes
+                  // Calculate DER using canonical formula
+                  const dogProfile = {
+                    weight: planWeight,
+                    weightUnit: planWeightUnit,
+                    age: dog.age || 4,
+                    ageUnit: "years" as const,
+                    sex: "male" as const,
+                    breed: dog.breed || "mixed-breed",
+                    activity: "moderate" as const,
+                    bodyCondition: 5,
+                    isNeutered: true,
+                    lifeStage: "adult" as const
+                  }
+                  const der = calculateDERFromProfile(dogProfile)
+                  console.log(`[v0] Recipe data for ${dog.name}:`, recipe)
+                  console.log(`[v0] Recipe macros:`, recipe.macros)
+                  const caloriesPer100g = recipe.macros?.calories || 175
+                  const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
+                  
+                  nutritionalData = {
+                    dailyCalories: Math.round(der),
+                    protein: recipe.macros?.protein || 0,
+                    fat: recipe.macros?.fat || 0,
+                    carbs: recipe.macros?.carbs || 0,
+                    fiber: recipe.macros?.fiber || 0,
+                    moisture: recipe.macros?.moisture || 0
+                  }
+                  console.log(`[v0] Calculated nutrition for ${dog.name}:`, nutritionalData)
+                } catch (error) {
+                  console.error(`[v0] Error calculating nutrition for ${dog.name}:`, error)
+                  // Fallback to default values
+                  nutritionalData = {
+                    dailyCalories: 0,
+                    protein: 0,
+                    fat: 0,
+                    carbs: 0,
+                    fiber: 0,
+                    moisture: 0
+                  }
                 }
               }
             }
@@ -364,6 +381,7 @@ export default function DashboardPage() {
             }
           }) || []
 
+        console.log("[v0] Transformed dogs data:", transformedDogs)
         setDogs(transformedDogs)
         if (transformedDogs.length > 0 && !selectedDogId) {
           setSelectedDogId(transformedDogs[0].id)

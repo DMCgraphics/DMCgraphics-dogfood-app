@@ -126,9 +126,9 @@ export function NutrientInfo({
           </div>
         )}
         
-        {recipeName === "No Recipe Selected" && (
+        {(recipeName === "No Recipe Selected" || (dailyCalories > 0 && protein === 0 && fat === 0 && carbs === 0)) && (
           <div className="text-center py-4 text-muted-foreground text-sm">
-            Select a recipe to see nutritional information
+            Select a recipe to see nutritional breakdown
           </div>
         )}
       </CardContent>

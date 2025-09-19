@@ -314,31 +314,31 @@ export default function DashboardPage() {
               moisture: 0
             }
 
-            if (dogPlan) {
-              const planItem = dogPlan.plan_items?.[0]
-              if (planItem?.recipes) {
-                try {
+            // Always calculate DER for all dogs, regardless of recipe status
+            try {
+              const dogProfile = {
+                weight: planWeight,
+                weightUnit: dog.weight_unit || "lb",
+                age: dog.age || 4,
+                ageUnit: "years" as const,
+                sex: "male" as const,
+                breed: dog.breed || "mixed-breed",
+                activity: "moderate" as const,
+                bodyCondition: 5,
+                isNeutered: true,
+                lifeStage: "adult" as const
+              }
+              console.log(`[v0] Dog profile for calculation:`, dogProfile)
+              const der = calculateDERFromProfile(dogProfile)
+              console.log(`[v0] Calculated DER:`, der)
+              
+              // Check if dog has a recipe
+              if (dogPlan) {
+                const planItem = dogPlan.plan_items?.[0]
+                if (planItem?.recipes) {
                   const dbRecipe = planItem.recipes
                   console.log(`[v0] Recipe data for ${dog.name}:`, dbRecipe)
                   console.log(`[v0] Recipe macros:`, dbRecipe.macros)
-                  console.log(`[v0] planWeight:`, planWeight, `weight_unit:`, dog.weight_unit)
-                  
-                  // Calculate DER using canonical formula - Fixed planWeightUnit issue
-                  const dogProfile = {
-                    weight: planWeight,
-                    weightUnit: dog.weight_unit || "lb",
-                    age: dog.age || 4,
-                    ageUnit: "years" as const,
-                    sex: "male" as const,
-                    breed: dog.breed || "mixed-breed",
-                    activity: "moderate" as const,
-                    bodyCondition: 5,
-                    isNeutered: true,
-                    lifeStage: "adult" as const
-                  }
-                  console.log(`[v0] Dog profile for calculation:`, dogProfile)
-                  const der = calculateDERFromProfile(dogProfile)
-                  console.log(`[v0] Calculated DER:`, der)
                   
                   // Use realistic calorie density for fresh dog food (150-200 kcal/100g)
                   const caloriesPer100g = 175 // Default realistic value for fresh cooked dog food
@@ -349,23 +349,45 @@ export default function DashboardPage() {
                     protein: dbRecipe.macros?.protein || 0,
                     fat: dbRecipe.macros?.fat || 0,
                     carbs: dbRecipe.macros?.carbs || 0,
-                    fiber: 7, // Default fiber content for fresh dog food
-                    moisture: 7 // Default moisture content for fresh dog food
+                    fiber: dbRecipe.macros?.fiber || 7, // Use recipe fiber or default
+                    moisture: dbRecipe.macros?.moisture || 74 // Use recipe moisture or default
                   }
                   console.log(`[v0] Final nutritional data for ${dog.name}:`, nutritionalData)
                   console.log(`[v0] Protein: ${dbRecipe.macros?.protein}, Fat: ${dbRecipe.macros?.fat}, Carbs: ${dbRecipe.macros?.carbs}`)
-                } catch (error) {
-                  console.error(`[v0] Error calculating nutrition for ${dog.name}:`, error)
-                  // Fallback to default values
+                } else {
+                  // Dog has a plan but no recipe - show DER only
                   nutritionalData = {
-                    dailyCalories: 0,
-                    protein: 0,
+                    dailyCalories: Math.round(der),
+                    protein: 0, // Will show as "Select a recipe to see nutritional breakdown"
                     fat: 0,
                     carbs: 0,
                     fiber: 0,
                     moisture: 0
                   }
+                  console.log(`[v0] Dog ${dog.name} has plan but no recipe - showing DER only:`, nutritionalData)
                 }
+              } else {
+                // Dog has no plan - show DER only
+                nutritionalData = {
+                  dailyCalories: Math.round(der),
+                  protein: 0, // Will show as "Select a recipe to see nutritional breakdown"
+                  fat: 0,
+                  carbs: 0,
+                  fiber: 0,
+                  moisture: 0
+                }
+                console.log(`[v0] Dog ${dog.name} has no plan - showing DER only:`, nutritionalData)
+              }
+            } catch (error) {
+              console.error(`[v0] Error calculating nutrition for ${dog.name}:`, error)
+              // Fallback to default values
+              nutritionalData = {
+                dailyCalories: 0,
+                protein: 0,
+                fat: 0,
+                carbs: 0,
+                fiber: 0,
+                moisture: 0
               }
             }
 

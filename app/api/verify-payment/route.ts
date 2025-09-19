@@ -133,7 +133,36 @@ export async function POST(req: Request) {
             console.log("[v0] Subscription created successfully in verify-payment endpoint")
           }
         } else {
-          console.log("[v0] Subscription already exists in database")
+          console.log("[v0] Subscription already exists in database, updating with latest Stripe data...")
+          
+          // Update existing subscription with latest Stripe data
+          const updateData = {
+            status: stripeSubscription.status,
+            current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+            currency: stripeSubscription.currency,
+            interval: stripeSubscription.items.data[0]?.price.recurring?.interval || "month",
+            interval_count: stripeSubscription.items.data[0]?.price.recurring?.interval_count || 1,
+            cancel_at_period_end: stripeSubscription.cancel_at_period_end || false,
+            canceled_at: stripeSubscription.canceled_at
+              ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
+              : null,
+            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string' 
+              ? stripeSubscription.default_payment_method 
+              : stripeSubscription.default_payment_method?.id || null,
+            updated_at: new Date().toISOString(),
+          }
+
+          const { error: updateError } = await supabase
+            .from("subscriptions")
+            .update(updateData)
+            .eq("stripe_subscription_id", subscriptionId)
+
+          if (updateError) {
+            console.error("[v0] Failed to update existing subscription:", updateError)
+          } else {
+            console.log("[v0] Existing subscription updated successfully")
+          }
         }
 
         // Also ensure the plan status is updated to active

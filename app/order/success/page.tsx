@@ -25,12 +25,7 @@ export default function OrderSuccessPage() {
         return
       }
 
-      if (authLoading) {
-        console.log("[v0] Still loading authentication...", { sessionId, authLoading })
-        return
-      }
-
-      // Note: We can now proceed without user authentication since verify-payment API
+      // Note: We can now proceed without waiting for authentication since verify-payment API
       // can work with user_id from session metadata
       console.log("[v0] Proceeding with payment verification...", { 
         sessionId, 

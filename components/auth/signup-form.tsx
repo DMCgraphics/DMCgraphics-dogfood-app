@@ -92,6 +92,14 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
         // The auth context will automatically handle the session change
         // Call onSuccess immediately - the parent component will handle modal closing
         setIsLoading(false)
+        
+        // Add a fallback timeout to ensure modal closes even if auth state doesn't update
+        setTimeout(() => {
+          console.log("[v0] signup_form_fallback_close")
+          onSuccess?.()
+        }, 2000) // 2 second fallback
+        
+        // Also call onSuccess immediately as primary mechanism
         onSuccess?.()
       } else {
         setIsLoading(false)

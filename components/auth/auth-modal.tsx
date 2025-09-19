@@ -26,17 +26,25 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
     }
   }, [isOpen, defaultMode])
 
-  // Auto-close modal when user becomes authenticated (but only if they haven't recently interacted)
+  // Auto-close modal when user becomes authenticated
   useEffect(() => {
-    if (isAuthenticated && isOpen && !hasUserInteracted) {
+    console.log("[v0] auth_modal_state_check", { 
+      isAuthenticated, 
+      isOpen, 
+      hasUserInteracted,
+      mode 
+    })
+    
+    if (isAuthenticated && isOpen) {
       console.log("[v0] auth_modal_auto_close_on_auth", { isAuthenticated, hasUserInteracted })
       // Add a small delay to ensure the auth flow is complete
       setTimeout(() => {
+        console.log("[v0] auth_modal_closing_now")
         onSuccess?.()
         onClose()
-      }, 500)
+      }, 1000) // Increased delay to 1 second
     }
-  }, [isAuthenticated, isOpen, hasUserInteracted, onSuccess, onClose])
+  }, [isAuthenticated, isOpen, onSuccess, onClose])
 
   const handleSuccess = () => {
     console.log("[v0] auth_modal_handle_success")

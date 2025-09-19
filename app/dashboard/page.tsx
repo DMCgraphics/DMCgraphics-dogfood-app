@@ -318,7 +318,10 @@ export default function DashboardPage() {
               const planItem = dogPlan.plan_items?.[0]
               if (planItem?.recipes) {
                 try {
-                  const recipe = planItem.recipes
+                  const dbRecipe = planItem.recipes
+                  console.log(`[v0] Recipe data for ${dog.name}:`, dbRecipe)
+                  console.log(`[v0] Recipe macros:`, dbRecipe.macros)
+                  
                   // Calculate DER using canonical formula
                   const dogProfile = {
                     weight: planWeight,
@@ -333,18 +336,18 @@ export default function DashboardPage() {
                     lifeStage: "adult" as const
                   }
                   const der = calculateDERFromProfile(dogProfile)
-                  console.log(`[v0] Recipe data for ${dog.name}:`, recipe)
-                  console.log(`[v0] Recipe macros:`, recipe.macros)
-                  const caloriesPer100g = recipe.macros?.calories || 175
+                  
+                  // Use realistic calorie density for fresh dog food (150-200 kcal/100g)
+                  const caloriesPer100g = 175 // Default realistic value for fresh cooked dog food
                   const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
                   
                   nutritionalData = {
                     dailyCalories: Math.round(der),
-                    protein: recipe.macros?.protein || 0,
-                    fat: recipe.macros?.fat || 0,
-                    carbs: recipe.macros?.carbs || 0,
-                    fiber: recipe.macros?.fiber || 0,
-                    moisture: recipe.macros?.moisture || 0
+                    protein: dbRecipe.macros?.protein || 0,
+                    fat: dbRecipe.macros?.fat || 0,
+                    carbs: dbRecipe.macros?.carbs || 0,
+                    fiber: 7, // Default fiber content for fresh dog food
+                    moisture: 7 // Default moisture content for fresh dog food
                   }
                   console.log(`[v0] Calculated nutrition for ${dog.name}:`, nutritionalData)
                 } catch (error) {

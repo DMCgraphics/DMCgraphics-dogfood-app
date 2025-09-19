@@ -618,15 +618,19 @@ export default function PlanBuilderPage() {
   const handleAuthSuccess = async () => {
     console.log("[v0] Auth success - starting reliable session handling")
     
-    // Add a small delay to ensure the user has finished their action
-    setTimeout(() => {
+    // Set a timeout to close the modal if it gets stuck
+    const timeoutId = setTimeout(() => {
+      console.log("[v0] Auth success timeout - closing modal to prevent stuck state")
       setShowAuthModal(false)
-    }, 1000)
-
+    }, 15000) // 15 second timeout
+    
     try {
       console.log("[v0] Waiting for authenticated session...")
       const session = await waitForSession()
       console.log("[v0] Session confirmed:", session.user.id)
+      
+      // Clear the timeout since we're proceeding successfully
+      clearTimeout(timeoutId)
       
       // Validate session user ID
       if (!session?.user?.id) {
@@ -1080,11 +1084,23 @@ export default function PlanBuilderPage() {
       }
 
       console.log("[v0] Proceeding to checkout...")
+      
+      // Close the modal after successful completion
+      setShowAuthModal(false)
+      
       router.push("/checkout")
     } catch (error) {
       console.error("[v0] Error in handleAuthSuccess:", error)
+      
+      // Clear the timeout since we're handling the error
+      clearTimeout(timeoutId)
+      
       // Show specific error message for debugging
-      alert(`Error saving plan: ${error.message || error.toString()}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      alert(`Error saving plan: ${errorMessage}`)
+      
+      // Close the modal even on error to prevent it from getting stuck
+      setShowAuthModal(false)
     }
   }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, MapPin, Leaf, Stethoscope, Ban } from "lucide-react"
 import Link from "next/link"
 import { trackHeroCTAClick, initializeAnalytics } from "@/lib/analytics-utils"
 import { useEffect, useState } from "react"
@@ -148,18 +148,35 @@ export function HeroSection() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-8 pt-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 pt-4">
               <div className="text-center">
-                <div className="font-serif text-2xl font-bold text-primary">10k+</div>
-                <div className="text-sm text-muted-foreground">Happy Dogs</div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <div className="font-serif text-2xl font-bold text-primary">3</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Communities Served</div>
+                <div className="text-xs text-muted-foreground">(Stamford, Norwalk & Westchester)</div>
               </div>
               <div className="text-center">
-                <div className="font-serif text-2xl font-bold text-primary">98%</div>
-                <div className="text-sm text-muted-foreground">Vet Approved</div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Leaf className="h-5 w-5 text-primary" />
+                  <div className="font-serif text-2xl font-bold text-primary">100%</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Fresh, Local Ingredients</div>
               </div>
               <div className="text-center">
-                <div className="font-serif text-2xl font-bold text-primary">100%</div>
-                <div className="text-xs text-muted-foreground">Transparent</div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Stethoscope className="h-5 w-5 text-primary" />
+                  <div className="font-serif text-2xl font-bold text-primary">Vet-Formulated</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Balanced to AAFCO Standards</div>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Ban className="h-5 w-5 text-primary" />
+                  <div className="font-serif text-2xl font-bold text-primary">Zero</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Artificial Preservatives</div>
               </div>
             </div>
           </div>

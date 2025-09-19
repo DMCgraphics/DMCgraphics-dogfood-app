@@ -28,15 +28,27 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
 
   // Auto-close modal when user becomes authenticated (but only if they haven't recently interacted)
   useEffect(() => {
-    if (isAuthenticated && isOpen && !hasUserInteracted) {
+    if (isAuthenticated && isOpen) {
       console.log("[v0] auth_modal_auto_close", { isAuthenticated, hasUserInteracted })
-      // Add a delay to ensure the user has finished their action
-      const timeout = setTimeout(() => {
-        onSuccess?.()
-        onClose()
-      }, 1000)
       
-      return () => clearTimeout(timeout)
+      // Only auto-close if user hasn't interacted with the form recently
+      if (!hasUserInteracted) {
+        // Add a delay to ensure the user has finished their action
+        const timeout = setTimeout(() => {
+          onSuccess?.()
+          onClose()
+        }, 1500) // Increased delay to 1.5 seconds
+        
+        return () => clearTimeout(timeout)
+      } else {
+        // User has interacted, wait longer before auto-closing
+        const timeout = setTimeout(() => {
+          onSuccess?.()
+          onClose()
+        }, 3000) // 3 seconds if user has interacted
+        
+        return () => clearTimeout(timeout)
+      }
     }
   }, [isAuthenticated, isOpen, hasUserInteracted, onSuccess, onClose])
 
@@ -53,13 +65,14 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
   }, [isOpen, onClose])
 
   const handleSuccess = () => {
+    console.log("[v0] auth_modal_handle_success", { hasUserInteracted })
     onSuccess?.()
     onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 bg-transparent border-none shadow-none">
+      <DialogContent className="sm:max-w-md p-0 gap-0 bg-transparent border-none shadow-none max-h-[90vh] overflow-y-auto">
         <VisuallyHidden>
           <DialogTitle>{mode === "login" ? "Sign In" : "Sign Up"}</DialogTitle>
           <DialogDescription>
@@ -71,13 +84,19 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
           <LoginForm 
             onSuccess={handleSuccess} 
             onSwitchToSignup={() => setMode("signup")} 
-            onUserInteraction={() => setHasUserInteracted(true)}
+            onUserInteraction={() => {
+              console.log("[v0] auth_modal_user_interaction_login")
+              setHasUserInteracted(true)
+            }}
           />
         ) : (
           <SignupForm 
             onSuccess={handleSuccess} 
             onSwitchToLogin={() => setMode("login")} 
-            onUserInteraction={() => setHasUserInteracted(true)}
+            onUserInteraction={() => {
+              console.log("[v0] auth_modal_user_interaction_signup")
+              setHasUserInteracted(true)
+            }}
           />
         )}
       </DialogContent>

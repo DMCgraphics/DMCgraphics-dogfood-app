@@ -25,6 +25,9 @@ export function LoginForm({ onSuccess, onSwitchToSignup, onUserInteraction }: Lo
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
+  // Form validation
+  const isFormValid = email.trim() !== "" && password.trim() !== ""
+
   // Auth context will automatically handle login via auth state changes
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,7 +140,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, onUserInteraction }: Lo
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || !isFormValid}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
 

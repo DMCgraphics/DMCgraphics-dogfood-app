@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Check, ChevronDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,22 +36,28 @@ export function BreedSelector({
   const [search, setSearch] = useState("")
   const measuredMobile = useMobile(768)       // true | false | null
   const isMobile = measuredMobile === true    // treat null as desktop
-  const inputRef = useRef<HTMLInputElement | null>(null)
-  const uid = useId()
-  const searchInputId = `breed-search-${uid}`
+  
+  // Memoize mobile state to prevent unnecessary re-renders
+  const mobileState = useMemo(() => isMobile, [isMobile])
+  const searchInputId = useMemo(() => `breed-search-${Math.random().toString(36).substr(2, 9)}`, [])
 
+  // Removed auto-focus effect to prevent focus issues
+
+  // Reset search when dialog closes
   useEffect(() => {
-    if (!open) return
-    const t = setTimeout(() => inputRef.current?.focus(), isMobile ? 220 : 100)
-    return () => clearTimeout(t)
-  }, [open, isMobile])
+    if (!open) {
+      setSearch("")
+    }
+  }, [open])
 
-  const canonicalizedSearch = canonicalizeBreed(search)
-  const filtered = options.filter(o => 
-    o.label.toLowerCase().includes(canonicalizedSearch.toLowerCase()) ||
-    o.value.toLowerCase().includes(canonicalizedSearch.toLowerCase())
+  const canonicalizedSearch = useMemo(() => canonicalizeBreed(search), [search])
+  const filtered = useMemo(() => 
+    options.filter(o => 
+      o.label.toLowerCase().includes(canonicalizedSearch.toLowerCase()) ||
+      o.value.toLowerCase().includes(canonicalizedSearch.toLowerCase())
+    ), [options, canonicalizedSearch]
   )
-  const selected = options.find(o => o.value === value)
+  const selected = useMemo(() => options.find(o => o.value === value), [options, value])
 
   const handleSelect = useCallback((opt: BreedOption) => {
     const canonicalizedValue = canonicalizeBreed(opt.value)
@@ -81,7 +87,7 @@ export function BreedSelector({
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
           className="pl-10"
-          ref={inputRef}
+          autoFocus
           inputMode="search"
           role="searchbox"
           aria-label="Search dog breeds"
@@ -98,7 +104,7 @@ export function BreedSelector({
         </div>
       )}
 
-      <div className={cn("max-h-60 overflow-y-auto", isMobile && "max-h-[50vh]")} role="listbox">
+      <div className={cn("max-h-60 overflow-y-auto", mobileState && "max-h-[50vh]")} role="listbox">
         {filtered.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
         ) : (
@@ -126,10 +132,10 @@ export function BreedSelector({
         )}
       </div>
     </div>
-  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile])
+  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, mobileState])
 
   // ---- Mobile: Drawer ----
-  if (isMobile) {
+  if (mobileState) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>

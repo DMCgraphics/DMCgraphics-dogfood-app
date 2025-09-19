@@ -11,7 +11,7 @@ import { SubscriptionManagementModal } from "@/components/modals/subscription-ma
 import { useAuth } from "@/contexts/auth-context"
 
 export function HeroSection() {
-  const { user } = useAuth()
+  const { user, hasSubscription, isLoading: authLoading } = useAuth()
   const [hasExistingPlan, setHasExistingPlan] = useState(false)
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -20,26 +20,25 @@ export function HeroSection() {
 
   useEffect(() => {
     initializeAnalytics()
-    checkForExistingPlan()
   }, [])
+
+  // Listen for auth state changes and check subscription status
+  useEffect(() => {
+    if (!authLoading) {
+      checkForExistingPlan()
+    }
+  }, [user, hasSubscription, authLoading])
 
   const checkForExistingPlan = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       if (user) {
-        const { data: subscriptions } = await supabase
-          .from("subscriptions")
-          .select("id, status")
-          .eq("user_id", user.id)
-          .in("status", ["active", "trialing", "past_due"])
-
-        if (subscriptions && subscriptions.length > 0) {
+        // Use the auth context's subscription status
+        if (hasSubscription) {
           setHasActiveSubscription(true)
           setHasExistingPlan(false) // Don't show plan building options if they have active subscription
+          console.log("[v0] HeroSection - User has active subscription")
         } else {
+          // Check for existing plans or dogs
           const { data: plans } = await supabase
             .from("plans")
             .select(`
@@ -62,12 +61,19 @@ export function HeroSection() {
             } else {
               setHasExistingPlan(true) // Will show "Resume Building Plan" to continue building
             }
+            console.log("[v0] HeroSection - User has existing plan:", plan.status)
           } else {
             // Fallback: check if user has any dogs (legacy check)
             const { data: dogs } = await supabase.from("dogs").select("id").eq("user_id", user.id).limit(1)
             setHasExistingPlan(dogs && dogs.length > 0)
+            console.log("[v0] HeroSection - User has dogs:", dogs?.length || 0)
           }
         }
+      } else {
+        // User is not logged in
+        setHasActiveSubscription(false)
+        setHasExistingPlan(false)
+        console.log("[v0] HeroSection - User not logged in")
       }
     } catch (error) {
       console.error("[v0] Error checking for existing plan:", error)
@@ -121,7 +127,7 @@ export function HeroSection() {
             <div className="flex flex-col sm:flex-row gap-4">
               {user ? (
                 <Button size="lg" className="text-lg px-8" onClick={handlePlanBuilderClick}>
-                  {loading
+                  {authLoading || loading
                     ? "Build Your Dog's Plan"
                     : hasActiveSubscription
                       ? "Manage Subscription"

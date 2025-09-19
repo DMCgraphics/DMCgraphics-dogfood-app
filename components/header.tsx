@@ -18,49 +18,19 @@ import { SubscriptionManagementModal } from "@/components/modals/subscription-ma
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [hasSubscription, setHasSubscription] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [openDogModal, setOpenDogModal] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
-  const { user, isAuthenticated, loading, logout } = useAuth()
+  const { user, isAuthenticated, hasSubscription, loading, logout } = useAuth()
   const router = useRouter()
   const { state: planUiState } = usePlanUiState()
 
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  useEffect(() => {
-    if (!mounted) return
-
-    const checkSubscription = () => {
-      try {
-        const isValid = hasValidSubscription()
-        setHasSubscription(isValid)
-      } catch (error) {
-        console.error("Error checking subscription:", error)
-        setHasSubscription(false)
-      }
-    }
-
-    const timeoutId = setTimeout(checkSubscription, 0)
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "nouripet-order-confirmation" || e.key === "nouripet-checkout-plan" || e.key === null) {
-        setTimeout(checkSubscription, 0)
-      }
-    }
-
-    window.addEventListener("storage", handleStorageChange)
-
-    return () => {
-      clearTimeout(timeoutId)
-      window.removeEventListener("storage", handleStorageChange)
-    }
-  }, [mounted])
 
   const handleLogin = () => {
     setAuthMode("login")

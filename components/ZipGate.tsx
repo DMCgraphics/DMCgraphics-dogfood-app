@@ -22,8 +22,17 @@ export default function ZipGate({ planId, total, lineItems, userEmail }: ZipGate
   const handleCheckout = async () => {
     if (!ok) return;
     
+    console.log("[ZipGate] Starting checkout with:", {
+      zip: normalized,
+      email: userEmail,
+      lineItems: lineItems,
+      planId,
+      total
+    });
+    
     setIsLoading(true);
     try {
+      // First try the new session API with ZIP validation
       const response = await fetch("/api/checkout/session", {
         method: "POST",
         headers: {
@@ -34,18 +43,40 @@ export default function ZipGate({ planId, total, lineItems, userEmail }: ZipGate
           email: userEmail,
           lineItems: lineItems.map(item => ({
             price: item.stripe_price_id,
-            quantity: item.quantity,
+            quantity: item.qty || 1,
           })),
           plan: "weekly", // or get from line items
         }),
       });
 
       const data = await response.json();
+      console.log("[ZipGate] Checkout response:", data);
       
       if (data.ok && data.url) {
         window.location.href = data.url;
+        return;
       } else {
-        alert(data.message || "Unable to start checkout.");
+        console.error("[ZipGate] New checkout API failed:", data);
+        
+        // Fallback to original checkout API if new one fails
+        console.log("[ZipGate] Trying fallback to original checkout API");
+        const fallbackResponse = await fetch("/api/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ plan_id: planId }),
+        });
+
+        const fallbackData = await fallbackResponse.json();
+        console.log("[ZipGate] Fallback checkout response:", fallbackData);
+        
+        if (fallbackData.url) {
+          window.location.href = fallbackData.url;
+          return;
+        } else {
+          alert(data.message || fallbackData.error || "Unable to start checkout.");
+        }
       }
     } catch (error) {
       console.error("Checkout error:", error);

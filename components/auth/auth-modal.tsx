@@ -16,16 +16,27 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">(defaultMode)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (isOpen) {
       setMode(defaultMode)
+      setHasUserInteracted(false)
     }
   }, [isOpen, defaultMode])
 
-  // No auto-close logic - modals only close when user clicks the button
-
-  // No fallback timeout - modals only close when user explicitly closes them
+  // Auto-close modal when user becomes authenticated (but only if they haven't recently interacted)
+  useEffect(() => {
+    if (isAuthenticated && isOpen && !hasUserInteracted) {
+      console.log("[v0] auth_modal_auto_close_on_auth", { isAuthenticated, hasUserInteracted })
+      // Add a small delay to ensure the auth flow is complete
+      setTimeout(() => {
+        onSuccess?.()
+        onClose()
+      }, 500)
+    }
+  }, [isAuthenticated, isOpen, hasUserInteracted, onSuccess, onClose])
 
   const handleSuccess = () => {
     console.log("[v0] auth_modal_handle_success")
@@ -47,11 +58,13 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
           <LoginForm 
             onSuccess={handleSuccess} 
             onSwitchToSignup={() => setMode("signup")} 
+            onUserInteraction={() => setHasUserInteracted(true)}
           />
         ) : (
           <SignupForm 
             onSuccess={handleSuccess} 
             onSwitchToLogin={() => setMode("login")} 
+            onUserInteraction={() => setHasUserInteracted(true)}
           />
         )}
       </DialogContent>

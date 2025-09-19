@@ -16,10 +16,9 @@ import { supabase } from "@/lib/supabase/client"
 interface SignupFormProps {
   onSuccess?: () => void
   onSwitchToLogin?: () => void
-  onUserInteraction?: () => void
 }
 
-export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: SignupFormProps) {
+export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -44,7 +43,6 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    onUserInteraction?.()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -16,56 +16,19 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">(defaultMode)
-  const [hasUserInteracted, setHasUserInteracted] = useState(false)
-  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (isOpen) {
       setMode(defaultMode)
-      setHasUserInteracted(false) // Reset interaction state when modal opens
     }
   }, [isOpen, defaultMode])
 
-  // Auto-close modal when user becomes authenticated (but only if they haven't recently interacted)
-  useEffect(() => {
-    if (isAuthenticated && isOpen) {
-      console.log("[v0] auth_modal_auto_close", { isAuthenticated, hasUserInteracted })
-      
-      // Only auto-close if user hasn't interacted with the form recently
-      if (!hasUserInteracted) {
-        // Add a delay to ensure the user has finished their action
-        const timeout = setTimeout(() => {
-          onSuccess?.()
-          onClose()
-        }, 1500) // Increased delay to 1.5 seconds
-        
-        return () => clearTimeout(timeout)
-      } else {
-        // User has interacted, wait longer before auto-closing
-        const timeout = setTimeout(() => {
-          onSuccess?.()
-          onClose()
-        }, 3000) // 3 seconds if user has interacted
-        
-        return () => clearTimeout(timeout)
-      }
-    }
-  }, [isAuthenticated, isOpen, hasUserInteracted, onSuccess, onClose])
+  // No auto-close logic - modals only close when user clicks the button
 
-  // Fallback timeout to close modal after 10 seconds if it gets stuck
-  useEffect(() => {
-    if (isOpen) {
-      const timeout = setTimeout(() => {
-        console.log("[v0] auth_modal_timeout_fallback")
-        onClose()
-      }, 10000) // 10 seconds
-
-      return () => clearTimeout(timeout)
-    }
-  }, [isOpen, onClose])
+  // No fallback timeout - modals only close when user explicitly closes them
 
   const handleSuccess = () => {
-    console.log("[v0] auth_modal_handle_success", { hasUserInteracted })
+    console.log("[v0] auth_modal_handle_success")
     onSuccess?.()
     onClose()
   }
@@ -84,19 +47,11 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
           <LoginForm 
             onSuccess={handleSuccess} 
             onSwitchToSignup={() => setMode("signup")} 
-            onUserInteraction={() => {
-              console.log("[v0] auth_modal_user_interaction_login")
-              setHasUserInteracted(true)
-            }}
           />
         ) : (
           <SignupForm 
             onSuccess={handleSuccess} 
             onSwitchToLogin={() => setMode("login")} 
-            onUserInteraction={() => {
-              console.log("[v0] auth_modal_user_interaction_signup")
-              setHasUserInteracted(true)
-            }}
           />
         )}
       </DialogContent>

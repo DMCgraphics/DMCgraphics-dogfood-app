@@ -685,7 +685,7 @@ export default function DashboardPage() {
     localStorage.removeItem("nouripet-selected-dog")
     // Set parameters to skip dog count selection and go directly to step 1
     localStorage.setItem("nouripet-add-dog-mode", "true")
-    localStorage.setItem("nouripet-total-dogs", "2") // User already has 1 dog, adding 1 more
+    localStorage.setItem("nouripet-total-dogs", (dogs.length + 1).toString()) // Current dogs + 1 new dog
     window.location.href = "/plan-builder"
   }
 

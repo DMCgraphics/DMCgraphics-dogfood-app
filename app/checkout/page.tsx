@@ -2,11 +2,10 @@ import { redirect } from "next/navigation"
 import { createServerSupabase } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { CartSummary } from "@/components/checkout/cart-summary"
-import { ShippingForm } from "@/components/checkout/shipping-form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import CheckoutButton from "@/components/checkout/checkout-button"
+import ZipGate from "@/components/ZipGate"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -123,15 +122,23 @@ export default async function CheckoutPage() {
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <ShippingForm />
+            <div className="bg-white rounded-lg border p-6">
+              <h2 className="text-lg font-semibold mb-4">Delivery Information</h2>
+              <p className="text-muted-foreground mb-6">
+                We currently deliver to Westchester County, NY and Fairfield County, CT. 
+                Please enter your ZIP code to continue to checkout.
+              </p>
+              <ZipGate 
+                planId={data.plan_id}
+                total={total}
+                lineItems={data.line_items}
+                userEmail={user.email}
+              />
+            </div>
           </div>
 
           <div className="space-y-6">
             <CartSummary items={lineItems} subtotal={subtotal} shipping={shipping} tax={tax} total={total} />
-
-            <div className="space-y-4">
-              <CheckoutButton planId={data.plan_id} total={total} />
-            </div>
           </div>
         </div>
       </div>

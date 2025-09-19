@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import type Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
+import { isAllowedZip, normalizeZip } from "@/lib/allowed-zips"
 
 function reqEnv(name: string) {
   const v = process.env[name]
@@ -161,6 +162,25 @@ export async function POST(req: Request) {
     case "checkout.session.completed": {
       const s = event.data.object as Stripe.Checkout.Session
       console.log("[v0] Processing checkout.session.completed:", s.id)
+
+      // ZIP validation safety net - check if shipping address is in allowed zones
+      const shippingZip = 
+        (s.shipping_details?.address?.postal_code && normalizeZip(s.shipping_details.address.postal_code)) ||
+        "";
+
+      // Fall back to billing postal code if needed
+      const billingZip = normalizeZip((s.customer_details?.address?.postal_code as string) || "");
+
+      const finalZip = shippingZip || billingZip;
+      if (finalZip && !isAllowedZip(finalZip)) {
+        console.warn("[v0] Out-of-zone order detected:", finalZip, s.id);
+        // Log the out-of-zone order for manual follow-up
+        // In production, you might want to:
+        // 1. Send an alert to your team
+        // 2. Auto-refund if it's a one-time payment
+        // 3. Cancel subscription if it's a recurring payment
+        // 4. Flag the order for manual review
+      }
 
       let subscriptionId = s.subscription as string | null
 

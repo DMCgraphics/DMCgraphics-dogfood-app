@@ -321,11 +321,12 @@ export default function DashboardPage() {
                   const dbRecipe = planItem.recipes
                   console.log(`[v0] Recipe data for ${dog.name}:`, dbRecipe)
                   console.log(`[v0] Recipe macros:`, dbRecipe.macros)
+                  console.log(`[v0] planWeight:`, planWeight, `weight_unit:`, dog.weight_unit)
                   
-                  // Calculate DER using canonical formula
+                  // Calculate DER using canonical formula - Fixed planWeightUnit issue
                   const dogProfile = {
                     weight: planWeight,
-                    weightUnit: planWeightUnit,
+                    weightUnit: dog.weight_unit || "lb",
                     age: dog.age || 4,
                     ageUnit: "years" as const,
                     sex: "male" as const,
@@ -335,7 +336,9 @@ export default function DashboardPage() {
                     isNeutered: true,
                     lifeStage: "adult" as const
                   }
+                  console.log(`[v0] Dog profile for calculation:`, dogProfile)
                   const der = calculateDERFromProfile(dogProfile)
+                  console.log(`[v0] Calculated DER:`, der)
                   
                   // Use realistic calorie density for fresh dog food (150-200 kcal/100g)
                   const caloriesPer100g = 175 // Default realistic value for fresh cooked dog food
@@ -349,7 +352,8 @@ export default function DashboardPage() {
                     fiber: 7, // Default fiber content for fresh dog food
                     moisture: 7 // Default moisture content for fresh dog food
                   }
-                  console.log(`[v0] Calculated nutrition for ${dog.name}:`, nutritionalData)
+                  console.log(`[v0] Final nutritional data for ${dog.name}:`, nutritionalData)
+                  console.log(`[v0] Protein: ${dbRecipe.macros?.protein}, Fat: ${dbRecipe.macros?.fat}, Carbs: ${dbRecipe.macros?.carbs}`)
                 } catch (error) {
                   console.error(`[v0] Error calculating nutrition for ${dog.name}:`, error)
                   // Fallback to default values
@@ -402,6 +406,21 @@ export default function DashboardPage() {
 
     fetchDogs()
   }, [user])
+
+  // Debug selectedDog data
+  useEffect(() => {
+    if (selectedDog) {
+      console.log(`[v0] Selected dog data:`, selectedDog)
+      console.log(`[v0] Selected dog nutrition:`, {
+        dailyCalories: selectedDog.dailyCalories,
+        protein: selectedDog.protein,
+        fat: selectedDog.fat,
+        carbs: selectedDog.carbs,
+        fiber: selectedDog.fiber,
+        moisture: selectedDog.moisture
+      })
+    }
+  }, [selectedDog])
 
   useEffect(() => {
     const fetchWeightEntries = async () => {

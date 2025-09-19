@@ -25,6 +25,16 @@ export function NutrientInfo({
   fiber = 0,
   moisture = 0
 }: NutrientInfoProps) {
+  console.log(`[v0] NutrientInfo received:`, {
+    dogName,
+    recipeName,
+    dailyCalories,
+    protein,
+    fat,
+    carbs,
+    fiber,
+    moisture
+  })
   const nutrients = [
     {
       name: "Protein",

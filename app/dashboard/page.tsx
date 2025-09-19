@@ -17,6 +17,7 @@ import { Plus } from "lucide-react"
 import { mockVerificationRequests } from "@/lib/vet-verification"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
+import { calculateDERFromProfile, calculateDailyGrams } from "@/lib/nutrition-calculator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, PawPrint } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
@@ -317,7 +318,6 @@ export default function DashboardPage() {
               if (planItem?.recipes) {
                 const recipe = planItem.recipes
                 // Calculate DER using canonical formula
-                const { calculateDERFromProfile, calculateDailyGrams } = await import('@/lib/nutrition-calculator')
                 const dogProfile = {
                   weight: planWeight,
                   weightUnit: planWeightUnit,

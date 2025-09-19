@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { getStripePricingForDog } from "@/lib/stripe-pricing"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { PlanBuilderPage } from "@/components/plan-builder/plan-builder-page"
+import { calculateDERFromProfile, calculateDailyGrams, toKg } from "@/lib/nutrition-calculator"
 
 export default function PlanBuilder() {
   const router = useRouter()
@@ -98,7 +99,7 @@ export default function PlanBuilder() {
             age: firstDogData.dogProfile.age,
             weight: weight,
             weight_unit: weightUnit,
-            weight_kg: (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit),
+            weight_kg: toKg(weight, weightUnit),
             allergies: firstDogData.selectedAllergens,
             conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
           })
@@ -181,7 +182,7 @@ export default function PlanBuilder() {
               age: dogData.dogProfile.age,
               weight: weight,
               weight_unit: weightUnit,
-              weight_kg: (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit),
+              weight_kg: toKg(weight, weightUnit),
               allergies: dogData.selectedAllergens,
               conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
             })
@@ -253,7 +254,6 @@ export default function PlanBuilder() {
           }
 
           // Calculate portions using canonical DER formula
-          const { calculateDERFromProfile, calculateDailyGrams } = await import('@/lib/nutrition-calculator')
           const dogProfile = {
             weight: weight,
             weightUnit: weightUnit,

@@ -12,6 +12,7 @@ import { PlanReview } from "@/components/plan-builder/plan-review"
 import { Header } from "@/components/header"
 import { AuthModal } from "@/components/auth/auth-modal"
 import type { DogProfile, HealthGoals } from "@/lib/nutrition-calculator"
+import { calculateDERFromProfile, calculateDailyGrams, toKg } from "@/lib/nutrition-calculator"
 import { useRouter } from "next/navigation"
 import { analytics } from "@/lib/analytics"
 import { supabase } from "@/lib/supabase/client"
@@ -690,7 +691,7 @@ export default function PlanBuilderPage() {
               age: firstDogData.dogProfile.age,
               weight: weight,
               weight_unit: weightUnit,
-              weight_kg: (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit),
+              weight_kg: toKg(weight, weightUnit),
               allergies: firstDogData.selectedAllergens,
               conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
             })
@@ -812,7 +813,7 @@ export default function PlanBuilderPage() {
                 age: dogData.dogProfile.age,
                 weight: weight, // Store in original unit
                 weight_unit: weightUnit, // Store the unit
-                weight_kg: (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit), // Also store converted weight
+                weight_kg: toKg(weight, weightUnit), // Also store converted weight
                 allergies: dogData.selectedAllergens,
                 conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
               })
@@ -914,7 +915,6 @@ export default function PlanBuilderPage() {
           }
 
           // Calculate DER using canonical formula
-          const { calculateDERFromProfile, calculateDailyGrams } = await import('@/lib/nutrition-calculator')
           const dogProfile = {
             weight: weight,
             weightUnit: weightUnit,
@@ -991,7 +991,7 @@ export default function PlanBuilderPage() {
           // The RPC function was causing issues and we have the correct Stripe pricing
         }
 
-        const weightInKg = (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit)
+        const weightInKg = toKg(weight, weightUnit)
         const targetWeight = dogData.healthGoals.targetWeight
         const targetWeightInKg = targetWeight ? (weightUnit === "kg" ? targetWeight * 0.453592 : targetWeight) : null
 

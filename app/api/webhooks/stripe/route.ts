@@ -11,14 +11,22 @@ function reqEnv(name: string) {
   return v
 }
 
-const supabaseAdmin = createClient(
-  reqEnv("SUPABASE_URL"),
-  reqEnv("SUPABASE_SERVICE_ROLE_KEY"), // service role to bypass RLS
-)
+// Lazy initialization of Supabase client
+let supabaseAdmin: ReturnType<typeof createClient> | null = null
+
+const getSupabaseAdmin = () => {
+  if (!supabaseAdmin) {
+    supabaseAdmin = createClient(
+      reqEnv("SUPABASE_URL"),
+      reqEnv("SUPABASE_SERVICE_ROLE_KEY"), // service role to bypass RLS
+    )
+  }
+  return supabaseAdmin
+}
 
 // Helper function for resolving plan ID from price
 async function resolvePlanIdFromPrice(stripePriceId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("product_prices")
     .select("plan_id")
     .eq("stripe_price_id", stripePriceId)
@@ -56,7 +64,7 @@ async function upsertSubscriptionFromIds({
     // Get user_id from the plan if not available in session metadata
     let userId = session.metadata?.user_id
     if (!userId && planId) {
-      const { data: planData } = await supabaseAdmin
+      const { data: planData } = await getSupabaseAdmin()
         .from("plans")
         .select("user_id")
         .eq("id", planId)
@@ -98,7 +106,7 @@ async function upsertSubscriptionFromIds({
 
     console.log("[v0] Attempting to upsert subscription with data:", JSON.stringify(subscriptionData, null, 2))
     
-    const { error: subError } = await supabaseAdmin.from("subscriptions").upsert(subscriptionData, {
+    const { error: subError } = await getSupabaseAdmin().from("subscriptions").upsert(subscriptionData, {
       onConflict: "stripe_subscription_id",
       ignoreDuplicates: false,
     })
@@ -139,7 +147,7 @@ export async function POST(req: Request) {
 
   // Persist raw event
   try {
-    await supabaseAdmin.from("stripe_events").insert({
+    await getSupabaseAdmin().from("stripe_events").insert({
       id: event.id,
       type: event.type,
       payload: event as any,
@@ -177,7 +185,7 @@ export async function POST(req: Request) {
       // Billing customer and plan resolution code
       if (s.metadata?.user_id && s.customer) {
         try {
-          await supabaseAdmin.from("billing_customers").upsert({
+          await getSupabaseAdmin().from("billing_customers").upsert({
             user_id: s.metadata.user_id,
             stripe_customer_id: s.customer as string,
           })
@@ -192,21 +200,21 @@ export async function POST(req: Request) {
 
       if (!planId && s.client_reference_id) {
         console.log("[v0] Trying client_reference_id:", s.client_reference_id)
-        const { data } = await supabaseAdmin.from("plans").select("id").eq("id", s.client_reference_id).single()
+        const { data } = await getSupabaseAdmin().from("plans").select("id").eq("id", s.client_reference_id).single()
         planId = data?.id ?? planId
         console.log("[v0] Plan ID from client_reference_id:", planId)
       }
 
       if (!planId) {
         console.log("[v0] Trying stripe_session_id lookup:", s.id)
-        const { data } = await supabaseAdmin.from("plans").select("id").eq("stripe_session_id", s.id).single()
+        const { data } = await getSupabaseAdmin().from("plans").select("id").eq("stripe_session_id", s.id).single()
         planId = data?.id ?? planId
         console.log("[v0] Plan ID from stripe_session_id:", planId)
       }
 
       if (!planId && s.customer) {
         console.log("[v0] Trying customer-based plan lookup")
-        const { data: bc } = await supabaseAdmin
+        const { data: bc } = await getSupabaseAdmin()
           .from("billing_customers")
           .select("user_id")
           .eq("stripe_customer_id", s.customer as string)
@@ -214,7 +222,7 @@ export async function POST(req: Request) {
 
         if (bc?.user_id) {
           console.log("[v0] Found user_id from billing customer:", bc.user_id)
-          const { data: p } = await supabaseAdmin
+          const { data: p } = await getSupabaseAdmin()
             .from("plans")
             .select("id")
             .in("status", ["checkout_in_progress", "checkout", "draft"])
@@ -236,7 +244,7 @@ export async function POST(req: Request) {
         console.log("[v0] Payment is paid, processing subscription creation")
         
         // First, check if the plan exists and get its current state
-        const { data: existingPlan, error: planFetchError } = await supabaseAdmin
+        const { data: existingPlan, error: planFetchError } = await getSupabaseAdmin()
           .from("plans")
           .select("*")
           .eq("id", planId)
@@ -255,7 +263,7 @@ export async function POST(req: Request) {
         console.log("[v0] Found plan:", existingPlan.id, "user_id:", existingPlan.user_id, "status:", existingPlan.status)
 
         // Update plan to active and set user_id
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await getSupabaseAdmin()
           .from("plans")
           .update({
             status: "active",
@@ -277,7 +285,7 @@ export async function POST(req: Request) {
         await upsertSubscriptionFromIds({ subscriptionId, session: s })
 
         // Create order (existing order creation logic)
-        const { data: plan } = await supabaseAdmin
+        const { data: plan } = await getSupabaseAdmin()
           .from("plans")
           .select("user_id, dog_id, total_cents, subtotal_cents, discount_cents")
           .eq("id", planId)
@@ -299,7 +307,7 @@ export async function POST(req: Request) {
             updated_at: new Date().toISOString(),
           }
 
-          const { error: orderError } = await supabaseAdmin.from("orders").insert(orderData)
+          const { error: orderError } = await getSupabaseAdmin().from("orders").insert(orderData)
           if (orderError) {
             console.error("[v0] Failed to create order:", orderError)
           } else {
@@ -327,7 +335,7 @@ export async function POST(req: Request) {
       // Get user_id from the plan if not available in subscription metadata
       let userId = sub.metadata?.user_id
       if (!userId && resolvedPlanId) {
-        const { data: planData } = await supabaseAdmin
+        const { data: planData } = await getSupabaseAdmin()
           .from("plans")
           .select("user_id")
           .eq("id", resolvedPlanId)
@@ -363,7 +371,7 @@ export async function POST(req: Request) {
 
       console.log("[v0] Attempting to upsert subscription from customer.subscription.created with data:", JSON.stringify(subscriptionData, null, 2))
       
-      const { error: subError } = await supabaseAdmin.from("subscriptions").upsert(subscriptionData, {
+      const { error: subError } = await getSupabaseAdmin().from("subscriptions").upsert(subscriptionData, {
         onConflict: "stripe_subscription_id",
         ignoreDuplicates: false,
       })
@@ -383,7 +391,7 @@ export async function POST(req: Request) {
       console.log("[v0] Processing customer.subscription.updated:", sub.id, "status:", sub.status)
 
       // Update the subscription status in our database
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await getSupabaseAdmin()
         .from("subscriptions")
         .update({
           status: sub.status,

@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { BreedSelector } from "@/components/ui/breed-selector"
-import { dogBreeds, type DogProfile } from "@/lib/nutrition-calculator"
+import { ALL_BREEDS } from "@/lib/data/dog-breeds"
+import { type DogProfile } from "@/lib/nutrition-calculator"
 
 interface Step1Props {
   profile: Partial<DogProfile>
@@ -15,10 +16,7 @@ interface Step1Props {
 }
 
 export function Step1DogProfile({ profile, onUpdate }: Step1Props) {
-  const breedOptions = dogBreeds.map((breed) => ({
-    value: breed.toLowerCase().replace(/\s+/g, "-"),
-    label: breed,
-  }))
+  const breedOptions = ALL_BREEDS
 
   return (
     <div className="space-y-6">

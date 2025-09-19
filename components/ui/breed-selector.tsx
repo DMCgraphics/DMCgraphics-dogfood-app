@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useId, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
 import { Check, ChevronDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
+import { canonicalizeBreed, type BreedOption as MixedBreedOption } from "@/lib/data/dog-breeds-mixed"
 
 interface BreedOption { value: string; label: string }
 interface BreedSelectorProps {
@@ -45,16 +46,31 @@ export function BreedSelector({
     return () => clearTimeout(t)
   }, [open, isMobile])
 
-  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+  const canonicalizedSearch = canonicalizeBreed(search)
+  const filtered = options.filter(o => 
+    o.label.toLowerCase().includes(canonicalizedSearch.toLowerCase()) ||
+    o.value.toLowerCase().includes(canonicalizedSearch.toLowerCase())
+  )
   const selected = options.find(o => o.value === value)
 
-  const handleSelect = (opt: BreedOption) => {
-    onValueChange(opt.value)
+  const handleSelect = useCallback((opt: BreedOption) => {
+    const canonicalizedValue = canonicalizeBreed(opt.value)
+    onValueChange(canonicalizedValue)
     setOpen(false)
     setSearch("")
-  }
+  }, [onValueChange])
 
-  const BreedList = () => (
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && search.trim() && filtered.length === 0) {
+      // Allow free-text fallback when no matches found
+      const canonicalizedValue = canonicalizeBreed(search)
+      onValueChange(canonicalizedValue)
+      setOpen(false)
+      setSearch("")
+    }
+  }, [search, filtered.length, onValueChange])
+
+  const BreedList = useCallback(() => (
     <div className="space-y-2">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -63,6 +79,7 @@ export function BreedSelector({
           placeholder={searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="pl-10"
           ref={inputRef}
           inputMode="search"
@@ -75,6 +92,11 @@ export function BreedSelector({
           Type to search through available dog breeds
         </div>
       </div>
+      {search.trim() && filtered.length === 0 && (
+        <div className="text-xs text-muted-foreground px-1">
+          Don't see your dog's breed? Press Enter to use what you typed.
+        </div>
+      )}
 
       <div className={cn("max-h-60 overflow-y-auto", isMobile && "max-h-[50vh]")} role="listbox">
         {filtered.length === 0 ? (
@@ -104,7 +126,7 @@ export function BreedSelector({
         )}
       </div>
     </div>
-  )
+  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile])
 
   // ---- Mobile: Drawer ----
   if (isMobile) {

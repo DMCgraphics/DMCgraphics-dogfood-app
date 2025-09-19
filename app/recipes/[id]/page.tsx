@@ -69,8 +69,18 @@ export default function RecipePage({ params }: RecipePageProps) {
                 )}
               </h1>
               <p className="text-lg text-muted-foreground">
-                Vacuum sealed packs made with {recipe.sourcing[0].split(",")[0]} ingredients. Nutritionally complete and
-                balanced for {recipe.aafcoLifeStage === "all" ? "all life stages" : recipe.aafcoLifeStage} dogs.
+                {recipe.id === "low-fat-chicken-garden-veggie" ? (
+                  <>
+                    Specially formulated as a low-fat option for dogs prone to pancreatitis. 
+                    Protein comes from lean chicken breast and egg whites, with no added oils. 
+                    Balanced carbs and veggies support digestion and energy. Vacuum sealed packs made with {recipe.sourcing[0].split(",")[0]} ingredients.
+                  </>
+                ) : (
+                  <>
+                    Vacuum sealed packs made with {recipe.sourcing[0].split(",")[0]} ingredients. Nutritionally complete and
+                    balanced for {recipe.aafcoLifeStage === "all" ? "all life stages" : recipe.aafcoLifeStage} dogs.
+                  </>
+                )}
               </p>
             </div>
 

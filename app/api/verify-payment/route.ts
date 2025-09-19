@@ -20,9 +20,9 @@ export async function POST(req: Request) {
   try {
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    
+    // If user is not authenticated, we'll try to get user_id from session metadata
+    let userId = user?.id
 
     // Retrieve the Stripe session
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -32,6 +32,18 @@ export async function POST(req: Request) {
     console.log("[v0] Verifying payment for session:", sessionId)
     console.log("[v0] Session payment status:", session.payment_status)
     console.log("[v0] Session mode:", session.mode)
+    console.log("[v0] Session metadata:", session.metadata)
+
+    // If user is not authenticated, try to get user_id from session metadata
+    if (!userId && session.metadata?.user_id) {
+      userId = session.metadata.user_id
+      console.log("[v0] Using user_id from session metadata:", userId)
+    }
+
+    if (!userId) {
+      console.log("[v0] No user_id available from auth or session metadata")
+      return NextResponse.json({ error: "Unable to identify user" }, { status: 401 })
+    }
 
     // If payment is successful and we have a subscription, ensure it's saved to our database
     if (session.payment_status === "paid" && session.subscription) {
@@ -59,7 +71,7 @@ export async function POST(req: Request) {
           .from("plans")
           .select("id, user_id, status")
           .eq("id", planId)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .single()
 
         if (planError || !planData) {
@@ -81,7 +93,7 @@ export async function POST(req: Request) {
           
           // Create subscription record
           const subscriptionData = {
-            user_id: user.id,
+            user_id: userId,
             plan_id: planId,
             stripe_subscription_id: subscriptionId,
             stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id,
@@ -133,7 +145,7 @@ export async function POST(req: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq("id", planData.id)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
 
         if (planUpdateError) {
           console.error("[v0] Failed to update plan status:", planUpdateError)

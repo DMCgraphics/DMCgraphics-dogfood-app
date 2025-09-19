@@ -13,14 +13,31 @@ export default function OrderSuccessPage() {
   const [orderData, setOrderData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const { user, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
     const handleSuccessfulPayment = async () => {
-      if (!sessionId || authLoading || !user) {
-        console.log("[v0] Waiting for authentication or session ID...", { sessionId, authLoading, user: !!user })
+      if (!sessionId) {
+        console.log("[v0] No session ID provided")
+        setError("No session ID provided")
+        setIsLoading(false)
         return
       }
+
+      if (authLoading) {
+        console.log("[v0] Still loading authentication...", { sessionId, authLoading })
+        return
+      }
+
+      // Note: We can now proceed without user authentication since verify-payment API
+      // can work with user_id from session metadata
+      console.log("[v0] Proceeding with payment verification...", { 
+        sessionId, 
+        hasUser: !!user, 
+        authLoading,
+        userId: user?.id 
+      })
 
       try {
         console.log("[v0] Processing successful payment for session:", sessionId)

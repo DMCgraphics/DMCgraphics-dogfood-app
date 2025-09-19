@@ -98,7 +98,7 @@ export default function PlanBuilder() {
             age: firstDogData.dogProfile.age,
             weight: weight,
             weight_unit: weightUnit,
-            weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight,
+            weight_kg: (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit),
             allergies: firstDogData.selectedAllergens,
             conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
           })
@@ -181,7 +181,7 @@ export default function PlanBuilder() {
               age: dogData.dogProfile.age,
               weight: weight,
               weight_unit: weightUnit,
-              weight_kg: weightUnit === "lb" ? weight * 0.453592 : weight,
+              weight_kg: (await import('@/lib/nutrition-calculator')).toKg(weight, weightUnit),
               allergies: dogData.selectedAllergens,
               conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
             })
@@ -252,12 +252,23 @@ export default function PlanBuilder() {
             continue
           }
 
-          // Calculate portions
-          const weightInKg = weightUnit === "lb" ? weight * 0.453592 : weight
-          const activityMultiplier = dogData.dogProfile.activity === "high" ? 1.6 : dogData.dogProfile.activity === "low" ? 1.2 : 1.4
-          const dailyCalories = Math.round(70 * Math.pow(weightInKg, 0.75) * activityMultiplier)
-          const caloriesPer100g = 375
-          const dailyGrams = Math.round((dailyCalories / caloriesPer100g) * 100)
+          // Calculate portions using canonical DER formula
+          const { calculateDERFromProfile, calculateDailyGrams } = await import('@/lib/nutrition-calculator')
+          const dogProfile = {
+            weight: weight,
+            weightUnit: weightUnit,
+            age: dogData.dogProfile.age || 4,
+            ageUnit: "years" as const,
+            sex: dogData.dogProfile.sex || "male" as const,
+            breed: dogData.dogProfile.breed || "mixed-breed",
+            activity: dogData.dogProfile.activity || "moderate" as const,
+            bodyCondition: dogData.dogProfile.bodyCondition || 5,
+            isNeutered: dogData.dogProfile.isNeutered ?? true,
+            lifeStage: dogData.dogProfile.lifeStage || "adult" as const
+          }
+          const der = calculateDERFromProfile(dogProfile)
+          const caloriesPer100g = 175 // Realistic calories per 100g of fresh dog food
+          const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
           const monthlyGrams = dailyGrams * 30
           const sizeG = Math.ceil(monthlyGrams / 100) * 100
 
@@ -281,7 +292,7 @@ export default function PlanBuilder() {
                 daily_grams: dailyGrams,
                 monthly_grams: monthlyGrams,
                 activity_level: dogData.dogProfile.activity,
-                calculated_calories: dailyCalories,
+                calculated_calories: Math.round(der),
                 stripe_product_name: stripePricing.productName,
               },
             })

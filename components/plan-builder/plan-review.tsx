@@ -7,9 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { Download, User } from "lucide-react"
 import { PricingClarityCard } from "@/components/ui/pricing-clarity-card"
 import {
-  calculateRER,
-  calculateDER,
-  convertToKg,
+  calculateDERFromProfile,
   mockRecipes,
   mockAddOns,
   type DogProfile,
@@ -88,9 +86,7 @@ function PlanReviewInner({
   const foodCostPerDay = pricing.costPerDay
   const currentGramsPerMeal = gramsPerMeal(mealsPerDay)
 
-  const weightKg = convertToKg(dogProfile.weight!, dogProfile.weightUnit!)
-  const rer = calculateRER(weightKg)
-  const der = calculateDER(rer, dogProfile as DogProfile)
+  const der = calculateDERFromProfile(dogProfile as DogProfile)
 
   const selectedAddOnItems = mockAddOns.filter((a) => selectedAddOns.includes(a.id))
   const addOnsCostPerWeek = selectedAddOnItems.reduce((total, addOn) => {

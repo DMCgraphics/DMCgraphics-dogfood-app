@@ -316,11 +316,26 @@ export default function DashboardPage() {
               const planItem = dogPlan.plan_items?.[0]
               if (planItem?.recipes) {
                 const recipe = planItem.recipes
-                // Calculate daily calories based on dog weight and recipe
-                const dailyGrams = Math.max(50, planWeight * 2) // 2g per lb minimum
-                const caloriesPer100g = recipe.macros?.calories || 175 // Default calories per 100g
+                // Calculate DER using canonical formula
+                const { calculateDERFromProfile, calculateDailyGrams } = await import('@/lib/nutrition-calculator')
+                const dogProfile = {
+                  weight: planWeight,
+                  weightUnit: planWeightUnit,
+                  age: dog.age || 4,
+                  ageUnit: "years" as const,
+                  sex: "male" as const,
+                  breed: dog.breed || "mixed-breed",
+                  activity: "moderate" as const,
+                  bodyCondition: 5,
+                  isNeutered: true,
+                  lifeStage: "adult" as const
+                }
+                const der = calculateDERFromProfile(dogProfile)
+                const caloriesPer100g = recipe.macros?.calories || 175
+                const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
+                
                 nutritionalData = {
-                  dailyCalories: Math.round((dailyGrams / 100) * caloriesPer100g),
+                  dailyCalories: Math.round(der),
                   protein: recipe.macros?.protein || 0,
                   fat: recipe.macros?.fat || 0,
                   carbs: recipe.macros?.carbs || 0,

@@ -55,43 +55,68 @@ export interface AddOn {
   pricePerMonth: number
 }
 
-// Calculate Resting Energy Requirement (RER)
+// --- Canonical calorie math ---
+// Convert weight to kg
+export function toKg(weight: number, unit: "lb" | "kg"): number {
+  return unit === "lb" ? weight * 0.45359237 : weight
+}
+
+// Resting Energy Requirement
 export function calculateRER(weightKg: number): number {
+  // RER = 70 * (kg^0.75)
   return 70 * Math.pow(weightKg, 0.75)
 }
 
-// Calculate Daily Energy Requirement (DER)
-export function calculateDER(rer: number, profile: DogProfile): number {
-  let factor = 1.4 // default moderate activity
+// Daily Energy Requirement (adult maintenance baseline)
+export function calculateDERFromProfile(profile: DogProfile): number {
+  const kg = toKg(profile.weight, profile.weightUnit)
+  const rer = calculateRER(kg)
 
-  if (profile.activity === "low") factor = 1.2
-  if (profile.activity === "high") factor = 1.6
+  // Baseline factors:
+  // - Adult, neutered, moderate activity: 1.6 × RER
+  // - Adult, intact: 1.8 × RER (optionally)
+  // - Low activity: 1.3–1.4 × RER
+  // - High activity: 1.8–2.0 × RER
+  let factor = 1.6 // default: adult, neutered, moderate
 
-  // Adjust for life stage
+  // Activity adjustments
+  if (profile.activity === "low") factor = 1.35
+  if (profile.activity === "high") factor = 1.9
+
+  // Life stage
   if (profile.lifeStage === "puppy") {
-    if (profile.age < 4) factor = 3.0
-    else if (profile.age < 12) factor = 2.0
-    else factor = 1.8
+    // (Simplified) younger puppies need much more than adults
+    factor = profile.age < 4 ? 3.0 : profile.age < 12 ? 2.0 : 1.8
+  } else if (profile.lifeStage === "senior") {
+    // Seniors might trend a touch lower
+    factor = Math.max(1.3, factor - 0.1)
   }
 
-  // Adjust for body condition
+  // Optional: intact status bumps factor slightly
+  if (!profile.isNeutered && profile.lifeStage === "adult") {
+    factor = Math.max(factor, 1.8)
+  }
+
+  // Body condition nudges
   if (profile.bodyCondition <= 3) factor *= 1.1 // underweight
   if (profile.bodyCondition >= 7) factor *= 0.9 // overweight
-
-  // Adjust for neutering status
-  if (profile.isNeutered) factor *= 0.95
 
   return rer * factor
 }
 
-// Convert weight to kg
-export function convertToKg(weight: number, unit: "lb" | "kg"): number {
-  return unit === "lb" ? weight * 0.453592 : weight
+// Given DER and recipe density, compute grams/day
+export function calculateDailyGrams(derKcal: number, kcalPer100g: number): number {
+  return (derKcal / kcalPer100g) * 100
 }
 
-// Calculate daily food amount in grams
-export function calculateDailyGrams(der: number, kcalPer100g: number): number {
-  return (der / kcalPer100g) * 100
+// Legacy function for backward compatibility
+export function convertToKg(weight: number, unit: "lb" | "kg"): number {
+  return toKg(weight, unit)
+}
+
+// Legacy function for backward compatibility
+export function calculateDER(rer: number, profile: DogProfile): number {
+  return calculateDERFromProfile(profile)
 }
 
 // Calculate EPA+DHA target (rough guideline: ~90mg per 10lb body weight)

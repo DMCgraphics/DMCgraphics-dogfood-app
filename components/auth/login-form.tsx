@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, User, Lock } from "lucide-react"
-import { login } from "@/lib/auth"
 import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase/client"
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -24,7 +24,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { login: authLogin } = useAuth()
+  // Auth context will automatically handle login via auth state changes
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,12 +32,38 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
     setError("")
 
     try {
-      const userData = await login(email, password)
-      await authLogin(userData, "supabase-session")
-      console.log("[v0] user_login_success", { email })
-      onSuccess?.()
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred during login"
+      console.log("[v0] login_attempt_start", { email })
+      
+      // Use Supabase directly instead of the auth library
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      })
+      
+      if (error) {
+        throw error
+      }
+      
+      if (data.user) {
+        const userData = {
+          id: data.user.id,
+          email: data.user.email!,
+          name: data.user.user_metadata?.name || data.user.email!.split("@")[0],
+          avatar_url: undefined,
+          createdAt: data.user.created_at,
+          subscriptionStatus: "none" as const,
+        }
+        
+        // The auth context will automatically handle the session change
+        console.log("[v0] user_login_success", { email, userId: data.user.id })
+        
+        // Add a small delay to ensure auth state has propagated
+        setTimeout(() => {
+          onSuccess?.()
+        }, 500)
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || "An error occurred during login"
       setError(errorMessage)
       console.log("[v0] user_login_failed", { email, error: errorMessage })
     } finally {

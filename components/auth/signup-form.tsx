@@ -10,8 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
-import { signup } from "@/lib/auth"
 import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase/client"
 
 interface SignupFormProps {
   onSuccess?: () => void
@@ -31,7 +31,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { login } = useAuth()
+  // Auth context will automatically handle signup via auth state changes
 
   const isFormValid =
     formData.name.trim() !== "" &&
@@ -67,20 +67,27 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         name: formData.name,
       })
 
-      const data = await signup(formData.email, formData.password, formData.name)
+      // Use Supabase directly instead of the auth library
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: { name: formData.name },
+        },
+      })
+
+      if (error) {
+        throw error
+      }
 
       if (data.user) {
-        const userData = {
-          id: data.user.id,
-          email: data.user.email!,
+        console.log("[v0] user_signup_success", { 
+          email: formData.email, 
           name: formData.name,
-          createdAt: new Date().toISOString(),
-          subscriptionStatus: "none" as const,
-        }
-
-        login(userData, "supabase-session")
-        console.log("[v0] user_signup_success", { email: formData.email, name: formData.name })
+          userId: data.user.id 
+        })
         
+        // The auth context will automatically handle the session change
         // Add a small delay to ensure auth state has propagated before calling onSuccess
         setTimeout(() => {
           onSuccess?.()

@@ -10,7 +10,6 @@ interface AuthContextType {
   isAuthenticated: boolean
   hasSubscription: boolean
   isLoading: boolean
-  login: (userData: User, token: string) => void
   logout: () => void
   updateUser: (userData: Partial<User>) => void
   refreshUserProfile: () => Promise<void>
@@ -129,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Keep the default "none" status if there's an error
         }
       } else if (event === "SIGNED_OUT") {
+        console.log("[v0] auth_state_change_signed_out")
         setUser(null)
         setApiStatus("disconnected")
       }
@@ -139,20 +139,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []) // Removed supabase dependency since it's now a stable import
 
-  const login = async (userData: User, token: string) => {
-    setUser(userData)
-    setApiStatus("connected")
-    console.log("[v0] auth_login", { userId: userData.id })
-  }
+  // Note: Login is now handled automatically by the auth state change handler
+  // when Supabase auth state changes
 
   const logout = async () => {
     try {
+      console.log("[v0] auth_logout_starting")
+      
+      // Clear all auth-related localStorage data
+      const keysToRemove = [
+        'site_authenticated',
+        'nouripet-order-confirmation',
+        'nouripet-checkout-plan',
+        'nouripet-selected-dog',
+        'nouripet-add-dog-mode',
+        'nouripet-total-dogs'
+      ]
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key)
+      })
+      
+      // Clear any saved plan data
+      const allKeys = Object.keys(localStorage)
+      allKeys.forEach(key => {
+        if (key.startsWith('nouripet-saved-plan-')) {
+          localStorage.removeItem(key)
+        }
+      })
+      
       await supabase.auth.signOut()
       setUser(null)
       setApiStatus("disconnected")
-      console.log("[v0] auth_logout")
+      console.log("[v0] auth_logout_completed")
     } catch (error) {
       console.error("Error during logout:", error)
+      // Even if there's an error, clear the local state
+      setUser(null)
+      setApiStatus("disconnected")
     }
   }
 
@@ -225,7 +249,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: user !== null,
     hasSubscription,
     isLoading,
-    login,
     logout,
     updateUser,
     refreshUserProfile,

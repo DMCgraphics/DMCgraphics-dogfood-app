@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Menu, X, ChevronDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { hasValidSubscription } from "@/lib/route-guards"
 import { useAuth } from "@/contexts/auth-context"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { User, LogOut } from "lucide-react"
@@ -43,17 +42,23 @@ export function Header() {
   }
 
   const handleLogout = async () => {
-    await logout()
-    setIsMenuOpen(false)
-    window.location.href = "/"
+    try {
+      console.log("[v0] Header - Starting logout")
+      await logout()
+      setIsMenuOpen(false)
+      console.log("[v0] Header - Logout completed, redirecting")
+      // Force a hard refresh to ensure all state is cleared
+      window.location.href = "/"
+    } catch (error) {
+      console.error("[v0] Header - Logout error:", error)
+      // Even if logout fails, redirect to clear any cached state
+      window.location.href = "/"
+    }
   }
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false)
-    setTimeout(() => {
-      const isValid = hasValidSubscription()
-      setHasSubscription(isValid)
-    }, 100)
+    // Auth context will automatically update subscription status
   }
 
   if (!mounted || loading) {

@@ -60,11 +60,9 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
         // The auth context will automatically handle the session change
         console.log("[v0] user_login_success", { email, userId: data.user.id })
         
-        // Add a small delay to ensure auth state has propagated, then close modal
-        setTimeout(() => {
-          setIsLoading(false)
-          onSuccess?.()
-        }, 1000)
+        // Call onSuccess immediately - the parent component will handle modal closing
+        setIsLoading(false)
+        onSuccess?.()
       } else {
         setIsLoading(false)
       }

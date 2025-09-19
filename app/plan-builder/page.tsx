@@ -122,9 +122,9 @@ export default function PlanBuilderPage() {
 
           // Initialize with existing dog data + new dog
           const newDogsData = Array.from({ length: dogCount }, (_, index) => {
-            if (index === 0 && existingDogs && existingDogs.length > 0) {
-              // Use existing dog data for the first dog
-              const existingDog = existingDogs[0]
+            if (existingDogs && existingDogs.length > index) {
+              // Use existing dog data for this position
+              const existingDog = existingDogs[index]
               return {
                 dogProfile: {
                   name: existingDog.name,

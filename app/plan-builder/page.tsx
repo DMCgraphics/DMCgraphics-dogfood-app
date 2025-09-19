@@ -162,7 +162,7 @@ export default function PlanBuilderPage() {
           })
           
           setAllDogsData(newDogsData)
-          setCurrentDogIndex(1) // Start with the new dog (index 1)
+          setCurrentDogIndex(dogCount - 1) // Start with the new dog (last index)
         } catch (error) {
           console.error('Error in fetchExistingDogs:', error)
         }
@@ -397,6 +397,12 @@ export default function PlanBuilderPage() {
       return getDefaultDogData()
     })
     setAllDogsData(newDogsData)
+    
+    // If we're adding dogs (count > previous total), set currentDogIndex to the last dog
+    if (count > allDogsData.length) {
+      setCurrentDogIndex(count - 1)
+    }
+    
     setCurrentStep(1)
   }
 

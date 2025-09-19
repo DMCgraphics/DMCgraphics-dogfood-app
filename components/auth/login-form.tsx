@@ -60,7 +60,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
         // Add a small delay to ensure auth state has propagated
         setTimeout(() => {
           onSuccess?.()
-        }, 500)
+        }, 1000)
       }
     } catch (err: any) {
       const errorMessage = err.message || "An error occurred during login"

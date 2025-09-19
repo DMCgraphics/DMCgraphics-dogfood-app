@@ -14,6 +14,7 @@ interface AuthContextType {
   updateUser: (userData: Partial<User>) => void
   refreshUserProfile: () => Promise<void>
   refreshSubscriptionStatus: () => Promise<void>
+  forceRefreshAuth: () => Promise<void>
   apiStatus: "unknown" | "connected" | "disconnected"
 }
 
@@ -27,6 +28,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Clear any existing user state first
+        setUser(null)
+        setApiStatus("unknown")
+        
         const {
           data: { session },
         } = await supabase.auth.getSession()
@@ -43,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           setUser(userData)
           setApiStatus("connected")
-          console.log("[v0] auth_supabase_session_found", { userId: userData.id })
+          console.log("[v0] auth_supabase_session_found", { userId: userData.id, email: userData.email })
 
           // Then, fetch real subscription status from database
           try {
@@ -60,11 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(updatedUser)
               console.log("[v0] auth_subscription_status_updated", { 
                 userId: userData.id, 
+                email: userData.email,
                 hasActiveSubscription: true,
                 subscriptionCount: subscriptionsData.length 
               })
             } else {
-              console.log("[v0] auth_no_active_subscription", { userId: userData.id })
+              console.log("[v0] auth_no_active_subscription", { userId: userData.id, email: userData.email })
             }
           } catch (subscriptionError) {
             console.error("Error fetching subscription status:", subscriptionError)
@@ -72,10 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           console.log("[v0] auth_no_session")
+          setUser(null)
           setApiStatus("disconnected")
         }
       } catch (error) {
         console.error("Error initializing auth:", error)
+        setUser(null)
         setApiStatus("disconnected")
       } finally {
         setIsLoading(false)
@@ -87,9 +95,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[v0] auth_state_change", { event, hasSession: !!session })
+      console.log("[v0] auth_state_change", { event, hasSession: !!session, userId: session?.user?.id, email: session?.user?.email })
 
       if (event === "SIGNED_IN" && session?.user) {
+        // Clear any existing user state first
+        setUser(null)
+        
         // First, create user with default subscription status
         const userData: User = {
           id: session.user.id,
@@ -101,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setUser(userData)
         setApiStatus("connected")
+        console.log("[v0] auth_signed_in", { userId: userData.id, email: userData.email })
 
         // Then, fetch real subscription status from database
         try {
@@ -117,11 +129,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(updatedUser)
             console.log("[v0] auth_subscription_status_updated_on_signin", { 
               userId: userData.id, 
+              email: userData.email,
               hasActiveSubscription: true,
               subscriptionCount: subscriptionsData.length 
             })
           } else {
-            console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id })
+            console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
           }
         } catch (subscriptionError) {
           console.error("Error fetching subscription status on signin:", subscriptionError)
@@ -131,6 +144,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("[v0] auth_state_change_signed_out")
         setUser(null)
         setApiStatus("disconnected")
+      } else if (event === "TOKEN_REFRESHED") {
+        console.log("[v0] auth_token_refreshed", { userId: session?.user?.id, email: session?.user?.email })
+        // Token refreshed, but user should remain the same
       }
     })
 
@@ -153,7 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'nouripet-checkout-plan',
         'nouripet-selected-dog',
         'nouripet-add-dog-mode',
-        'nouripet-total-dogs'
+        'nouripet-total-dogs',
+        'nouripet_user' // Clear any cached user data
       ]
       
       keysToRemove.forEach(key => {
@@ -168,9 +185,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       
-      await supabase.auth.signOut()
+      // Clear cookies
+      document.cookie = "auth_token=; Max-Age=0; path=/; SameSite=Lax"
+      
+      // Clear local state immediately
       setUser(null)
       setApiStatus("disconnected")
+      
+      await supabase.auth.signOut()
       console.log("[v0] auth_logout_completed")
     } catch (error) {
       console.error("Error during logout:", error)
@@ -232,6 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(updatedUser)
         console.log("[v0] auth_subscription_status_refreshed", { 
           userId: user.id, 
+          email: user.email,
           oldStatus: user.subscriptionStatus,
           newStatus: newSubscriptionStatus,
           subscriptionCount: subscriptionsData?.length || 0
@@ -239,6 +262,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error("Error refreshing subscription status:", error)
+    }
+  }
+
+  const forceRefreshAuth = async () => {
+    try {
+      console.log("[v0] force_refresh_auth_starting")
+      setUser(null)
+      setApiStatus("unknown")
+      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session?.user) {
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+          avatar_url: undefined,
+          createdAt: session.user.created_at,
+          subscriptionStatus: "none",
+        }
+        setUser(userData)
+        setApiStatus("connected")
+        console.log("[v0] force_refresh_auth_completed", { userId: userData.id, email: userData.email })
+      } else {
+        setUser(null)
+        setApiStatus("disconnected")
+        console.log("[v0] force_refresh_auth_no_session")
+      }
+    } catch (error) {
+      console.error("Error in force refresh auth:", error)
+      setUser(null)
+      setApiStatus("disconnected")
     }
   }
 
@@ -253,6 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUser,
     refreshUserProfile,
     refreshSubscriptionStatus,
+    forceRefreshAuth,
     apiStatus,
   }
 

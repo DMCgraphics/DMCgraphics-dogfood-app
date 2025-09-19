@@ -91,7 +91,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         // Add a small delay to ensure auth state has propagated before calling onSuccess
         setTimeout(() => {
           onSuccess?.()
-        }, 500)
+        }, 1000)
       }
     } catch (err: any) {
       console.log("[v0] user_signup_failed", {

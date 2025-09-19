@@ -1,12 +1,44 @@
 // app/api/checkout/session/route.ts
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 import Stripe from "stripe";
 import { isAllowedZip, normalizeZip } from "@/lib/allowed-zips";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" });
 
+function reqEnv(name: string) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env ${name}`);
+  return v;
+}
+
 export async function POST(req: Request) {
   try {
+    console.log("[checkout-session] Starting checkout session API request");
+
+    // Authenticate user (same pattern as existing checkout API)
+    const cookieStore = cookies();
+    const supabase = createServerClient(reqEnv("NEXT_PUBLIC_SUPABASE_URL"), reqEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"), {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set() {},
+        remove() {},
+      },
+    });
+
+    console.log("[checkout-session] Supabase client created, checking auth");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      console.log("[checkout-session] No authenticated user found");
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    console.log("[checkout-session] User authenticated:", user.id);
+
     const body = await req.json();
     console.log("[checkout-session] Request body:", JSON.stringify(body, null, 2));
     
@@ -46,21 +78,51 @@ export async function POST(req: Request) {
       mode: "subscription",
       customer_email: body?.email,
       line_items_count: line_items.length,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/order/confirmed?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/order/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/cart`,
     });
 
+    // Get plan data to include in metadata (same pattern as existing checkout API)
+    const { data: plans, error: plansError } = await supabase
+      .from("plans")
+      .select("id, total_cents")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (plansError || !plans || plans.length === 0) {
+      console.log("[checkout-session] No active plan found for user");
+      return NextResponse.json(
+        { ok: false, code: "NO_PLAN", message: "No active plan found. Please complete the plan builder first." },
+        { status: 400 }
+      );
+    }
+
+    const planId = plans[0].id;
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription", // or "payment"
-      customer_email: body?.email, // optional if you create/reuse customers elsewhere
+      customer_email: user.email ?? undefined, // Use authenticated user's email
       line_items,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/order/confirmed?session_id={CHECKOUT_SESSION_ID}`,
+      subscription_data: {
+        metadata: {
+          plan_id: planId,
+          user_id: user.id,
+        },
+      },
+      client_reference_id: planId,
+      metadata: { 
+        plan_id: planId, 
+        user_id: user.id,
+        prevalidated_zip: zip, 
+        plan: body?.plan ?? "" 
+      },
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/order/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/cart`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
       shipping_address_collection: { allowed_countries: ["US"] },
-      // You can also surface your prevalidated ZIP to your metadata for reconciliation:
-      metadata: { prevalidated_zip: zip, plan: body?.plan ?? "" },
     });
 
     console.log("[checkout-session] Stripe session created successfully:", session.id);

@@ -40,7 +40,6 @@ export default function ZipGate({ planId, total, lineItems, userEmail }: ZipGate
         },
         body: JSON.stringify({
           zip: normalized,
-          email: userEmail,
           lineItems: lineItems.map(item => ({
             price: item.stripe_price_id,
             quantity: item.qty || 1,

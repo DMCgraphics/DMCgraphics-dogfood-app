@@ -1,150 +1,232 @@
 #!/usr/bin/env node
 
-// Script to clean up orphaned dogs and related data when users are deleted
+/**
+ * Cleanup script to remove orphaned data before applying CASCADE DELETE constraints
+ */
+
 const { createClient } = require('@supabase/supabase-js')
-require('dotenv').config({ path: '.env.local' })
+
+// Set environment variables
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://tczvietgpixwonpqaotl.supabase.co'
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'sb_publishable_Y8anZ6O42jr1WlyFvT8fwg_m1T97GG_'
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'sb_secret_BrHc5r2vkNjLL7axDt-cng_YWCktFBz'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Missing Supabase environment variables')
-  process.exit(1)
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function cleanupOrphanedData() {
   console.log('🧹 Cleaning up orphaned data...\n')
 
   try {
-    // Get all dogs
-    const { data: dogs, error: dogsError } = await supabase
-      .from('dogs')
-      .select('id, name, user_id, created_at')
-      .order('created_at', { ascending: false })
+    // Step 1: Get all valid user IDs
+    console.log('1. Getting valid user IDs...')
+    const { data: users } = await supabase.auth.admin.listUsers()
+    const validUserIds = users.users.map(user => user.id)
+    console.log(`   Found ${validUserIds.length} valid users`)
 
-    if (dogsError) {
-      console.error('❌ Error fetching dogs:', dogsError)
-      return
-    }
-
-    // Get all valid users
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
+    // Step 2: Find orphaned data
+    console.log('\n2. Finding orphaned data...')
     
-    if (authError) {
-      console.error('❌ Error fetching auth users:', authError)
-      return
-    }
-
-    const validUserIds = new Set(authUsers.users.map(u => u.id))
-    const orphanedDogs = dogs.filter(dog => !validUserIds.has(dog.user_id))
-
-    console.log(`✅ Found ${dogs.length} total dogs`)
-    console.log(`❌ Found ${orphanedDogs.length} orphaned dogs`)
-
-    if (orphanedDogs.length === 0) {
-      console.log('✅ No orphaned dogs to clean up')
-      return
-    }
-
-    console.log('\n🗑️  Cleaning up orphaned dogs and related data...')
-
-    for (const dog of orphanedDogs) {
-      console.log(`\n🧹 Cleaning up dog: ${dog.name} (ID: ${dog.id})`)
-
-      // 1. Delete dog metrics
-      const { error: metricsError } = await supabase
-        .from('dog_metrics')
-        .delete()
-        .eq('dog_id', dog.id)
-
-      if (metricsError) {
-        console.error(`   ❌ Error deleting dog metrics: ${metricsError.message}`)
-      } else {
-        console.log('   ✅ Deleted dog metrics')
-      }
-
-      // 2. Delete plan items
-      const { error: planItemsError } = await supabase
-        .from('plan_items')
-        .delete()
-        .eq('dog_id', dog.id)
-
-      if (planItemsError) {
-        console.error(`   ❌ Error deleting plan items: ${planItemsError.message}`)
-      } else {
-        console.log('   ✅ Deleted plan items')
-      }
-
-      // 3. Delete plan-dog relationships
-      const { error: planDogsError } = await supabase
-        .from('plan_dogs')
-        .delete()
-        .eq('dog_id', dog.id)
-
-      if (planDogsError) {
-        console.error(`   ❌ Error deleting plan-dog relationships: ${planDogsError.message}`)
-      } else {
-        console.log('   ✅ Deleted plan-dog relationships')
-      }
-
-      // 4. Delete plans that are only linked to this dog
-      const { data: plans, error: plansError } = await supabase
-        .from('plans')
-        .select('id')
-        .eq('dog_id', dog.id)
-
-      if (plansError) {
-        console.error(`   ❌ Error fetching plans: ${plansError.message}`)
-      } else if (plans && plans.length > 0) {
-        for (const plan of plans) {
-          const { error: deletePlanError } = await supabase
-            .from('plans')
-            .delete()
-            .eq('id', plan.id)
-
-          if (deletePlanError) {
-            console.error(`   ❌ Error deleting plan ${plan.id}: ${deletePlanError.message}`)
-          } else {
-            console.log(`   ✅ Deleted plan ${plan.id}`)
-          }
-        }
-      }
-
-      // 5. Finally delete the dog
-      const { error: dogError } = await supabase
-        .from('dogs')
-        .delete()
-        .eq('id', dog.id)
-
-      if (dogError) {
-        console.error(`   ❌ Error deleting dog: ${dogError.message}`)
-      } else {
-        console.log(`   ✅ Deleted dog ${dog.name}`)
-      }
-    }
-
-    console.log('\n🎉 Orphaned data cleanup completed!')
-
-    // Show remaining dogs
-    const { data: remainingDogs, error: remainingError } = await supabase
+    // Check for orphaned dogs
+    const { data: allDogs } = await supabase
       .from('dogs')
       .select('id, name, user_id')
-      .order('created_at', { ascending: false })
-
-    if (remainingError) {
-      console.error('❌ Error fetching remaining dogs:', remainingError)
-    } else {
-      console.log(`\n📊 Remaining dogs: ${remainingDogs.length}`)
-      remainingDogs.forEach((dog, index) => {
-        console.log(`   ${index + 1}. ${dog.name} (User: ${dog.user_id})`)
+    
+    const orphanedDogs = allDogs?.filter(dog => 
+      !dog.user_id || !validUserIds.includes(dog.user_id)
+    ) || []
+    
+    console.log(`   Orphaned dogs: ${orphanedDogs.length}`)
+    if (orphanedDogs.length > 0) {
+      orphanedDogs.forEach(dog => {
+        console.log(`     - ${dog.name} (user_id: ${dog.user_id || 'NULL'})`)
       })
     }
 
+    // Check for orphaned plans
+    const { data: allPlans } = await supabase
+      .from('plans')
+      .select('id, user_id')
+    
+    const orphanedPlans = allPlans?.filter(plan => 
+      !plan.user_id || !validUserIds.includes(plan.user_id)
+    ) || []
+    
+    console.log(`   Orphaned plans: ${orphanedPlans.length}`)
+    if (orphanedPlans.length > 0) {
+      orphanedPlans.forEach(plan => {
+        console.log(`     - Plan ${plan.id} (user_id: ${plan.user_id || 'NULL'})`)
+      })
+    }
+
+    // Check for orphaned subscriptions
+    const { data: allSubscriptions } = await supabase
+      .from('subscriptions')
+      .select('id, user_id, stripe_subscription_id')
+    
+    const orphanedSubscriptions = allSubscriptions?.filter(sub => 
+      !sub.user_id || !validUserIds.includes(sub.user_id)
+    ) || []
+    
+    console.log(`   Orphaned subscriptions: ${orphanedSubscriptions.length}`)
+    if (orphanedSubscriptions.length > 0) {
+      orphanedSubscriptions.forEach(sub => {
+        console.log(`     - ${sub.stripe_subscription_id} (user_id: ${sub.user_id || 'NULL'})`)
+      })
+    }
+
+    // Check for orphaned orders
+    const { data: allOrders } = await supabase
+      .from('orders')
+      .select('id, user_id, order_number')
+    
+    const orphanedOrders = allOrders?.filter(order => 
+      !order.user_id || !validUserIds.includes(order.user_id)
+    ) || []
+    
+    console.log(`   Orphaned orders: ${orphanedOrders.length}`)
+    if (orphanedOrders.length > 0) {
+      orphanedOrders.forEach(order => {
+        console.log(`     - ${order.order_number} (user_id: ${order.user_id || 'NULL'})`)
+      })
+    }
+
+    // Step 3: Clean up orphaned data
+    console.log('\n3. Cleaning up orphaned data...')
+    
+    let totalDeleted = 0
+
+    // Delete orphaned plan_items first (they reference plans)
+    if (orphanedPlans.length > 0) {
+      const orphanedPlanIds = orphanedPlans.map(plan => plan.id)
+      const { error: planItemsError } = await supabase
+        .from('plan_items')
+        .delete()
+        .in('plan_id', orphanedPlanIds)
+      
+      if (planItemsError) {
+        console.log('   ⚠️  Error deleting orphaned plan_items:', planItemsError.message)
+      } else {
+        console.log('   ✅ Deleted orphaned plan_items')
+      }
+    }
+
+    // Delete orphaned subscriptions
+    if (orphanedSubscriptions.length > 0) {
+      const orphanedSubIds = orphanedSubscriptions.map(sub => sub.id)
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .delete()
+        .in('id', orphanedSubIds)
+      
+      if (subError) {
+        console.log('   ⚠️  Error deleting orphaned subscriptions:', subError.message)
+      } else {
+        console.log(`   ✅ Deleted ${orphanedSubscriptions.length} orphaned subscriptions`)
+        totalDeleted += orphanedSubscriptions.length
+      }
+    }
+
+    // Delete orphaned orders
+    if (orphanedOrders.length > 0) {
+      const orphanedOrderIds = orphanedOrders.map(order => order.id)
+      const { error: orderError } = await supabase
+        .from('orders')
+        .delete()
+        .in('id', orphanedOrderIds)
+      
+      if (orderError) {
+        console.log('   ⚠️  Error deleting orphaned orders:', orderError.message)
+      } else {
+        console.log(`   ✅ Deleted ${orphanedOrders.length} orphaned orders`)
+        totalDeleted += orphanedOrders.length
+      }
+    }
+
+    // Delete orphaned plans
+    if (orphanedPlans.length > 0) {
+      const orphanedPlanIds = orphanedPlans.map(plan => plan.id)
+      const { error: planError } = await supabase
+        .from('plans')
+        .delete()
+        .in('id', orphanedPlanIds)
+      
+      if (planError) {
+        console.log('   ⚠️  Error deleting orphaned plans:', planError.message)
+      } else {
+        console.log(`   ✅ Deleted ${orphanedPlans.length} orphaned plans`)
+        totalDeleted += orphanedPlans.length
+      }
+    }
+
+    // Delete orphaned dogs
+    if (orphanedDogs.length > 0) {
+      const orphanedDogIds = orphanedDogs.map(dog => dog.id)
+      const { error: dogError } = await supabase
+        .from('dogs')
+        .delete()
+        .in('id', orphanedDogIds)
+      
+      if (dogError) {
+        console.log('   ⚠️  Error deleting orphaned dogs:', dogError.message)
+      } else {
+        console.log(`   ✅ Deleted ${orphanedDogs.length} orphaned dogs`)
+        totalDeleted += orphanedDogs.length
+      }
+    }
+
+    // Step 4: Verify cleanup
+    console.log('\n4. Verifying cleanup...')
+    
+    const { data: remainingOrphanedDogs } = await supabase
+      .from('dogs')
+      .select('id, user_id')
+      .not('user_id', 'in', `(${validUserIds.join(',')})`)
+    
+    const { data: remainingOrphanedPlans } = await supabase
+      .from('plans')
+      .select('id, user_id')
+      .not('user_id', 'in', `(${validUserIds.join(',')})`)
+    
+    const { data: remainingOrphanedSubscriptions } = await supabase
+      .from('subscriptions')
+      .select('id, user_id')
+      .not('user_id', 'in', `(${validUserIds.join(',')})`)
+    
+    const { data: remainingOrphanedOrders } = await supabase
+      .from('orders')
+      .select('id, user_id')
+      .not('user_id', 'in', `(${validUserIds.join(',')})`)
+
+    const remainingOrphaned = (remainingOrphanedDogs?.length || 0) + 
+                             (remainingOrphanedPlans?.length || 0) + 
+                             (remainingOrphanedSubscriptions?.length || 0) + 
+                             (remainingOrphanedOrders?.length || 0)
+
+    console.log(`   Remaining orphaned records: ${remainingOrphaned}`)
+
+    // Step 5: Summary
+    console.log('\n📊 Cleanup Summary:')
+    console.log('   ========================================')
+    console.log(`   Total records deleted: ${totalDeleted}`)
+    console.log(`   Remaining orphaned records: ${remainingOrphaned}`)
+    
+    if (remainingOrphaned === 0) {
+      console.log('   ✅ All orphaned data has been cleaned up!')
+      console.log('   You can now run the CASCADE DELETE constraints script.')
+    } else {
+      console.log('   ⚠️  Some orphaned data still remains.')
+      console.log('   You may need to run this script again or check manually.')
+    }
+    
+    console.log('   ========================================')
+
   } catch (error) {
-    console.error('❌ Error in cleanup script:', error)
+    console.error('❌ Fatal error during cleanup:', error)
   }
 }
 
-cleanupOrphanedData()
+// Run the cleanup
+cleanupOrphanedData().catch(console.error)

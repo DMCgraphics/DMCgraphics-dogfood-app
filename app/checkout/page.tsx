@@ -35,11 +35,13 @@ export default async function CheckoutPage() {
   if (!user) redirect("/sign-in?returnTo=/checkout")
 
   // Query plans and plan items directly instead of using the view
-  const { data: plans, error: plansError } = await supabase
+  // Get all active plans and find the most recent one that has plan items
+  const { data: allPlans, error: plansError } = await supabase
     .from("plans")
     .select(`
       id,
       total_cents,
+      created_at,
       plan_items (
         id,
         recipe_id,
@@ -55,12 +57,14 @@ export default async function CheckoutPage() {
     .eq("user_id", user.id)
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(1)
 
-  const data = plans && plans.length > 0 ? {
-    plan_id: plans[0].id,
-    total_cents: plans[0].total_cents,
-    line_items: plans[0].plan_items || []
+  // Find the most recent plan that has plan items
+  const planWithItems = allPlans?.find(plan => plan.plan_items && plan.plan_items.length > 0)
+  
+  const data = planWithItems ? {
+    plan_id: planWithItems.id,
+    total_cents: planWithItems.total_cents,
+    line_items: planWithItems.plan_items || []
   } : null
 
   const error = plansError

@@ -95,7 +95,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDogs = async () => {
+      // Set a timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log("[v0] Dashboard loading timeout - stopping loading state")
+        setLoading(false)
+      }, 10000) // 10 second timeout
+
       if (!user) {
+        clearTimeout(timeoutId)
         setLoading(false)
         return
       }
@@ -117,6 +124,7 @@ export default function DashboardPage() {
 
         if (error) {
           console.error("[v0] Error fetching dogs:", error.message)
+          clearTimeout(timeoutId)
           setLoading(false)
           return
         }
@@ -425,6 +433,7 @@ export default function DashboardPage() {
       } catch (error) {
         console.error("[v0] Error in fetchDogs:", error)
       } finally {
+        clearTimeout(timeoutId)
         setLoading(false)
       }
     }

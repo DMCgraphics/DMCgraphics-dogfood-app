@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, Package, Calendar } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase/client"
 
 export default function OrderSuccessPage() {
   const searchParams = useSearchParams()
@@ -14,7 +15,7 @@ export default function OrderSuccessPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading, refreshSubscriptionStatus } = useAuth()
 
   useEffect(() => {
     const handleSuccessfulPayment = async () => {
@@ -52,6 +53,24 @@ export default function OrderSuccessPage() {
           const verifyData = await verifyResponse.json()
           setOrderData(verifyData)
           console.log("[v0] Payment verified successfully:", verifyData)
+
+          // Refresh the session to ensure auth state is up to date
+          console.log("[v0] Refreshing session after payment verification...")
+          try {
+            await supabase.auth.refreshSession()
+            console.log("[v0] Session refreshed successfully")
+          } catch (refreshError) {
+            console.log("[v0] Session refresh failed (this is OK):", refreshError)
+          }
+
+          // Refresh subscription status in auth context
+          console.log("[v0] Refreshing subscription status...")
+          try {
+            await refreshSubscriptionStatus()
+            console.log("[v0] Subscription status refreshed successfully")
+          } catch (subRefreshError) {
+            console.log("[v0] Subscription status refresh failed:", subRefreshError)
+          }
 
           // As a backup, also try to create the subscription directly
           // This ensures the subscription is saved even if the webhook failed

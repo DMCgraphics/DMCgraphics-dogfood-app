@@ -173,29 +173,43 @@ export default function PlanBuilder() {
           const weight = dogData.dogProfile.weight || 0
           const weightUnit = dogData.dogProfile.weightUnit || "lb"
 
-          const { data: newDogData, error: dogError } = await supabase
+          // Check for existing dog with same name to prevent duplicates
+          const { data: existingDogs, error: checkError } = await supabase
             .from("dogs")
-            .insert({
-              user_id: user.id,
-              name: dogData.dogProfile.name,
-              breed: dogData.dogProfile.breed,
-              age: dogData.dogProfile.age,
-              weight: weight,
-              weight_unit: weightUnit,
-              weight_kg: toKg(weight, weightUnit),
-              allergies: dogData.selectedAllergens,
-              conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
-            })
-            .select("id")
-            .single()
+            .select("id, name")
+            .eq("user_id", user.id)
+            .eq("name", dogData.dogProfile.name)
+            .limit(1)
+            
+          const existingDog = existingDogs?.[0]
+          if (existingDog) {
+            console.log(`[v0] ⚠️ Dog with name "${dogData.dogProfile.name}" already exists, using existing dog:`, existingDog.id)
+            dogDbData = existingDog
+          } else {
+            const { data: newDogData, error: dogError } = await supabase
+              .from("dogs")
+              .insert({
+                user_id: user.id,
+                name: dogData.dogProfile.name,
+                breed: dogData.dogProfile.breed,
+                age: dogData.dogProfile.age,
+                weight: weight,
+                weight_unit: weightUnit,
+                weight_kg: toKg(weight, weightUnit),
+                allergies: dogData.selectedAllergens,
+                conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
+              })
+              .select("id")
+              .single()
 
-          if (dogError) {
-            console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
-            alert(`Error saving dog ${i + 1}: ${dogError.message}`)
-            continue
+            if (dogError) {
+              console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
+              alert(`Error saving dog ${i + 1}: ${dogError.message}`)
+              continue
+            }
+
+            dogDbData = newDogData
           }
-
-          dogDbData = newDogData
 
           // Create plan-dog relationship
           const { error: planDogError } = await supabase.rpc("upsert_plan_dog", {

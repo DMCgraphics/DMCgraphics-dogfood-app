@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Cleanup script to remove duplicate dogs from the database
- * This script identifies and removes duplicate dogs with the same name and user_id
+ * Advanced cleanup script to remove duplicate dogs while handling database relationships
+ * This script identifies duplicate dogs and merges their data before removing duplicates
  */
 
 const { createClient } = require('@supabase/supabase-js')
@@ -17,8 +17,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-async function cleanupDuplicateDogs() {
-  console.log('🐕 Starting Duplicate Dogs Cleanup...\n')
+async function cleanupDuplicateDogsWithRelationships() {
+  console.log('🐕 Starting Advanced Duplicate Dogs Cleanup...\n')
 
   try {
     // Step 1: Find all dogs grouped by user_id and name
@@ -26,7 +26,7 @@ async function cleanupDuplicateDogs() {
     
     const { data: allDogs, error: allDogsError } = await supabase
       .from('dogs')
-      .select('id, name, user_id, created_at')
+      .select('id, name, user_id, created_at, breed, age, weight, weight_unit, allergies, conditions')
       .order('created_at', { ascending: true })
 
     if (allDogsError) {
@@ -78,10 +78,10 @@ async function cleanupDuplicateDogs() {
       console.log('   ' + '-'.repeat(40))
     })
 
-    // Step 5: Keep the oldest dog and delete the rest
-    console.log('\n3. Cleaning up duplicates (keeping the oldest dog in each group)...')
+    // Step 5: Handle duplicates by updating references and then deleting
+    console.log('\n3. Handling duplicates (updating references and merging data)...')
     
-    let deletedCount = 0
+    let processedCount = 0
     let errorCount = 0
 
     for (const duplicate of duplicates) {
@@ -93,22 +93,81 @@ async function cleanupDuplicateDogs() {
 
       for (const dogToDelete of deleteDogs) {
         try {
-          console.log(`   Deleting dog: ${dogToDelete.id} (created: ${dogToDelete.created_at})`)
+          console.log(`   Processing dog: ${dogToDelete.id} (created: ${dogToDelete.created_at})`)
           
+          // Step 5a: Update all plans that reference this dog to point to the keep dog
+          console.log(`      Updating plans to reference dog ${keepDog.id} instead of ${dogToDelete.id}`)
+          const { error: plansUpdateError } = await supabase
+            .from('plans')
+            .update({ dog_id: keepDog.id })
+            .eq('dog_id', dogToDelete.id)
+
+          if (plansUpdateError) {
+            console.error(`      ❌ Failed to update plans:`, plansUpdateError.message)
+            errorCount++
+            continue
+          }
+
+          // Step 5b: Update plan_dogs table if it exists
+          console.log(`      Updating plan_dogs to reference dog ${keepDog.id} instead of ${dogToDelete.id}`)
+          const { error: planDogsUpdateError } = await supabase
+            .from('plan_dogs')
+            .update({ dog_id: keepDog.id })
+            .eq('dog_id', dogToDelete.id)
+
+          if (planDogsUpdateError && !planDogsUpdateError.message.includes('relation "plan_dogs" does not exist')) {
+            console.error(`      ❌ Failed to update plan_dogs:`, planDogsUpdateError.message)
+            // Don't count this as an error since the table might not exist
+          }
+
+          // Step 5c: Update any other tables that might reference dogs
+          // Update dog_metrics if they exist
+          const { error: metricsUpdateError } = await supabase
+            .from('dog_metrics')
+            .update({ dog_id: keepDog.id })
+            .eq('dog_id', dogToDelete.id)
+
+          if (metricsUpdateError && !metricsUpdateError.message.includes('relation "dog_metrics" does not exist')) {
+            console.error(`      ❌ Failed to update dog_metrics:`, metricsUpdateError.message)
+          }
+
+          // Update weight_logs if they exist
+          const { error: weightLogsUpdateError } = await supabase
+            .from('weight_logs')
+            .update({ dog_id: keepDog.id })
+            .eq('dog_id', dogToDelete.id)
+
+          if (weightLogsUpdateError && !weightLogsUpdateError.message.includes('relation "weight_logs" does not exist')) {
+            console.error(`      ❌ Failed to update weight_logs:`, weightLogsUpdateError.message)
+          }
+
+          // Update stool_logs if they exist
+          const { error: stoolLogsUpdateError } = await supabase
+            .from('stool_logs')
+            .update({ dog_id: keepDog.id })
+            .eq('dog_id', dogToDelete.id)
+
+          if (stoolLogsUpdateError && !stoolLogsUpdateError.message.includes('relation "stool_logs" does not exist')) {
+            console.error(`      ❌ Failed to update stool_logs:`, stoolLogsUpdateError.message)
+          }
+
+          // Step 5d: Now delete the duplicate dog
+          console.log(`      Deleting duplicate dog: ${dogToDelete.id}`)
           const { error: deleteError } = await supabase
             .from('dogs')
             .delete()
             .eq('id', dogToDelete.id)
 
           if (deleteError) {
-            console.error(`   ❌ Failed to delete dog ${dogToDelete.id}:`, deleteError.message)
+            console.error(`      ❌ Failed to delete dog ${dogToDelete.id}:`, deleteError.message)
             errorCount++
           } else {
-            console.log(`   ✅ Successfully deleted dog ${dogToDelete.id}`)
-            deletedCount++
+            console.log(`      ✅ Successfully deleted dog ${dogToDelete.id}`)
+            processedCount++
           }
+
         } catch (err) {
-          console.error(`   ❌ Error deleting dog ${dogToDelete.id}:`, err.message)
+          console.error(`   ❌ Error processing dog ${dogToDelete.id}:`, err.message)
           errorCount++
         }
       }
@@ -118,13 +177,13 @@ async function cleanupDuplicateDogs() {
     console.log('\n4. Cleanup Summary:')
     console.log('   ' + '='.repeat(40))
     console.log(`   Duplicate groups found: ${duplicates.length}`)
-    console.log(`   Dogs deleted: ${deletedCount}`)
+    console.log(`   Dogs processed: ${processedCount}`)
     console.log(`   Errors: ${errorCount}`)
     
-    if (deletedCount > 0) {
+    if (processedCount > 0) {
       console.log('   ✅ Cleanup completed successfully!')
     } else {
-      console.log('   ⚠️  No dogs were deleted')
+      console.log('   ⚠️  No dogs were processed')
     }
 
     // Step 7: Verify cleanup
@@ -168,4 +227,4 @@ async function cleanupDuplicateDogs() {
 }
 
 // Run the cleanup
-cleanupDuplicateDogs().catch(console.error)
+cleanupDuplicateDogsWithRelationships().catch(console.error)

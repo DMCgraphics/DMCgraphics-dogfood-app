@@ -548,14 +548,12 @@ export default function PlanBuilderPage() {
     analytics.proceedToCheckoutClicked({
       planId: `plan_${Date.now()}`,
       dogs: allDogsPlans,
-      recipes: allDogsPlans.flatMap((dog) => dog.recipes),
+      recipes: allDogsPlans.flatMap((dog) => dog.recipes || []).filter((recipe): recipe is string => Boolean(recipe)),
       prescriptionDiet: allDogsPlans.find((dog) => dog.prescriptionDiet)?.prescriptionDiet,
       mealsPerDay: allDogsPlans[0]?.mealsPerDay || 2,
       planType: "full",
       priceMonthly: allDogsPlans.reduce((total, dog) => total + dog.totalWeeklyCost, 0),
       addOns: allDogsPlans.flatMap((dog) => dog.addOns),
-      healthGoals: allDogsPlans[0]?.healthGoals,
-      selectedAllergens: allDogsPlans.flatMap((dog) => dog.selectedAllergens),
     })
 
     console.log("[v0] proceed_to_checkout_clicked")
@@ -591,23 +589,27 @@ export default function PlanBuilderPage() {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
-        if (user) {
+        if (user && !isProcessingAuth) {
           console.log("[v0] User authenticated after loading, proceeding to save plan")
           handleAuthSuccess()
-        } else {
+        } else if (!user) {
           console.log("[v0] User not authenticated after loading, showing auth modal")
           setShowAuthModal(true)
+        } else {
+          console.log("[v0] Auth already processing, skipping duplicate call")
         }
       }, 500)
       return
     }
 
-    if (user) {
+    if (user && !isProcessingAuth) {
       console.log("[v0] User already authenticated, proceeding directly to save plan")
       handleAuthSuccess()
-    } else {
+    } else if (!user) {
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
+    } else {
+      console.log("[v0] Auth already processing, skipping duplicate call")
     }
   }
 
@@ -615,13 +617,23 @@ export default function PlanBuilderPage() {
     setShowAuthModal(true)
   }
 
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false)
+
   const handleAuthSuccess = async () => {
+    // Prevent multiple simultaneous executions
+    if (isProcessingAuth) {
+      console.log("[v0] Auth success already processing, skipping duplicate call")
+      return
+    }
+    
+    setIsProcessingAuth(true)
     console.log("[v0] Auth success - starting reliable session handling")
     
     // Set a timeout to close the modal if it gets stuck
     const timeoutId = setTimeout(() => {
       console.log("[v0] Auth success timeout - closing modal to prevent stuck state")
       setShowAuthModal(false)
+      setIsProcessingAuth(false)
     }, 15000) // 15 second timeout
     
     try {
@@ -685,13 +697,14 @@ export default function PlanBuilderPage() {
         const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
 
         // Check for existing dog with same name to prevent duplicates
-        const { data: existingFirstDog, error: checkFirstError } = await supabase
+        const { data: existingFirstDogs, error: checkFirstError } = await supabase
           .from("dogs")
           .select("id, name, user_id")
           .eq("user_id", session.user.id)
           .eq("name", firstDogData.dogProfile.name)
-          .single()
+          .limit(1)
           
+        const existingFirstDog = existingFirstDogs?.[0]
         if (existingFirstDog) {
           console.log(`[v0] ⚠️ First dog with name "${firstDogData.dogProfile.name}" already exists, using existing dog:`, existingFirstDog.id)
           firstDogDbData = existingFirstDog
@@ -807,13 +820,14 @@ export default function PlanBuilderPage() {
           console.log(`[v0] Creating new dog ${i + 1}: ${dogData.dogProfile.name}`)
           
           // Check for existing dog with same name to prevent duplicates
-          const { data: existingDog, error: checkError } = await supabase
+          const { data: existingDogs, error: checkError } = await supabase
             .from("dogs")
             .select("id, name")
             .eq("user_id", session.user.id)
             .eq("name", dogData.dogProfile.name)
-            .single()
+            .limit(1)
             
+          const existingDog = existingDogs?.[0]
           if (existingDog) {
             console.log(`[v0] ⚠️ Dog with name "${dogData.dogProfile.name}" already exists, using existing dog:`, existingDog.id)
             dogDbData = existingDog
@@ -1087,6 +1101,7 @@ export default function PlanBuilderPage() {
       
       // Close the modal after successful completion
       setShowAuthModal(false)
+      setIsProcessingAuth(false)
       
       router.push("/checkout")
     } catch (error) {
@@ -1101,6 +1116,7 @@ export default function PlanBuilderPage() {
       
       // Close the modal even on error to prevent it from getting stuck
       setShowAuthModal(false)
+      setIsProcessingAuth(false)
     }
   }
 
@@ -1219,10 +1235,6 @@ export default function PlanBuilderPage() {
             currentDogIndex={currentDogIndex}
             totalDogs={totalDogs}
             isLastDog={currentDogIndex === totalDogs - 1}
-            foodCostPerWeek={foodCostPerWeek}
-            addOnsCostPerWeek={addOnsCostPerWeek}
-            totalWeeklyCost={totalWeeklyCost}
-            subtotal_cents={subtotal_cents}
           />
         )
       default:

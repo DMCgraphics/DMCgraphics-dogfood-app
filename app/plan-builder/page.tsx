@@ -681,8 +681,21 @@ export default function PlanBuilderPage() {
         
         if (deleteItemsError) {
           console.error("[v0] Error deleting existing plan items:", deleteItemsError)
+          // Don't return here, continue with plan creation
         } else {
           console.log("[v0] Existing plan items cleaned up")
+        }
+        
+        // Update plan status to checkout_in_progress
+        const { error: updateStatusError } = await supabase
+          .from("plans")
+          .update({ status: "checkout_in_progress" })
+          .eq("id", planId)
+        
+        if (updateStatusError) {
+          console.error("[v0] Error updating plan status:", updateStatusError)
+        } else {
+          console.log("[v0] Plan status updated to checkout_in_progress")
         }
       } else {
         // Get the first dog's ID to link to the plan
@@ -970,47 +983,80 @@ export default function PlanBuilderPage() {
           )
 
           console.log(`[v0] Creating plan item for dog ${i + 1}, recipe ${recipeId}...`)
-          const { data: planItem, error: planItemError } = await supabase
+          
+          // Check if plan item already exists to prevent duplicate key constraint violation
+          const { data: existingPlanItem, error: checkError } = await supabase
             .from("plan_items")
-            .insert({
-              plan_id: planId,
-              dog_id: dogDbData.id,
-              recipe_id: recipeData.id, // Use recipe UUID instead of slug
-              qty: 1,
-              size_g: sizeG,
-              billing_interval: "week",
-              stripe_price_id: stripePricing?.priceId,
-              unit_price_cents: stripePricing?.amountCents || 2100,
-              amount_cents: stripePricing?.amountCents || 2100,
-              meta: {
-                source: "wizard",
-                dog_weight: weight,
-                weight_unit: weightUnit,
-                daily_grams: dailyGrams,
-                monthly_grams: monthlyGrams,
-                activity_level: dogData.dogProfile.activity,
-                calculated_calories: Math.round(der),
-                stripe_product_name: stripePricing?.productName,
-              },
-            })
             .select("id")
+            .eq("plan_id", planId)
+            .eq("dog_id", dogDbData.id)
+            .eq("recipe_id", recipeData.id)
             .single()
-
-          if (planItemError) {
-            console.error(`[v0] ❌ Error saving plan item for dog ${i + 1}, recipe ${recipeId}:`, planItemError)
-            console.error(`[v0] Plan item data:`, {
-              plan_id: planId,
-              dog_id: dogDbData.id,
-              recipe_id: recipeData.id,
-              qty: 1,
-              size_g: sizeG,
-              billing_interval: "week",
-              stripe_price_id: stripePricing.priceId,
-              unit_price_cents: stripePricing.amountCents,
-              amount_cents: stripePricing.amountCents,
-            })
-            alert(`Error saving plan item for dog ${i + 1}, recipe ${recipeId}: ${planItemError.message}`)
-            continue
+          
+          let planItem
+          if (existingPlanItem) {
+            console.log(`[v0] Plan item already exists for dog ${i + 1}, recipe ${recipeId}, updating...`)
+            const { data: updatedPlanItem, error: updateError } = await supabase
+              .from("plan_items")
+              .update({
+                qty: 1,
+                size_g: sizeG,
+                billing_interval: "week",
+                stripe_price_id: stripePricing?.priceId,
+                unit_price_cents: stripePricing?.amountCents || 2100,
+                amount_cents: stripePricing?.amountCents || 2100,
+                meta: {
+                  source: "wizard",
+                  dog_weight: weight,
+                  weight_unit: weightUnit,
+                  daily_grams: dailyGrams,
+                  monthly_grams: monthlyGrams,
+                  activity_level: dogData.dogProfile.activity,
+                  calculated_calories: Math.round(der),
+                  stripe_product_name: stripePricing?.productName,
+                },
+              })
+              .eq("id", existingPlanItem.id)
+              .select("id")
+              .single()
+            
+            if (updateError) {
+              console.error(`[v0] Error updating plan item:`, updateError)
+              continue
+            }
+            planItem = updatedPlanItem
+          } else {
+            const { data: newPlanItem, error: planItemError } = await supabase
+              .from("plan_items")
+              .insert({
+                plan_id: planId,
+                dog_id: dogDbData.id,
+                recipe_id: recipeData.id, // Use recipe UUID instead of slug
+                qty: 1,
+                size_g: sizeG,
+                billing_interval: "week",
+                stripe_price_id: stripePricing?.priceId,
+                unit_price_cents: stripePricing?.amountCents || 2100,
+                amount_cents: stripePricing?.amountCents || 2100,
+                meta: {
+                  source: "wizard",
+                  dog_weight: weight,
+                  weight_unit: weightUnit,
+                  daily_grams: dailyGrams,
+                  monthly_grams: monthlyGrams,
+                  activity_level: dogData.dogProfile.activity,
+                  calculated_calories: Math.round(der),
+                  stripe_product_name: stripePricing?.productName,
+                },
+              })
+              .select("id")
+              .single()
+            
+            if (planItemError) {
+              console.error(`[v0] Error creating plan item:`, planItemError)
+              continue
+            }
+            planItem = newPlanItem
           }
 
           console.log(`[v0] ✅ Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)

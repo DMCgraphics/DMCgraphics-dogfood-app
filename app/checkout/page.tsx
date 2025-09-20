@@ -55,7 +55,7 @@ export default async function CheckoutPage() {
       )
     `)
     .eq("user_id", user.id)
-    .eq("status", "active")
+    .in("status", ["active", "checkout_in_progress", "draft"])
     .order("created_at", { ascending: false })
 
   // Find the most recent plan that has plan items

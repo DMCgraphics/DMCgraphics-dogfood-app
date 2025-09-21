@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { WizardLayout } from "@/components/plan-builder/wizard-layout"
 import { Step1DogProfile } from "@/components/plan-builder/step-1-dog-profile"
 import { Step2HealthGoals } from "@/components/plan-builder/step-2-health-goals"
@@ -629,22 +629,31 @@ export default function PlanBuilderPage() {
   }
 
   const [isProcessingAuth, setIsProcessingAuth] = useState(false)
+  const authSuccessRef = useRef(false)
 
   const handleAuthSuccess = async () => {
-    // Prevent multiple simultaneous executions
-    if (isProcessingAuth) {
+    // Prevent multiple simultaneous executions using both state and ref
+    if (isProcessingAuth || authSuccessRef.current) {
       console.log("[v0] Auth success already processing, skipping duplicate call")
       return
     }
     
     setIsProcessingAuth(true)
+    authSuccessRef.current = true
     console.log("[v0] Auth success - starting reliable session handling")
+    
+    // Clear any existing timeout to prevent multiple executions
+    if ((window as any).authSuccessTimeout) {
+      clearTimeout((window as any).authSuccessTimeout)
+      delete (window as any).authSuccessTimeout
+    }
     
     // Set a timeout to close the modal if it gets stuck
     const timeoutId = setTimeout(() => {
       console.log("[v0] Auth success timeout - closing modal to prevent stuck state")
       setShowAuthModal(false)
       setIsProcessingAuth(false)
+      authSuccessRef.current = false
     }, 10000) // Reduced timeout to 10 seconds
     
     try {
@@ -683,7 +692,16 @@ export default function PlanBuilderPage() {
         .eq("user_id", session.user.id)
         .in("status", ["draft", "active", "checkout_in_progress"])
         .order("created_at", { ascending: false })
-        .limit(1)
+      
+      // Clean up any duplicate plans first
+      if (existingPlans && existingPlans.length > 1) {
+        console.log("[v0] Found multiple plans, cleaning up duplicates...")
+        const plansToDelete = existingPlans.slice(1) // Keep the first one, delete the rest
+        for (const plan of plansToDelete) {
+          console.log("[v0] Deleting duplicate plan:", plan.id)
+          await supabase.from("plans").delete().eq("id", plan.id)
+        }
+      }
       
       const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
 
@@ -1186,6 +1204,7 @@ export default function PlanBuilderPage() {
       // Close the modal after successful completion
       setShowAuthModal(false)
       setIsProcessingAuth(false)
+      authSuccessRef.current = false
       
       router.push("/checkout")
     } catch (error) {
@@ -1209,6 +1228,7 @@ export default function PlanBuilderPage() {
       alert(`Error saving plan: ${errorMessage}`)
       setShowAuthModal(false)
       setIsProcessingAuth(false)
+      authSuccessRef.current = false
     }
   }
 

@@ -48,8 +48,11 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
 
   const handleSuccess = () => {
     console.log("[v0] auth_modal_handle_success")
-    onSuccess?.()
-    onClose()
+    // Prevent multiple calls by checking if modal is still open
+    if (isOpen) {
+      onSuccess?.()
+      onClose()
+    }
   }
 
   return (

@@ -70,7 +70,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, onUserInteraction }: Lo
           onSuccess?.()
         }, 1000) // Reduced to 1 second fallback
         
-        // Also call onSuccess immediately as primary mechanism
+        // Call onSuccess immediately as primary mechanism
         onSuccess?.()
       } else {
         setIsLoading(false)

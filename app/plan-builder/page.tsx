@@ -586,24 +586,19 @@ export default function PlanBuilderPage() {
 
     console.log("[v0] Checking authentication state:", { user: !!user, isLoading })
 
-    // Check if user is authenticated via direct session check as well
-    const { data: { session: directSession } } = await supabase.auth.getSession()
-    const isAuthenticatedViaSession = !!directSession?.user
-    console.log("[v0] Direct session check:", { isAuthenticatedViaSession, userId: directSession?.user?.id })
-
-    if (!user && !isLoading && !isAuthenticatedViaSession) {
+    if (!user && !isLoading) {
       console.log("[v0] Creating anonymous plan before authentication...")
       await createAnonymousPlan()
     }
 
-    if (isLoading && !isAuthenticatedViaSession) {
+    if (isLoading) {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
-        if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
+        if (user && !isProcessingAuth) {
           console.log("[v0] User authenticated after loading, proceeding to save plan")
           handleAuthSuccess()
-        } else if (!user && !isAuthenticatedViaSession && !isProcessingAuth) {
+        } else if (!user && !isProcessingAuth) {
           console.log("[v0] User not authenticated after loading, showing auth modal")
           setShowAuthModal(true)
         } else {
@@ -613,10 +608,10 @@ export default function PlanBuilderPage() {
       return
     }
 
-    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
+    if (user && !isProcessingAuth) {
       console.log("[v0] User already authenticated, proceeding directly to save plan")
       handleAuthSuccess()
-    } else if (!user && !isAuthenticatedViaSession) {
+    } else if (!user) {
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
     } else {

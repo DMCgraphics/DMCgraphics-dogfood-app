@@ -68,7 +68,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup, onUserInteraction }: Lo
         setTimeout(() => {
           console.log("[v0] login_form_fallback_close")
           onSuccess?.()
-        }, 2000) // 2 second fallback
+        }, 1000) // Reduced to 1 second fallback
         
         // Also call onSuccess immediately as primary mechanism
         onSuccess?.()

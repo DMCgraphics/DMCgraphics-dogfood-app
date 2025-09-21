@@ -97,7 +97,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
         setTimeout(() => {
           console.log("[v0] signup_form_fallback_close")
           onSuccess?.()
-        }, 2000) // 2 second fallback
+        }, 1000) // Reduced to 1 second fallback
         
         // Also call onSuccess immediately as primary mechanism
         onSuccess?.()

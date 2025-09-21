@@ -586,12 +586,17 @@ export default function PlanBuilderPage() {
 
     console.log("[v0] Checking authentication state:", { user: !!user, isLoading })
 
-    if (!user && !isLoading) {
+    // Check if user is authenticated via direct session check as well
+    const { data: { session: directSession } } = await supabase.auth.getSession()
+    const isAuthenticatedViaSession = !!directSession?.user
+    console.log("[v0] Direct session check:", { isAuthenticatedViaSession, userId: directSession?.user?.id })
+
+    if (!user && !isLoading && !isAuthenticatedViaSession) {
       console.log("[v0] Creating anonymous plan before authentication...")
       await createAnonymousPlan()
     }
 
-    if (isLoading) {
+    if (isLoading && !isAuthenticatedViaSession) {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
@@ -608,10 +613,10 @@ export default function PlanBuilderPage() {
       return
     }
 
-    if (user && !isProcessingAuth) {
+    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
       console.log("[v0] User already authenticated, proceeding directly to save plan")
       handleAuthSuccess()
-    } else if (!user) {
+    } else if (!user && !isAuthenticatedViaSession) {
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
     } else {
@@ -640,7 +645,7 @@ export default function PlanBuilderPage() {
       console.log("[v0] Auth success timeout - closing modal to prevent stuck state")
       setShowAuthModal(false)
       setIsProcessingAuth(false)
-    }, 15000) // 15 second timeout
+    }, 10000) // Reduced timeout to 10 seconds
     
     try {
       console.log("[v0] Waiting for authenticated session...")
@@ -655,7 +660,8 @@ export default function PlanBuilderPage() {
         clearTimeout(timeoutId)
       } else {
         console.log("[v0] No current session, waiting for session...")
-        session = await waitForSession(10000, 500) // Increased timeout and interval
+        // Use shorter timeout for waitForSession since we have a global timeout
+        session = await waitForSession(5000, 250) // Reduced timeout and interval
         console.log("[v0] Session confirmed:", session.user.id)
         clearTimeout(timeoutId)
       }
@@ -1190,9 +1196,17 @@ export default function PlanBuilderPage() {
       
       // Show specific error message for debugging
       const errorMessage = error instanceof Error ? error.message : String(error)
-      alert(`Error saving plan: ${errorMessage}`)
       
-      // Close the modal even on error to prevent it from getting stuck
+      // Check if it's a session-related error
+      if (errorMessage.includes("No authenticated user") || errorMessage.includes("session")) {
+        console.log("[v0] Session error detected, redirecting to login")
+        setShowAuthModal(true)
+        setIsProcessingAuth(false)
+        return
+      }
+      
+      // For other errors, show alert and close modal
+      alert(`Error saving plan: ${errorMessage}`)
       setShowAuthModal(false)
       setIsProcessingAuth(false)
     }

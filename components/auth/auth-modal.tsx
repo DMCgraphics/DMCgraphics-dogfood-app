@@ -37,12 +37,12 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
     
     if (isAuthenticated && isOpen) {
       console.log("[v0] auth_modal_auto_close_on_auth", { isAuthenticated, hasUserInteracted })
-      // Add a small delay to ensure the auth flow is complete
+      // Reduce delay to prevent timeout issues
       setTimeout(() => {
         console.log("[v0] auth_modal_closing_now")
         onSuccess?.()
         onClose()
-      }, 1000) // Increased delay to 1 second
+      }, 500) // Reduced delay to 500ms
     }
   }, [isAuthenticated, isOpen, onSuccess, onClose])
 

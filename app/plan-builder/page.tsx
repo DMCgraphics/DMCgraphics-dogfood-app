@@ -1033,10 +1033,10 @@ export default function PlanBuilderPage() {
 
           console.log(`[v0] Creating plan item for dog ${i + 1}, recipe ${recipeId}...`)
           
-          // Use upsert to handle existing plan items gracefully
+          // Insert new plan item
           const { data: planItem, error: planItemError } = await supabase
             .from("plan_items")
-            .upsert({
+            .insert({
               plan_id: planId,
               dog_id: dogDbData.id,
               recipe_id: recipeData.id, // Use recipe UUID instead of slug
@@ -1056,14 +1056,12 @@ export default function PlanBuilderPage() {
                 calculated_calories: Math.round(der),
                 stripe_product_name: stripePricing?.productName,
               },
-            }, {
-              onConflict: 'plan_id,dog_id,recipe_id'
             })
             .select("id")
             .single()
           
           if (planItemError) {
-            console.error(`[v0] Error upserting plan item for dog ${i + 1}:`, planItemError)
+            console.error(`[v0] Error creating plan item for dog ${i + 1}:`, planItemError)
             continue
           }
 

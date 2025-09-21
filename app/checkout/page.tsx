@@ -35,13 +35,24 @@ export default async function CheckoutPage() {
   if (!user) redirect("/sign-in?returnTo=/checkout")
 
   // Query plans and plan items with proper RLS handling
-  // First get the plans
+  // Use a single query with joins to satisfy RLS policies
   const { data: allPlans, error: plansError } = await supabase
     .from("plans")
     .select(`
       id,
       total_cents,
-      created_at
+      created_at,
+      plan_items (
+        id,
+        recipe_id,
+        qty,
+        unit_price_cents,
+        amount_cents,
+        billing_interval,
+        stripe_price_id,
+        recipes (name, slug),
+        dogs (name)
+      )
     `)
     .eq("user_id", user.id)
     .in("status", ["active", "checkout_in_progress", "draft"])
@@ -52,31 +63,8 @@ export default async function CheckoutPage() {
   
   let planWithItems = null
   let itemsError = null
-  if (latestPlan) {
-    // Get plan items for the latest plan with proper joins to satisfy RLS
-    const { data: planItems, error: planItemsError } = await supabase
-      .from("plan_items")
-      .select(`
-        id,
-        recipe_id,
-        qty,
-        unit_price_cents,
-        amount_cents,
-        billing_interval,
-        stripe_price_id,
-        recipes (name, slug),
-        dogs (name)
-      `)
-      .eq("plan_id", latestPlan.id)
-    
-    itemsError = planItemsError
-    
-    if (planItems && planItems.length > 0) {
-      planWithItems = {
-        ...latestPlan,
-        plan_items: planItems
-      }
-    }
+  if (latestPlan && latestPlan.plan_items && latestPlan.plan_items.length > 0) {
+    planWithItems = latestPlan
   }
   
   const data = planWithItems ? {
@@ -85,7 +73,7 @@ export default async function CheckoutPage() {
     line_items: planWithItems.plan_items || []
   } : null
 
-  const error = plansError || itemsError
+  const error = plansError
 
   if (error || !data || !Array.isArray(data.line_items) || data.line_items.length === 0) {
     return (
@@ -114,8 +102,8 @@ export default async function CheckoutPage() {
     price: (li.unit_price_cents || 0) / 100,
     quantity: li.qty || 1,
     frequency: li.billing_interval === "week" ? "Weekly delivery" : li.billing_interval || "Weekly delivery",
-    dogWeight: null,
-    dogActivity: null,
+    dogWeight: undefined,
+    dogActivity: undefined,
     foodCostPerWeek: (li.unit_price_cents || 0) / 100,
     addOnsCostPerWeek: 0,
     totalWeeklyCost: (li.unit_price_cents || 0) / 100,

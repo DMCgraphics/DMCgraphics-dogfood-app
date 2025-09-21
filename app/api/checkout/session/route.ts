@@ -87,14 +87,14 @@ export async function POST(req: Request) {
       .from("plans")
       .select("id, total_cents")
       .eq("user_id", user.id)
-      .eq("status", "active")
+      .in("status", ["draft", "checkout_in_progress", "active"])
       .order("created_at", { ascending: false })
       .limit(1);
 
     if (plansError || !plans || plans.length === 0) {
-      console.log("[checkout-session] No active plan found for user");
+      console.log("[checkout-session] No plan found for user");
       return NextResponse.json(
-        { ok: false, code: "NO_PLAN", message: "No active plan found. Please complete the plan builder first." },
+        { ok: false, code: "NO_PLAN", message: "No plan found. Please complete the plan builder first." },
         { status: 400 }
       );
     }

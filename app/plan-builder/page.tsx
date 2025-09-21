@@ -558,6 +558,12 @@ export default function PlanBuilderPage() {
 
     console.log("[v0] proceed_to_checkout_clicked")
 
+    // Prevent multiple simultaneous calls
+    if (isProcessingAuth) {
+      console.log("[v0] Checkout already processing, skipping duplicate call")
+      return
+    }
+
     const subtotal_cents = allDogsPlans.reduce((total, dog) => total + dog.subtotal_cents, 0)
     const discount_cents = 0 // plug your discounts here if any
     const total_cents = Math.max(0, subtotal_cents - discount_cents)
@@ -580,19 +586,24 @@ export default function PlanBuilderPage() {
 
     console.log("[v0] Checking authentication state:", { user: !!user, isLoading })
 
-    if (!user && !isLoading) {
+    // Check if user is authenticated via direct session check as well
+    const { data: { session: directSession } } = await supabase.auth.getSession()
+    const isAuthenticatedViaSession = !!directSession?.user
+    console.log("[v0] Direct session check:", { isAuthenticatedViaSession, userId: directSession?.user?.id })
+
+    if (!user && !isLoading && !isAuthenticatedViaSession) {
       console.log("[v0] Creating anonymous plan before authentication...")
       await createAnonymousPlan()
     }
 
-    if (isLoading) {
+    if (isLoading && !isAuthenticatedViaSession) {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
-        if (user && !isProcessingAuth) {
+        if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
           console.log("[v0] User authenticated after loading, proceeding to save plan")
           handleAuthSuccess()
-        } else if (!user) {
+        } else if (!user && !isAuthenticatedViaSession && !isProcessingAuth) {
           console.log("[v0] User not authenticated after loading, showing auth modal")
           setShowAuthModal(true)
         } else {
@@ -602,10 +613,10 @@ export default function PlanBuilderPage() {
       return
     }
 
-    if (user && !isProcessingAuth) {
+    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
       console.log("[v0] User already authenticated, proceeding directly to save plan")
       handleAuthSuccess()
-    } else if (!user) {
+    } else if (!user && !isAuthenticatedViaSession) {
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
     } else {
@@ -638,11 +649,21 @@ export default function PlanBuilderPage() {
     
     try {
       console.log("[v0] Waiting for authenticated session...")
-      const session = await waitForSession()
-      console.log("[v0] Session confirmed:", session.user.id)
       
-      // Clear the timeout since we're proceeding successfully
-      clearTimeout(timeoutId)
+      // First, try to get the current session directly
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+      
+      let session
+      if (currentSession?.user && !sessionError) {
+        console.log("[v0] Session already available:", currentSession.user.id)
+        session = currentSession
+        clearTimeout(timeoutId)
+      } else {
+        console.log("[v0] No current session, waiting for session...")
+        session = await waitForSession(10000, 500) // Increased timeout and interval
+        console.log("[v0] Session confirmed:", session.user.id)
+        clearTimeout(timeoutId)
+      }
       
       // Validate session user ID
       if (!session?.user?.id) {
@@ -1012,79 +1033,38 @@ export default function PlanBuilderPage() {
 
           console.log(`[v0] Creating plan item for dog ${i + 1}, recipe ${recipeId}...`)
           
-          // Check if plan item already exists to prevent duplicate key constraint violation
-          const { data: existingPlanItem, error: checkError } = await supabase
+          // Use upsert to handle existing plan items gracefully
+          const { data: planItem, error: planItemError } = await supabase
             .from("plan_items")
+            .upsert({
+              plan_id: planId,
+              dog_id: dogDbData.id,
+              recipe_id: recipeData.id, // Use recipe UUID instead of slug
+              qty: 1,
+              size_g: sizeG,
+              billing_interval: "week",
+              stripe_price_id: stripePricing?.priceId,
+              unit_price_cents: stripePricing?.amountCents || 2100,
+              amount_cents: stripePricing?.amountCents || 2100,
+              meta: {
+                source: "wizard",
+                dog_weight: weight,
+                weight_unit: weightUnit,
+                daily_grams: dailyGrams,
+                monthly_grams: monthlyGrams,
+                activity_level: dogData.dogProfile.activity,
+                calculated_calories: Math.round(der),
+                stripe_product_name: stripePricing?.productName,
+              },
+            }, {
+              onConflict: 'plan_id,dog_id,recipe_id'
+            })
             .select("id")
-            .eq("plan_id", planId)
-            .eq("dog_id", dogDbData.id)
-            .eq("recipe_id", recipeData.id)
             .single()
           
-          let planItem
-          if (existingPlanItem) {
-            console.log(`[v0] Plan item already exists for dog ${i + 1}, recipe ${recipeId}, updating...`)
-            const { data: updatedPlanItem, error: updateError } = await supabase
-              .from("plan_items")
-              .update({
-                qty: 1,
-                size_g: sizeG,
-                billing_interval: "week",
-                stripe_price_id: stripePricing?.priceId,
-                unit_price_cents: stripePricing?.amountCents || 2100,
-                amount_cents: stripePricing?.amountCents || 2100,
-                meta: {
-                  source: "wizard",
-                  dog_weight: weight,
-                  weight_unit: weightUnit,
-                  daily_grams: dailyGrams,
-                  monthly_grams: monthlyGrams,
-                  activity_level: dogData.dogProfile.activity,
-                  calculated_calories: Math.round(der),
-                  stripe_product_name: stripePricing?.productName,
-                },
-              })
-              .eq("id", existingPlanItem.id)
-              .select("id")
-              .single()
-            
-            if (updateError) {
-              console.error(`[v0] Error updating plan item:`, updateError)
-              continue
-            }
-            planItem = updatedPlanItem
-          } else {
-            const { data: newPlanItem, error: planItemError } = await supabase
-              .from("plan_items")
-              .insert({
-                plan_id: planId,
-                dog_id: dogDbData.id,
-                recipe_id: recipeData.id, // Use recipe UUID instead of slug
-                qty: 1,
-                size_g: sizeG,
-                billing_interval: "week",
-                stripe_price_id: stripePricing?.priceId,
-                unit_price_cents: stripePricing?.amountCents || 2100,
-                amount_cents: stripePricing?.amountCents || 2100,
-                meta: {
-                  source: "wizard",
-                  dog_weight: weight,
-                  weight_unit: weightUnit,
-                  daily_grams: dailyGrams,
-                  monthly_grams: monthlyGrams,
-                  activity_level: dogData.dogProfile.activity,
-                  calculated_calories: Math.round(der),
-                  stripe_product_name: stripePricing?.productName,
-                },
-              })
-              .select("id")
-              .single()
-            
-            if (planItemError) {
-              console.error(`[v0] Error creating plan item:`, planItemError)
-              continue
-            }
-            planItem = newPlanItem
+          if (planItemError) {
+            console.error(`[v0] Error upserting plan item for dog ${i + 1}:`, planItemError)
+            continue
           }
 
           console.log(`[v0] ✅ Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)

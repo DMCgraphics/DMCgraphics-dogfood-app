@@ -286,10 +286,10 @@ export default function PlanBuilder() {
           const monthlyGrams = dailyGrams * 30
           const sizeG = Math.ceil(monthlyGrams / 100) * 100
 
-          // Create plan item
+          // Create or update plan item using upsert
           const { data: planItemData, error: planItemError } = await supabase
             .from("plan_items")
-            .insert({
+            .upsert({
               plan_id: planId,
               dog_id: dogDbData.id,
               recipe_id: recipeData.id,
@@ -309,6 +309,8 @@ export default function PlanBuilder() {
                 calculated_calories: Math.round(der),
                 stripe_product_name: stripePricing.productName,
               },
+            }, {
+              onConflict: 'plan_id,dog_id,recipe_id'
             })
             .select("id")
             .single()

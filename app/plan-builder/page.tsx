@@ -794,6 +794,20 @@ export default function PlanBuilderPage() {
 
         if (firstPlanDogError) {
           console.error("[v0] Error creating plan_dog relationship for first dog:", firstPlanDogError)
+          
+          // Log specific error details for debugging
+          if (firstPlanDogError.code === 'PGRST202') {
+            console.log("[v0] 🚨 RPC function 'upsert_plan_dog' not found")
+          } else if (firstPlanDogError.code === 'PGRST301') {
+            console.log("[v0] 🚨 Invalid parameters for 'upsert_plan_dog'")
+          } else {
+            console.log("[v0] 🚨 Unexpected RPC error:", {
+              code: firstPlanDogError.code,
+              message: firstPlanDogError.message,
+              details: firstPlanDogError.details
+            })
+          }
+          
           alert(`Error creating plan-dog relationship: ${firstPlanDogError.message}`)
           return
         } else {
@@ -893,6 +907,20 @@ export default function PlanBuilderPage() {
 
           if (planDogError) {
             console.error(`[v0] Error creating plan_dog relationship for dog ${i + 1}:`, planDogError)
+            
+            // Log specific error details for debugging
+            if (planDogError.code === 'PGRST202') {
+              console.log("[v0] 🚨 RPC function 'upsert_plan_dog' not found")
+            } else if (planDogError.code === 'PGRST301') {
+              console.log("[v0] 🚨 Invalid parameters for 'upsert_plan_dog'")
+            } else {
+              console.log("[v0] 🚨 Unexpected RPC error:", {
+                code: planDogError.code,
+                message: planDogError.message,
+                details: planDogError.details
+              })
+            }
+            
             alert(`Error creating plan-dog relationship for dog ${i + 1}: ${planDogError.message}`)
             continue
           }
@@ -1070,18 +1098,36 @@ export default function PlanBuilderPage() {
         const targetWeightInKg = targetWeight ? (weightUnit === "kg" ? targetWeight * 0.453592 : targetWeight) : null
 
         if (dogData.dogProfile.weight && dogDbData) {
-          const { error: metricsError } = await supabase.from("dog_metrics").insert({
-            dog_id: dogDbData.id,
+          const metricsData = {
             weight_kg: weightInKg,
             body_condition_score: dogData.dogProfile.bodyCondition,
-            measured_at: new Date().toISOString().split("T")[0],
-            notes: `Initial weight from plan builder${targetWeightInKg ? `. Target: ${targetWeightInKg.toFixed(1)}kg` : ""}`,
+            notes: `Initial weight from plan builder${targetWeightInKg ? `. Target: ${targetWeightInKg.toFixed(1)}kg` : ""}`
+          }
+          
+          // Use improved error handling for dog metrics
+          const { error: metricsError } = await supabase.from("dog_metrics").upsert({
+            dog_id: dogDbData.id,
+            ...metricsData,
+            measured_at: new Date().toISOString().split("T")[0]
+          }, {
+            onConflict: 'dog_id,measured_at'
           })
 
           if (metricsError) {
             console.error(`[v0] Error saving dog metrics for dog ${i + 1}:`, metricsError)
+            
+            // Log specific error details for debugging
+            if (metricsError.code === '23505') {
+              console.log(`[v0] 💡 Dog metrics already exist for today, this is expected behavior`)
+            } else {
+              console.log(`[v0] 🚨 Unexpected dog metrics error:`, {
+                code: metricsError.code,
+                message: metricsError.message,
+                details: metricsError.details
+              })
+            }
           } else {
-            console.log(`[v0] Dog metrics saved for dog ${i + 1}`)
+            console.log(`[v0] ✅ Dog metrics saved for dog ${i + 1}`)
           }
         }
       }
@@ -1093,6 +1139,19 @@ export default function PlanBuilderPage() {
 
         if (totalsError) {
           console.error("[v0] RPC totals error:", totalsError)
+          
+          // Log specific error details for debugging
+          if (totalsError.code === 'PGRST202') {
+            console.log("[v0] 🚨 RPC function 'recalc_plan_totals' not found")
+          } else if (totalsError.code === 'PGRST301') {
+            console.log("[v0] 🚨 Invalid parameters for 'recalc_plan_totals'")
+          } else {
+            console.log("[v0] 🚨 Unexpected RPC error:", {
+              code: totalsError.code,
+              message: totalsError.message,
+              details: totalsError.details
+            })
+          }
           const { data: planItems, error: itemsError } = await supabase
             .from("plan_items")
             .select("amount_cents")

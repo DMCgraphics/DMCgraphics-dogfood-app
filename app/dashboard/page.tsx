@@ -584,13 +584,16 @@ export default function DashboardPage() {
     if (!selectedDogId) return
 
     try {
-      // Save to database
-      const { error } = await supabase.from("dog_metrics").insert({
+      // Save to database using upsert to handle unique constraint
+      const today = new Date().toISOString().split("T")[0]
+      const { error } = await supabase.from("dog_metrics").upsert({
         dog_id: selectedDogId,
         weight_kg: entry.weight / 2.20462, // Convert lbs to kg
         body_condition_score: 5, // Default value
-        measured_at: new Date().toISOString(),
+        measured_at: today,
         notes: entry.notes || "Weight logged by user",
+      }, {
+        onConflict: 'dog_id,measured_at'
       })
 
       if (error) {

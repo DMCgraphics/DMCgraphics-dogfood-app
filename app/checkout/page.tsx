@@ -34,15 +34,29 @@ export default async function CheckoutPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/sign-in?returnTo=/checkout")
 
-  // Query plans and plan items directly instead of using the view
-  // Get all active plans and find the most recent one that has plan items
+  // Query plans and plan items with proper RLS handling
+  // First get the plans
   const { data: allPlans, error: plansError } = await supabase
     .from("plans")
     .select(`
       id,
       total_cents,
-      created_at,
-      plan_items (
+      created_at
+    `)
+    .eq("user_id", user.id)
+    .in("status", ["active", "checkout_in_progress", "draft"])
+    .order("created_at", { ascending: false })
+
+  // Find the most recent plan
+  const latestPlan = allPlans?.[0]
+  
+  let planWithItems = null
+  let itemsError = null
+  if (latestPlan) {
+    // Get plan items for the latest plan with proper joins to satisfy RLS
+    const { data: planItems, error: planItemsError } = await supabase
+      .from("plan_items")
+      .select(`
         id,
         recipe_id,
         qty,
@@ -52,14 +66,18 @@ export default async function CheckoutPage() {
         stripe_price_id,
         recipes (name, slug),
         dogs (name)
-      )
-    `)
-    .eq("user_id", user.id)
-    .in("status", ["active", "checkout_in_progress", "draft"])
-    .order("created_at", { ascending: false })
-
-  // Find the most recent plan that has plan items
-  const planWithItems = allPlans?.find(plan => plan.plan_items && plan.plan_items.length > 0)
+      `)
+      .eq("plan_id", latestPlan.id)
+    
+    itemsError = planItemsError
+    
+    if (planItems && planItems.length > 0) {
+      planWithItems = {
+        ...latestPlan,
+        plan_items: planItems
+      }
+    }
+  }
   
   const data = planWithItems ? {
     plan_id: planWithItems.id,
@@ -67,7 +85,7 @@ export default async function CheckoutPage() {
     line_items: planWithItems.plan_items || []
   } : null
 
-  const error = plansError
+  const error = plansError || itemsError
 
   if (error || !data || !Array.isArray(data.line_items) || data.line_items.length === 0) {
     return (

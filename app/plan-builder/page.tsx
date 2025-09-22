@@ -804,6 +804,7 @@ export default function PlanBuilderPage() {
             subtotal_cents: 0,
             discount_cents: 0,
             total_cents: 0,
+            delivery_zipcode: null,
           })
           .select("id, user_id")
           .single()

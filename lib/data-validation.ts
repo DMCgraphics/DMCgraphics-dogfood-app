@@ -27,6 +27,7 @@ export interface PlanData {
   total_cents: number
   stripe_session_id?: string
   stripe_subscription_id?: string
+  delivery_zipcode?: string
 }
 
 export interface PlanItemData {
@@ -167,7 +168,8 @@ export function validatePlanData(planData: Partial<PlanData>): PlanData {
     discount_cents: planData.discount_cents || 0,
     total_cents: planData.total_cents!,
     stripe_session_id: planData.stripe_session_id,
-    stripe_subscription_id: planData.stripe_subscription_id
+    stripe_subscription_id: planData.stripe_subscription_id,
+    delivery_zipcode: planData.delivery_zipcode
   }
 }
 

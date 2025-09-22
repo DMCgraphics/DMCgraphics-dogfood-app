@@ -23,6 +23,7 @@ import { ArrowRight, PawPrint } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
+import { EditDogModal } from "@/components/modals/edit-dog-modal"
 
 // SWR fetcher function
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
@@ -79,6 +80,8 @@ export default function DashboardPage() {
   const [showDogSelectionModal, setShowDogSelectionModal] = useState(false)
   const [incompletePlans, setIncompletePlans] = useState<string[]>([])
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [showEditDogModal, setShowEditDogModal] = useState(false)
+  const [editingDogId, setEditingDogId] = useState<string | null>(null)
 
   const [medicalConditions] = useState(mockMedicalConditions)
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
@@ -612,7 +615,14 @@ export default function DashboardPage() {
   }, [selectedDogId, user])
 
   const handleEditDog = (dogId: string) => {
-    alert(`Edit dog profile for ${dogId} - this would open an edit modal`)
+    setEditingDogId(dogId)
+    setShowEditDogModal(true)
+  }
+
+  const handleDogUpdated = () => {
+    // Simple refresh - just reload the page to get updated data
+    // This is the safest approach that won't interfere with existing logic
+    window.location.reload()
   }
 
   const handleSelectDog = (dogId: string) => {
@@ -1048,6 +1058,12 @@ export default function DashboardPage() {
           incompletePlans={incompletePlans}
         />
         <SubscriptionManagementModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
+        <EditDogModal 
+          open={showEditDogModal} 
+          onOpenChange={setShowEditDogModal} 
+          dogId={editingDogId}
+          onDogUpdated={handleDogUpdated}
+        />
         <Footer />
       </div>
     </ProtectedRoute>

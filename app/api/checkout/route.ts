@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { stripe } from "@/lib/stripe"
+import { isAllowedZip, normalizeZip } from "@/lib/allowed-zips"
 
 function reqEnv(name: string) {
   const v = process.env[name]
@@ -11,7 +12,7 @@ function reqEnv(name: string) {
   return v
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     console.log("[v0] Starting checkout API request")
 
@@ -35,6 +36,19 @@ export async function POST() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
     console.log("[v0] User authenticated:", user.id)
+
+    // Parse request body for zipcode validation
+    const body = await req.json().catch(() => ({}));
+    const zip = normalizeZip(body?.zip);
+    
+    // Validate zipcode if provided
+    if (zip && !isAllowedZip(zip)) {
+      console.log("[v0] ZIP validation failed:", zip);
+      return NextResponse.json(
+        { error: "Sorry! We currently deliver only to Westchester County, NY and Fairfield County, CT." },
+        { status: 400 }
+      );
+    }
 
     // Query plans and plan items directly instead of using the view
     console.log("[v0] Fetching checkout lines from database")
@@ -141,11 +155,15 @@ export async function POST() {
 
     console.log("[v0] Stripe session created:", session.id)
 
-    // Mark plan "in progress" and store session id immediately
-    console.log("[v0] Updating plan status to checkout_in_progress")
+    // Mark plan "in progress" and store session id and zipcode
+    console.log("[v0] Updating plan status to checkout_in_progress with zipcode:", zip)
     const { error: updateError } = await supabase
       .from("plans")
-      .update({ status: "checkout_in_progress", stripe_session_id: session.id })
+      .update({ 
+        status: "checkout_in_progress", 
+        stripe_session_id: session.id,
+        delivery_zipcode: zip
+      })
       .eq("id", planId)
 
     if (updateError) {

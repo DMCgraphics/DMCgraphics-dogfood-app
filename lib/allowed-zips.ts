@@ -38,6 +38,7 @@ export const FAIRFIELD_ZIPS = [
 export const ALLOWED_ZIPS = Array.from(new Set([...WESTCHESTER_ZIPS, ...FAIRFIELD_ZIPS]));
 
 export function normalizeZip(input: string) {
+  // Extract the first 5-digit sequence from the input
   const match = (input || "").trim().match(/\d{5}/);
   return match ? match[0] : "";
 }

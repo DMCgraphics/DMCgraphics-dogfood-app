@@ -125,6 +125,22 @@ export async function POST(req: Request) {
       shipping_address_collection: { allowed_countries: ["US"] },
     });
 
+    // Store the validated zipcode in the plan record
+    console.log("[checkout-session] Storing validated zipcode in plan:", zip);
+    const { error: updateError } = await supabase
+      .from("plans")
+      .update({ 
+        status: "checkout_in_progress", 
+        stripe_session_id: session.id,
+        delivery_zipcode: zip
+      })
+      .eq("id", planId);
+
+    if (updateError) {
+      console.log("[checkout-session] Error updating plan with zipcode:", updateError);
+      // Don't fail the checkout, just log the error
+    }
+
     console.log("[checkout-session] Stripe session created successfully:", session.id);
     return NextResponse.json({ ok: true, url: session.url });
   } catch (err: any) {

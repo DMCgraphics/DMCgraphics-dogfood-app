@@ -108,11 +108,16 @@ export default function DashboardPage() {
         return
       }
 
-      if (!user) {
+      // Add additional check for auth state consistency
+      if (!user || user.id === undefined) {
+        console.log("[v0] Auth state not ready:", { authLoading, hasUser: !!user, userId: user?.id })
         clearTimeout(timeoutId)
         setLoading(false)
         return
       }
+
+      // Add small delay for desktop to handle rapid state changes
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       try {
         const { data: dogsData, error } = await supabase

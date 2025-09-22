@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
 import type { User } from "@/lib/auth"
 
@@ -25,6 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [apiStatus, setApiStatus] = useState<"unknown" | "connected" | "disconnected">("unknown")
+  
+  // Use ref to track current user state and avoid stale closures
+  const userRef = useRef<User | null>(null)
+  userRef.current = user
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -97,10 +101,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[v0] auth_state_change", { event, hasSession: !!session, userId: session?.user?.id, email: session?.user?.email })
+      console.log("[v0] auth_state_change_debug", { 
+        event, 
+        currentUserId: userRef.current?.id, 
+        sessionUserId: session?.user?.id,
+        isSameUser: userRef.current?.id === session?.user?.id,
+        hasCurrentUser: !!userRef.current,
+        hasSession: !!session
+      })
 
       if (event === "SIGNED_IN" && session?.user) {
         // Only process if we don't already have this user
-        if (user?.id !== session.user.id) {
+        // Use userRef.current to avoid stale closure issues
+        if (userRef.current?.id !== session.user.id) {
           // Clear any existing user state first
           setUser(null)
           

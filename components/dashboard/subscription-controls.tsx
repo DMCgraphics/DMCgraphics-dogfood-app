@@ -49,7 +49,7 @@ export function SubscriptionControls({
   }
 
   const handleManageClick = () => {
-    window.location.href = "/subscription/manage"
+    onManageSubscription()
   }
 
   const getStatusColor = (status: string) => {

@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowRight, PawPrint } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
+import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
 
 // SWR fetcher function
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
@@ -77,6 +78,7 @@ export default function DashboardPage() {
   const [selectedDogId, setSelectedDogId] = useState<string | null>(null)
   const [showDogSelectionModal, setShowDogSelectionModal] = useState(false)
   const [incompletePlans, setIncompletePlans] = useState<string[]>([])
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
   const [medicalConditions] = useState(mockMedicalConditions)
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
@@ -705,7 +707,7 @@ export default function DashboardPage() {
   }
 
   const handleManageSubscription = () => {
-    window.location.href = "/dashboard/subscription"
+    setShowSubscriptionModal(true)
   }
 
   const handleTakeAction = (recommendationId: string) => {
@@ -1045,6 +1047,7 @@ export default function DashboardPage() {
           isSubscriptionManagement={planStatus === "active"}
           incompletePlans={incompletePlans}
         />
+        <SubscriptionManagementModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
         <Footer />
       </div>
     </ProtectedRoute>

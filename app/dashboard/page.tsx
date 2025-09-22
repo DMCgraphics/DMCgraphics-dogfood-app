@@ -64,7 +64,7 @@ const mockMedicalConditions = [
 ]
 
 export default function DashboardPage() {
-  const { user, hasSubscription, refreshSubscriptionStatus } = useAuth()
+  const { user, hasSubscription, refreshSubscriptionStatus, isLoading: authLoading } = useAuth()
   const [dogs, setDogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [weightEntries, setWeightEntries] = useState([])
@@ -100,6 +100,13 @@ export default function DashboardPage() {
         console.log("[v0] Dashboard loading timeout - stopping loading state")
         setLoading(false)
       }, 10000) // 10 second timeout
+
+      // Wait for auth to finish loading before proceeding
+      if (authLoading) {
+        console.log("[v0] Auth still loading, waiting...")
+        clearTimeout(timeoutId)
+        return
+      }
 
       if (!user) {
         clearTimeout(timeoutId)
@@ -144,13 +151,36 @@ export default function DashboardPage() {
         console.log("[v0] Plan data:", planData)
         console.log("[v0] Dogs data:", dogsData)
 
-        const { data: subscriptionsData } = await supabase
-          .from("subscriptions")
-          .select("*")
-          .eq("user_id", user.id)
-          .in("status", ["active", "trialing", "past_due"])
+        // Fetch subscription data with retry mechanism for post-order scenarios
+        let subscriptionsData = null
+        let retryCount = 0
+        const maxRetries = 3
+        
+        while (retryCount < maxRetries) {
+          const { data: subsData, error: subsError } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", user.id)
+            .in("status", ["active", "trialing", "past_due"])
 
-        console.log("[v0] Subscriptions data:", subscriptionsData)
+          if (subsError) {
+            console.error("[v0] Error fetching subscriptions:", subsError)
+            break
+          }
+
+          subscriptionsData = subsData
+          console.log("[v0] Subscriptions data (attempt", retryCount + 1, "):", subscriptionsData)
+
+          // If we have subscription data or this is the last attempt, break
+          if (subscriptionsData && subscriptionsData.length > 0 || retryCount === maxRetries - 1) {
+            break
+          }
+
+          // Wait 1 second before retrying (for post-order scenarios)
+          console.log("[v0] No subscriptions found, retrying in 1 second...")
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          retryCount++
+        }
 
         const { data: activePlansData } = await supabase
           .from("plans")
@@ -442,7 +472,7 @@ export default function DashboardPage() {
     }
 
     fetchDogs()
-  }, [user])
+  }, [user, authLoading])
 
   // Debug selectedDog data
   useEffect(() => {

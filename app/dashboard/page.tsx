@@ -161,7 +161,10 @@ export default function DashboardPage() {
         console.log("[v0] Active plans data:", activePlansData)
 
         // Refresh auth context subscription status to ensure consistency
-        await refreshSubscriptionStatus()
+        // Don't await this to prevent dashboard timeout - it will update in background
+        refreshSubscriptionStatus().catch(error => {
+          console.log("[v0] Subscription status refresh failed (non-blocking):", error)
+        })
 
         // Fetch real delivery data from orders
         const { data: ordersData } = await supabase

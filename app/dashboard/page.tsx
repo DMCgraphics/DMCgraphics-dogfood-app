@@ -82,6 +82,7 @@ export default function DashboardPage() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [showEditDogModal, setShowEditDogModal] = useState(false)
   const [editingDogId, setEditingDogId] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const [medicalConditions] = useState(mockMedicalConditions)
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
@@ -482,7 +483,7 @@ export default function DashboardPage() {
     }
 
     fetchDogs()
-  }, [user, authLoading])
+  }, [user, authLoading, refreshTrigger])
 
   // Debug selectedDog data
   useEffect(() => {
@@ -620,9 +621,9 @@ export default function DashboardPage() {
   }
 
   const handleDogUpdated = () => {
-    // Simple refresh - just reload the page to get updated data
-    // This is the safest approach that won't interfere with existing logic
-    window.location.reload()
+    // Trigger a refresh by updating the refresh trigger
+    // This will cause the useEffect to re-run and fetch updated data
+    setRefreshTrigger(prev => prev + 1)
   }
 
   const handleSelectDog = (dogId: string) => {

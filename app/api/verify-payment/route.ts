@@ -69,7 +69,7 @@ export async function POST(req: Request) {
         // First, check if the plan exists and belongs to the current user
         const { data: planData, error: planError } = await supabase
           .from("plans")
-          .select("id, user_id, status")
+          .select("id, user_id, status, delivery_zipcode")
           .eq("id", planId)
           .eq("user_id", userId)
           .single()
@@ -166,18 +166,23 @@ export async function POST(req: Request) {
         }
 
         // Also ensure the plan status is updated to active
+        // Include delivery_zipcode in the update to satisfy database constraints
         const { error: planUpdateError } = await supabase
           .from("plans")
           .update({
             status: "active",
             stripe_subscription_id: subscriptionId,
             updated_at: new Date().toISOString(),
+            // Keep the existing delivery_zipcode to satisfy database constraints
+            delivery_zipcode: planData.delivery_zipcode
           })
           .eq("id", planData.id)
           .eq("user_id", userId)
 
         if (planUpdateError) {
           console.error("[v0] Failed to update plan status:", planUpdateError)
+          // Return error to client instead of silently failing
+          return NextResponse.json({ error: "Failed to update plan status" }, { status: 500 })
         } else {
           console.log("[v0] Plan status updated to active")
         }

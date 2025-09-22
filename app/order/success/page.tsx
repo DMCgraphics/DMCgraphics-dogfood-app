@@ -26,6 +26,12 @@ export default function OrderSuccessPage() {
         return
       }
 
+      // Prevent multiple executions
+      if (orderData || error) {
+        console.log("[v0] Payment already processed, skipping...")
+        return
+      }
+
       // Note: We can now proceed without waiting for authentication since verify-payment API
       // can work with user_id from session metadata
       console.log("[v0] Proceeding with payment verification...", { 
@@ -100,13 +106,14 @@ export default function OrderSuccessPage() {
         }
       } catch (error) {
         console.error("Error verifying payment:", error)
+        setError("An error occurred while verifying your payment")
       } finally {
         setIsLoading(false)
       }
     }
 
     handleSuccessfulPayment()
-  }, [sessionId, authLoading, user])
+  }, [sessionId, authLoading, user?.id]) // Use user.id instead of user object to prevent infinite loop
 
   if (isLoading) {
     return (

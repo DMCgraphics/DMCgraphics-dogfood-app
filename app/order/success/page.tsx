@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Package, Calendar } from "lucide-react"
@@ -16,6 +16,7 @@ export default function OrderSuccessPage() {
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const { user, isLoading: authLoading, refreshSubscriptionStatus } = useAuth()
+  const processingRef = useRef(false)
 
   useEffect(() => {
     const handleSuccessfulPayment = async () => {
@@ -26,11 +27,12 @@ export default function OrderSuccessPage() {
         return
       }
 
-      // Prevent multiple executions
-      if (orderData || error) {
-        console.log("[v0] Payment already processed, skipping...")
-        return
+      // Prevent multiple executions using ref
+      if (processingRef.current) {
+        console.log("[v0] Payment already processing, skipping duplicate call...")
+        return;
       }
+      processingRef.current = true; // Mark as processing
 
       // Note: We can now proceed without waiting for authentication since verify-payment API
       // can work with user_id from session metadata
@@ -60,14 +62,8 @@ export default function OrderSuccessPage() {
           setOrderData(verifyData)
           console.log("[v0] Payment verified successfully:", verifyData)
 
-          // Refresh the session to ensure auth state is up to date
-          console.log("[v0] Refreshing session after payment verification...")
-          try {
-            await supabase.auth.refreshSession()
-            console.log("[v0] Session refreshed successfully")
-          } catch (refreshError) {
-            console.log("[v0] Session refresh failed (this is OK):", refreshError)
-          }
+          // Note: Removed supabase.auth.refreshSession() as it was causing the useEffect to re-run
+          // The user object is now stable in the dependency array (user?.id)
 
           // Refresh subscription status in auth context
           console.log("[v0] Refreshing subscription status...")
@@ -109,6 +105,7 @@ export default function OrderSuccessPage() {
         setError("An error occurred while verifying your payment")
       } finally {
         setIsLoading(false)
+        processingRef.current = false; // Mark as not processing
       }
     }
 

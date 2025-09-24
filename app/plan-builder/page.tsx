@@ -273,7 +273,7 @@ export default function PlanBuilderPage() {
       setSubtotal_cents(data.subtotal_cents)
       setTimeout(() => setIsUpdatingFromAllDogsData(false), 50)
     }
-  }, [currentDogIndex]) // Only depend on currentDogIndex, not allDogsData
+  }, [currentDogIndex, allDogsData]) // Add allDogsData as dependency to ensure proper sync
 
   useEffect(() => {
     if (isUpdatingFromAllDogsData) return
@@ -408,7 +408,34 @@ export default function PlanBuilderPage() {
 
   const switchToDog = (index: number) => {
     if (index >= 0 && index < totalDogs) {
+      // Save current dog's data before switching
+      const currentData: DogPlanData = {
+        dogProfile,
+        healthGoals,
+        selectedAllergens,
+        selectedRecipe,
+        selectedRecipes,
+        allowMultipleSelection,
+        mealsPerDay,
+        selectedAddOns,
+        medicalNeeds,
+        foodCostPerWeek,
+        addOnsCostPerWeek,
+        totalWeeklyCost,
+        subtotal_cents,
+      }
+
+      // Update allDogsData with current dog's data
+      setAllDogsData((prev) => {
+        const newData = [...prev]
+        newData[currentDogIndex] = currentData
+        return newData
+      })
+
+      // Switch to the new dog
       setCurrentDogIndex(index)
+      
+      // Ensure the new dog has data
       if (!allDogsData[index] || !allDogsData[index].dogProfile.name) {
         setAllDogsData((prev) => {
           const newData = [...prev]

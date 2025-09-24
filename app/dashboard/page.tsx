@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
 import { EditDogModal } from "@/components/modals/edit-dog-modal"
+import { useRouter } from "next/navigation"
 
 // SWR fetcher function
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
@@ -86,6 +87,7 @@ export default function DashboardPage() {
 
   const [medicalConditions] = useState(mockMedicalConditions)
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
+  const router = useRouter()
 
   const selectedDog = dogs.find((dog) => dog.id === selectedDogId) || dogs[0]
 
@@ -126,6 +128,9 @@ export default function DashboardPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       try {
+        // Clear any plan builder state that might interfere with dashboard loading
+        localStorage.removeItem("nouripet-plan-builder")
+        
         const { data: dogsData, error } = await supabase
           .from("dogs")
           .select(`
@@ -774,7 +779,8 @@ export default function DashboardPage() {
     // Set parameters to skip dog count selection and go directly to step 1
     localStorage.setItem("nouripet-add-dog-mode", "true")
     localStorage.setItem("nouripet-total-dogs", (dogs.length + 1).toString()) // Current dogs + 1 new dog
-    window.location.href = "/plan-builder"
+    // Use router.push for better navigation instead of window.location.href
+    router.push("/plan-builder")
   }
 
   const handleContactVet = () => {

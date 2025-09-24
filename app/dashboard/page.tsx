@@ -487,8 +487,14 @@ export default function DashboardPage() {
       }
     }
 
-    fetchDogs()
-  }, [user, authLoading, refreshTrigger])
+    // Only run fetchDogs if we have a valid user and auth is not loading
+    if (user && user.id && !authLoading) {
+      fetchDogs()
+    } else if (!authLoading && !user) {
+      // If auth is done loading but no user, stop loading
+      setLoading(false)
+    }
+  }, [user?.id, authLoading, refreshTrigger]) // Use user.id instead of user object to prevent unnecessary re-runs
 
   // Debug selectedDog data
   useEffect(() => {

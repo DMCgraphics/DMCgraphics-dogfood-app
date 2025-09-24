@@ -18,12 +18,6 @@ export const metadata: Metadata = {
         height: 630,
         alt: "NouriPet - Coming Soon - Fresh, algorithm-guided meals for dogs",
       },
-      {
-        url: "https://nouripet.net/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "NouriPet - Coming Soon - Fresh, algorithm-guided meals for dogs",
-      },
     ],
     locale: "en_US",
     type: "website",

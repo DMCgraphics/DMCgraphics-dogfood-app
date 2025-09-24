@@ -42,13 +42,6 @@ export const metadata: Metadata = {
         alt: "Adorable puppy sitting next to fresh dog food ingredients including sweet potato, spinach, rice, and chicken - NouriPet Fresh Dog Food",
         type: "image/jpeg",
       },
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "NouriPet Fresh Dog Food - Premium nutrition for your dog",
-        type: "image/png",
-      },
     ],
     type: "website",
     locale: "en_US",

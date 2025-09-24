@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     siteName: "NouriPet",
     images: [
       {
-        url: "https://nouripet.net/og-image.png",
+        url: "https://nouripet.net/og-social.jpg",
         width: 1200,
         height: 630,
         alt: "About NouriPet - Fresh nutrition made simple for your dog",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     title: "About Us - NouriPet | Fresh Nutrition Made Simple",
     description:
       "Learn about NouriPet's mission to bring personalized, fresh dog nutrition to pet parents everywhere. Built with community feedback.",
-    images: ["https://nouripet.net/og-image.png"],
+    images: ["https://nouripet.net/og-social.jpg"],
   },
   alternates: {
     canonical: "/about-us",

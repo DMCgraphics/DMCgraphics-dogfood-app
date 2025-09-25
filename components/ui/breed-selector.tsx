@@ -34,18 +34,18 @@ export function BreedSelector({
 }: BreedSelectorProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
-  
-  // Debug logging and error handling
-  console.log('BreedSelector received options:', options?.length || 0, 'breeds')
-  
-  // Ensure options is always an array
-  const safeOptions = Array.isArray(options) ? options : []
-  const measuredMobile = useMobile(768)       // true | false | null
-  const isMobile = measuredMobile === true    // treat null as desktop
+  const measuredMobile = useMobile(768)
+  const isMobile = measuredMobile === true
   
   // Use React's useId for stable, unique IDs
   const searchInputId = useId()
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Debug logging
+  console.log('BreedSelector received options:', options?.length || 0, 'breeds')
+  
+  // Ensure options is always an array
+  const safeOptions = Array.isArray(options) ? options : []
 
   // Focus the search input when dialog/drawer opens
   useEffect(() => {
@@ -150,7 +150,7 @@ export function BreedSelector({
         )}
       </div>
     </div>
-  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile])
+  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions])
 
   // Show loading state while mobile detection is happening to prevent flickering
   if (measuredMobile === null) {
@@ -176,10 +176,6 @@ export function BreedSelector({
             variant="outline"
             className="w-full justify-between h-10 px-3 py-2 text-left font-normal bg-transparent"
             type="button"
-            onClick={() => {
-              console.log('Mobile breed selector button clicked, current open state:', open);
-              setOpen(o => !o);
-            }}
             aria-expanded={open}
             aria-haspopup="dialog"
           >
@@ -212,7 +208,7 @@ export function BreedSelector({
     )
   }
 
-  // ---- Desktop: Dialog (popover-free, bulletproof) ----
+  // ---- Desktop: Dialog ----
   return (
     <>
       <Button

@@ -17,6 +17,9 @@ interface Step1Props {
 
 export function Step1DogProfile({ profile, onUpdate }: Step1Props) {
   const breedOptions = ALL_BREEDS
+  
+  // Debug logging to check if breed options are loaded
+  console.log('Breed options loaded:', breedOptions?.length || 0, 'breeds')
 
   return (
     <div className="space-y-6">

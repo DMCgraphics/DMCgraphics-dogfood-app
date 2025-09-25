@@ -34,6 +34,12 @@ export function BreedSelector({
 }: BreedSelectorProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
+  
+  // Debug logging and error handling
+  console.log('BreedSelector received options:', options?.length || 0, 'breeds')
+  
+  // Ensure options is always an array
+  const safeOptions = Array.isArray(options) ? options : []
   const measuredMobile = useMobile(768)       // true | false | null
   const isMobile = measuredMobile === true    // treat null as desktop
   
@@ -60,12 +66,12 @@ export function BreedSelector({
 
   const canonicalizedSearch = useMemo(() => canonicalizeBreed(search), [search])
   const filtered = useMemo(() => 
-    options.filter(o => 
+    safeOptions.filter(o => 
       o.label.toLowerCase().includes(canonicalizedSearch.toLowerCase()) ||
       o.value.toLowerCase().includes(canonicalizedSearch.toLowerCase())
-    ), [options, canonicalizedSearch]
+    ), [safeOptions, canonicalizedSearch]
   )
-  const selected = useMemo(() => options.find(o => o.value === value), [options, value])
+  const selected = useMemo(() => safeOptions.find(o => o.value === value), [safeOptions, value])
 
   const handleSelect = useCallback((opt: BreedOption) => {
     const canonicalizedValue = canonicalizeBreed(opt.value)
@@ -113,7 +119,11 @@ export function BreedSelector({
       )}
 
       <div className={cn("max-h-60 overflow-y-auto", isMobile && "max-h-[50vh]")} role="listbox">
-        {filtered.length === 0 ? (
+        {safeOptions.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            No breed options available. Please refresh the page.
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
         ) : (
           <div className="space-y-1">
@@ -166,7 +176,10 @@ export function BreedSelector({
             variant="outline"
             className="w-full justify-between h-10 px-3 py-2 text-left font-normal bg-transparent"
             type="button"
-            onClick={() => setOpen(o => !o)}
+            onClick={() => {
+              console.log('Mobile breed selector button clicked, current open state:', open);
+              setOpen(o => !o);
+            }}
             aria-expanded={open}
             aria-haspopup="dialog"
           >
@@ -206,7 +219,10 @@ export function BreedSelector({
         variant="outline"
         className="w-full justify-between h-10 px-3 py-2 text-left font-normal bg-transparent"
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          console.log('Breed selector button clicked, current open state:', open);
+          setOpen(o => !o);
+        }}
         aria-expanded={open}
         aria-haspopup="dialog"
       >

@@ -16,11 +16,6 @@ export const ALL_BREEDS: BreedOption[] = [
   arr.findIndex(b => b.value === breed.value) === index
 );
 
-// Debug logging
-console.log('ALL_BREEDS loaded:', ALL_BREEDS.length, 'breeds');
-console.log('AKC_BREEDS:', AKC_BREEDS.length, 'breeds');
-console.log('MIXED_AND_DESIGNER_BREEDS:', MIXED_AND_DESIGNER_BREEDS.length, 'breeds');
-
 // Re-export for convenience
 export { MIXED_AND_DESIGNER_BREEDS };
 export type { BreedOption } from "./dog-breeds-mixed";

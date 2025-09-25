@@ -49,11 +49,19 @@ export function BreedSelector({
 
   // Focus the search input when dialog/drawer opens
   useEffect(() => {
-    if (open && searchInputRef.current) {
-      // Use requestAnimationFrame for better timing with Radix UI
-      requestAnimationFrame(() => {
-        searchInputRef.current?.focus()
-      })
+    if (open) {
+      console.log('Modal opened, attempting to focus search input')
+      // Use multiple attempts to focus the input
+      const focusAttempts = [100, 200, 300]
+      const timers = focusAttempts.map(delay => 
+        setTimeout(() => {
+          if (searchInputRef.current) {
+            console.log(`Focus attempt at ${delay}ms`)
+            searchInputRef.current.focus()
+          }
+        }, delay)
+      )
+      return () => timers.forEach(clearTimeout)
     }
   }, [open])
 
@@ -74,7 +82,9 @@ export function BreedSelector({
   const selected = useMemo(() => safeOptions.find(o => o.value === value), [safeOptions, value])
 
   const handleSelect = useCallback((opt: BreedOption) => {
+    console.log('Breed selected:', opt.label, opt.value)
     const canonicalizedValue = canonicalizeBreed(opt.value)
+    console.log('Canonicalized value:', canonicalizedValue)
     onValueChange(canonicalizedValue)
     setOpen(false)
     setSearch("")
@@ -92,6 +102,22 @@ export function BreedSelector({
 
   const BreedList = useCallback(() => (
     <div className="space-y-2">
+      <div className="p-4 bg-yellow-100 border border-yellow-300 rounded">
+        <p className="text-sm text-yellow-800">Debug: Modal content is rendering</p>
+        <p className="text-xs text-yellow-600">Options count: {safeOptions.length}</p>
+        <p className="text-xs text-yellow-600">Filtered count: {filtered.length}</p>
+        <p className="text-xs text-yellow-600">Search value: "{search}"</p>
+        <button
+          type="button"
+          onClick={() => {
+            console.log('Test button clicked!')
+            alert('Test button works!')
+          }}
+          className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm"
+        >
+          Test Click
+        </button>
+      </div>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -99,15 +125,44 @@ export function BreedSelector({
           id={searchInputId}
           placeholder={searchPlaceholder}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={(e) => {
+            console.log('Input onChange triggered:', e.target.value)
+            setSearch(e.target.value)
+          }}
+          onKeyDown={(e) => {
+            console.log('Input onKeyDown triggered:', e.key)
+            handleKeyDown(e)
+          }}
           className="pl-10"
           inputMode="search"
           role="searchbox"
           aria-label="Search dog breeds"
           aria-describedby={`${searchInputId}-description`}
           autoComplete="off"
+          autoFocus={false}
+          onFocus={() => console.log('Search input focused')}
+          onBlur={() => console.log('Search input blurred')}
+          onMouseDown={() => console.log('Input mouse down')}
+          onMouseUp={() => console.log('Input mouse up')}
+          onClick={() => console.log('Input clicked')}
         />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('Manual focus button clicked')
+            searchInputRef.current?.focus()
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('Focus button mouse down')
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground bg-red-100 px-1 py-0.5 rounded"
+        >
+          Focus
+        </button>
         <div id={`${searchInputId}-description`} className="sr-only">
           Type to search through available dog breeds
         </div>
@@ -132,9 +187,24 @@ export function BreedSelector({
               return (
                 <button
                   key={opt.value}
-                  onClick={() => handleSelect(opt)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('Breed button clicked:', opt.label)
+                    handleSelect(opt)
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('Breed button mouse down:', opt.label)
+                  }}
+                  onMouseUp={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('Breed button mouse up:', opt.label)
+                  }}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
+                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors border border-gray-200",
                     isSelected && "bg-accent text-accent-foreground",
                   )}
                   role="option"
@@ -176,6 +246,21 @@ export function BreedSelector({
             variant="outline"
             className="w-full justify-between h-10 px-3 py-2 text-left font-normal bg-transparent"
             type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('Mobile breed selector button clicked')
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('Mobile breed selector button mouse down')
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('Mobile breed selector button mouse up')
+            }}
             aria-expanded={open}
             aria-haspopup="dialog"
           >
@@ -187,14 +272,6 @@ export function BreedSelector({
         </DrawerTrigger>
         <DrawerContent 
           className="z-[60] h-[80dvh] max-h-[95vh]"
-          onOpenAutoFocus={(e) => {
-            // Prevent default focus behavior and let our custom focus take over
-            e.preventDefault()
-            // Focus our input after a brief delay
-            setTimeout(() => {
-              searchInputRef.current?.focus()
-            }, 0)
-          }}
         >
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
@@ -215,9 +292,21 @@ export function BreedSelector({
         variant="outline"
         className="w-full justify-between h-10 px-3 py-2 text-left font-normal bg-transparent"
         type="button"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           console.log('Breed selector button clicked, current open state:', open);
           setOpen(o => !o);
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          console.log('Breed selector button mouse down')
+        }}
+        onMouseUp={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          console.log('Breed selector button mouse up')
         }}
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -231,14 +320,6 @@ export function BreedSelector({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="sm:max-w-[480px] z-[1000]"
-          onOpenAutoFocus={(e) => {
-            // Prevent default focus behavior and let our custom focus take over
-            e.preventDefault()
-            // Focus our input after a brief delay
-            setTimeout(() => {
-              searchInputRef.current?.focus()
-            }, 0)
-          }}
         >
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>

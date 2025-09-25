@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { WizardLayout } from "@/components/plan-builder/wizard-layout"
 import { Step1DogProfile } from "@/components/plan-builder/step-1-dog-profile"
 import { Step2HealthGoals } from "@/components/plan-builder/step-2-health-goals"
@@ -658,7 +658,7 @@ export default function PlanBuilderPage() {
   const [isProcessingAuth, setIsProcessingAuth] = useState(false)
   const authSuccessRef = useRef(false)
 
-  const handleAuthSuccess = async () => {
+  const handleAuthSuccess = useCallback(async () => {
     // Prevent multiple simultaneous executions using both state and ref
     if (isProcessingAuth || authSuccessRef.current) {
       console.log("[v0] Auth success already processing, skipping duplicate call")
@@ -1258,7 +1258,11 @@ export default function PlanBuilderPage() {
       setIsProcessingAuth(false)
       authSuccessRef.current = false
     }
-  }
+  }, [router])
+
+  const handleCloseAuthModal = useCallback(() => {
+    setShowAuthModal(false)
+  }, [])
 
   const updateSelectedRecipes = (recipes: string[]) => {
     setSelectedRecipes(recipes)
@@ -1493,7 +1497,7 @@ export default function PlanBuilderPage() {
 
       <AuthModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={handleCloseAuthModal}
         defaultMode="signup"
         onSuccess={handleAuthSuccess}
       />

@@ -28,12 +28,15 @@ export function AuthModal({ isOpen, onClose, defaultMode = "login", onSuccess }:
 
   // Auto-close modal when user becomes authenticated
   useEffect(() => {
-    console.log("[v0] auth_modal_state_check", { 
-      isAuthenticated, 
-      isOpen, 
-      hasUserInteracted,
-      mode 
-    })
+    // Only log when modal is actually open to reduce noise
+    if (isOpen) {
+      console.log("[v0] auth_modal_state_check", { 
+        isAuthenticated, 
+        isOpen, 
+        hasUserInteracted,
+        mode 
+      })
+    }
     
     if (isAuthenticated && isOpen) {
       console.log("[v0] auth_modal_auto_close_on_auth", { isAuthenticated, hasUserInteracted })

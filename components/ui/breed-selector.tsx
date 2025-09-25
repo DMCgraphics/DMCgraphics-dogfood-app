@@ -39,10 +39,12 @@ export function BreedSelector({
   const searchInputId = useId()
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Simple mobile detection
+  // Mobile detection
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768)
+      const isMobileWidth = window.innerWidth <= 768
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+      setIsMobile(isMobileWidth || isTouchDevice)
     }
     checkMobile()
     window.addEventListener('resize', checkMobile)
@@ -52,18 +54,22 @@ export function BreedSelector({
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : []
 
-  // Focus the search input only once when modal first opens
+  // Focus the search input when modal opens
   useEffect(() => {
     if (open && !hasInitiallyFocused) {
       const timer = setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus()
+          // For mobile, also trigger click to ensure keyboard appears
+          if (isMobile) {
+            searchInputRef.current.click()
+          }
           setHasInitiallyFocused(true)
         }
-      }, 100)
+      }, 150) // Increased delay to ensure modal is fully rendered
       return () => clearTimeout(timer)
     }
-  }, [open, hasInitiallyFocused])
+  }, [open, hasInitiallyFocused, isMobile])
 
   // Reset state when modal closes
   useEffect(() => {
@@ -98,6 +104,21 @@ export function BreedSelector({
     }
   }, [search, filtered.length, onValueChange])
 
+  const handleInputFocus = useCallback(() => {
+    // Ensure mobile keyboard appears
+    if (isMobile && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [isMobile])
+
+  const handleInputClick = useCallback(() => {
+    // Ensure mobile keyboard appears on click
+    if (isMobile && searchInputRef.current) {
+      searchInputRef.current.focus()
+      searchInputRef.current.click()
+    }
+  }, [isMobile])
+
   const BreedList = useCallback(() => (
     <div className="space-y-2">
       <div className="relative">
@@ -109,12 +130,17 @@ export function BreedSelector({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          onClick={handleInputClick}
           className="pl-10"
           inputMode="search"
           role="searchbox"
           aria-label="Search dog breeds"
           aria-describedby={`${searchInputId}-description`}
           autoComplete="off"
+          autoFocus={false}
+          readOnly={false}
+          tabIndex={0}
         />
         <div id={`${searchInputId}-description`} className="sr-only">
           Type to search through available dog breeds
@@ -126,7 +152,7 @@ export function BreedSelector({
         </div>
       )}
 
-      <div className={cn("max-h-60 overflow-y-auto", isMobile && "max-h-[50vh]")} role="listbox">
+      <div className={cn("max-h-60 overflow-y-auto overscroll-contain", isMobile && "max-h-[50vh]")} role="listbox" style={{ WebkitOverflowScrolling: 'touch' }}>
         {safeOptions.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">
             No breed options available. Please refresh the page.
@@ -159,7 +185,7 @@ export function BreedSelector({
         )}
       </div>
     </div>
-  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions])
+  ), [search, filtered, selected, handleSelect, handleKeyDown, handleInputFocus, handleInputClick, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions])
 
   // Mobile: Drawer
   if (isMobile) {
@@ -179,12 +205,12 @@ export function BreedSelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]">
+        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
             <DrawerDescription>Search and select your dog's breed.</DrawerDescription>
           </DrawerHeader>
-          <div className="px-4 pb-6">
+          <div className="px-4 pb-6 flex-1 overflow-hidden">
             <BreedList />
           </div>
         </DrawerContent>
@@ -210,7 +236,7 @@ export function BreedSelector({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[480px] z-[1000]">
+        <DialogContent className="sm:max-w-[480px] z-[1000]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>
           </DialogHeader>

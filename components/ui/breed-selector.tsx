@@ -11,7 +11,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { useMobile } from "@/hooks/use-mobile"
 import { canonicalizeBreed, type BreedOption as MixedBreedOption } from "@/lib/data/dog-breeds-mixed"
 
 interface BreedOption { value: string; label: string }
@@ -34,11 +33,20 @@ export function BreedSelector({
 }: BreedSelectorProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
-  const measuredMobile = useMobile(768)
-  const isMobile = measuredMobile === true
+  const [isMobile, setIsMobile] = useState(false)
   
   const searchInputId = useId()
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Simple mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : []
@@ -146,21 +154,6 @@ export function BreedSelector({
       </div>
     </div>
   ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions])
-
-  // Show loading state while mobile detection is happening
-  if (measuredMobile === null) {
-    return (
-      <Button
-        variant="outline"
-        className="w-full justify-between h-10 px-3 py-2 text-left font-normal bg-transparent"
-        type="button"
-        disabled
-      >
-        <span className="truncate text-muted-foreground">Loading...</span>
-        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-      </Button>
-    )
-  }
 
   // Mobile: Drawer
   if (isMobile) {

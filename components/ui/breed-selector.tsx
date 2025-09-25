@@ -84,37 +84,7 @@ export function BreedSelector({
     }
   }, [search, filtered.length, onValueChange])
 
-  // Memoize the search input handler to prevent re-renders
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value)
-  }, [])
-
-  // Memoize the breed list content separately to prevent input re-creation
-  const breedListContent = useMemo(() => (
-    <div className="space-y-1">
-      {filtered.map(opt => {
-        const isSelected = selected?.value === opt.value
-        return (
-          <button
-            key={opt.value}
-            onClick={() => handleSelect(opt)}
-            className={cn(
-              "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
-              isSelected && "bg-accent text-accent-foreground",
-            )}
-            role="option"
-            aria-selected={isSelected}
-            type="button"
-          >
-            <span className="font-medium">{opt.label}</span>
-            {isSelected && <Check className="h-4 w-4 text-primary" />}
-          </button>
-        )
-      })}
-    </div>
-  ), [filtered, selected, handleSelect])
-
-  const BreedList = useMemo(() => (
+  const BreedList = useCallback(() => (
     <div className="space-y-2">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -123,7 +93,7 @@ export function BreedSelector({
           id={searchInputId}
           placeholder={searchPlaceholder}
           value={search}
-          onChange={handleSearchChange}
+          onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
           className="pl-10"
           inputMode="search"
@@ -146,11 +116,31 @@ export function BreedSelector({
         {filtered.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
         ) : (
-          breedListContent
+          <div className="space-y-1">
+            {filtered.map(opt => {
+              const isSelected = selected?.value === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => handleSelect(opt)}
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
+                    isSelected && "bg-accent text-accent-foreground",
+                  )}
+                  role="option"
+                  aria-selected={isSelected}
+                  type="button"
+                >
+                  <span className="font-medium">{opt.label}</span>
+                  {isSelected && <Check className="h-4 w-4 text-primary" />}
+                </button>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>
-  ), [search, filtered, handleSearchChange, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, breedListContent])
+  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile])
 
   // Show loading state while mobile detection is happening to prevent flickering
   if (measuredMobile === null) {

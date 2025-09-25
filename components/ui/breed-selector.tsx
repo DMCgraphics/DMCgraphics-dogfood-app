@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, useId } from "react"
+import { useCallback, useEffect, useMemo, useState, useId, useRef } from "react"
 import { Check, ChevronDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,8 +39,17 @@ export function BreedSelector({
   
   // Use React's useId for stable, unique IDs
   const searchInputId = useId()
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Removed auto-focus effect to prevent focus issues
+  // Focus the search input when dialog/drawer opens
+  useEffect(() => {
+    if (open && searchInputRef.current) {
+      // Small delay to ensure the modal is fully rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [open])
 
   // Reset search when dialog closes
   useEffect(() => {
@@ -80,6 +89,7 @@ export function BreedSelector({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          ref={searchInputRef}
           id={searchInputId}
           placeholder={searchPlaceholder}
           value={search}
@@ -199,8 +209,6 @@ export function BreedSelector({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="sm:max-w-[480px] z-[1000]"
-          // prevent auto-focus tug-of-war
-          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>

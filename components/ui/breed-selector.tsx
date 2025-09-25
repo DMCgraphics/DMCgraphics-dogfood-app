@@ -51,13 +51,27 @@ export function BreedSelector({
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : []
 
-  // Focus the search input when dialog/drawer opens
+  // Focus the search input immediately when modal opens
   useEffect(() => {
-    if (open && searchInputRef.current) {
-      const timer = setTimeout(() => {
-        searchInputRef.current?.focus()
-      }, 100)
-      return () => clearTimeout(timer)
+    if (open) {
+      // Use multiple attempts to ensure focus works
+      const focusInput = () => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus()
+        }
+      }
+      
+      // Try immediately
+      focusInput()
+      
+      // Try again after a short delay
+      const timer1 = setTimeout(focusInput, 50)
+      const timer2 = setTimeout(focusInput, 100)
+      
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+      }
     }
   }, [open])
 
@@ -110,6 +124,7 @@ export function BreedSelector({
           aria-label="Search dog breeds"
           aria-describedby={`${searchInputId}-description`}
           autoComplete="off"
+          autoFocus={open}
         />
         <div id={`${searchInputId}-description`} className="sr-only">
           Type to search through available dog breeds
@@ -136,6 +151,10 @@ export function BreedSelector({
                 <button
                   key={opt.value}
                   onClick={() => handleSelect(opt)}
+                  onMouseEnter={(e) => {
+                    // Prevent focus from being stolen by hover
+                    e.preventDefault()
+                  }}
                   className={cn(
                     "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
                     isSelected && "bg-accent text-accent-foreground",
@@ -153,7 +172,7 @@ export function BreedSelector({
         )}
       </div>
     </div>
-  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions])
+  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions, open])
 
   // Mobile: Drawer
   if (isMobile) {
@@ -173,7 +192,10 @@ export function BreedSelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]">
+        <DrawerContent 
+          className="z-[60] h-[80dvh] max-h-[95vh]"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
             <DrawerDescription>Search and select your dog's breed.</DrawerDescription>
@@ -204,7 +226,10 @@ export function BreedSelector({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[480px] z-[1000]">
+        <DialogContent 
+          className="sm:max-w-[480px] z-[1000]"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>
           </DialogHeader>

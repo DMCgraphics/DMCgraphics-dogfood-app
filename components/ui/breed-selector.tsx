@@ -44,10 +44,10 @@ export function BreedSelector({
   // Focus the search input when dialog/drawer opens
   useEffect(() => {
     if (open && searchInputRef.current) {
-      // Small delay to ensure the modal is fully rendered
-      setTimeout(() => {
+      // Use requestAnimationFrame for better timing with Radix UI
+      requestAnimationFrame(() => {
         searchInputRef.current?.focus()
-      }, 100)
+      })
     }
   }, [open])
 
@@ -84,7 +84,37 @@ export function BreedSelector({
     }
   }, [search, filtered.length, onValueChange])
 
-  const BreedList = useCallback(() => (
+  // Memoize the search input handler to prevent re-renders
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value)
+  }, [])
+
+  // Memoize the breed list content separately to prevent input re-creation
+  const breedListContent = useMemo(() => (
+    <div className="space-y-1">
+      {filtered.map(opt => {
+        const isSelected = selected?.value === opt.value
+        return (
+          <button
+            key={opt.value}
+            onClick={() => handleSelect(opt)}
+            className={cn(
+              "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
+              isSelected && "bg-accent text-accent-foreground",
+            )}
+            role="option"
+            aria-selected={isSelected}
+            type="button"
+          >
+            <span className="font-medium">{opt.label}</span>
+            {isSelected && <Check className="h-4 w-4 text-primary" />}
+          </button>
+        )
+      })}
+    </div>
+  ), [filtered, selected, handleSelect])
+
+  const BreedList = useMemo(() => (
     <div className="space-y-2">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -93,7 +123,7 @@ export function BreedSelector({
           id={searchInputId}
           placeholder={searchPlaceholder}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={handleKeyDown}
           className="pl-10"
           inputMode="search"
@@ -116,31 +146,11 @@ export function BreedSelector({
         {filtered.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
         ) : (
-          <div className="space-y-1">
-            {filtered.map(opt => {
-              const isSelected = selected?.value === opt.value
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => handleSelect(opt)}
-                  className={cn(
-                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors",
-                    isSelected && "bg-accent text-accent-foreground",
-                  )}
-                  role="option"
-                  aria-selected={isSelected}
-                  type="button"
-                >
-                  <span className="font-medium">{opt.label}</span>
-                  {isSelected && <Check className="h-4 w-4 text-primary" />}
-                </button>
-              )
-            })}
-          </div>
+          breedListContent
         )}
       </div>
     </div>
-  ), [search, filtered, selected, handleSelect, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile])
+  ), [search, filtered, handleSearchChange, handleKeyDown, searchInputId, searchPlaceholder, emptyMessage, isMobile, breedListContent])
 
   // Show loading state while mobile detection is happening to prevent flickering
   if (measuredMobile === null) {
@@ -176,7 +186,17 @@ export function BreedSelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]">
+        <DrawerContent 
+          className="z-[60] h-[80dvh] max-h-[95vh]"
+          onOpenAutoFocus={(e) => {
+            // Prevent default focus behavior and let our custom focus take over
+            e.preventDefault()
+            // Focus our input after a brief delay
+            setTimeout(() => {
+              searchInputRef.current?.focus()
+            }, 0)
+          }}
+        >
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
             <DrawerDescription>Search and select your dog's breed.</DrawerDescription>
@@ -209,6 +229,14 @@ export function BreedSelector({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="sm:max-w-[480px] z-[1000]"
+          onOpenAutoFocus={(e) => {
+            // Prevent default focus behavior and let our custom focus take over
+            e.preventDefault()
+            // Focus our input after a brief delay
+            setTimeout(() => {
+              searchInputRef.current?.focus()
+            }, 0)
+          }}
         >
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>

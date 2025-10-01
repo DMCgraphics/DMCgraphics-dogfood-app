@@ -130,6 +130,8 @@ export function BreedSelector({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          onClick={handleInputClick}
           className="pl-10"
           inputMode="search"
           role="searchbox"
@@ -137,7 +139,6 @@ export function BreedSelector({
           aria-describedby={`${searchInputId}-description`}
           autoComplete="off"
           autoFocus={false}
-          readOnly={false}
           tabIndex={0}
         />
         <div id={`${searchInputId}-description`} className="sr-only">
@@ -164,9 +165,12 @@ export function BreedSelector({
               return (
                 <button
                   key={opt.value}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
+                  onClick={() => {
                     handleSelect(opt)
+                  }}
+                  onMouseDown={(e) => {
+                    // Only prevent default to stop focus from shifting while keeping input functional
+                    e.preventDefault()
                   }}
                   className={cn(
                     "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition-none cursor-pointer select-none",

@@ -585,12 +585,6 @@ export default function PlanBuilderPage() {
 
     console.log("[v0] proceed_to_checkout_clicked")
 
-    // Prevent multiple simultaneous calls
-    if (isProcessingAuth) {
-      console.log("[v0] Checkout already processing, skipping duplicate call")
-      return
-    }
-
     const subtotal_cents = allDogsPlans.reduce((total, dog) => total + dog.subtotal_cents, 0)
     const discount_cents = 0 // plug your discounts here if any
     const total_cents = Math.max(0, subtotal_cents - discount_cents)
@@ -627,27 +621,30 @@ export default function PlanBuilderPage() {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
-        if (user && !isProcessingAuth) {
+        if (user) {
           console.log("[v0] User authenticated after loading, proceeding to save plan")
           handleAuthSuccess()
-        } else if (!user && !isProcessingAuth) {
+        } else if (!user) {
           console.log("[v0] User not authenticated after loading, showing auth modal")
-          setShowAuthModal(true)
-        } else {
-          console.log("[v0] Auth already processing, skipping duplicate call")
+          if (!isProcessingAuth) {
+            setShowAuthModal(true)
+          }
         }
       }, 500)
       return
     }
 
-    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
+    if (user || isAuthenticatedViaSession) {
       console.log("[v0] User already authenticated, proceeding directly to save plan")
       handleAuthSuccess()
     } else if (!user && !isAuthenticatedViaSession) {
+      // Only guard the auth modal to prevent duplicate modals
+      if (isProcessingAuth) {
+        console.log("[v0] Auth modal already processing, skipping duplicate modal")
+        return
+      }
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
-    } else {
-      console.log("[v0] Auth already processing, skipping duplicate call")
     }
   }
 
@@ -1482,6 +1479,7 @@ export default function PlanBuilderPage() {
         onPrevious={handlePrevious}
         canGoNext={canGoNext()}
         canGoPrevious={currentStep > 0}
+        showNextButton={currentStep !== TOTAL_STEPS - 1}
         nextLabel={
           currentStep === 0
             ? "Start Building Plans"

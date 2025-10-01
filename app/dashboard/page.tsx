@@ -103,23 +103,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDogs = async () => {
-      // Set a timeout to prevent infinite loading
-      const timeoutId = setTimeout(() => {
-        console.log("[v0] Dashboard loading timeout - stopping loading state")
-        setLoading(false)
-      }, 10000) // 10 second timeout
-
-      // Wait for auth to finish loading before proceeding
-      if (authLoading) {
-        console.log("[v0] Auth still loading, waiting...")
-        clearTimeout(timeoutId)
-        return
-      }
-
       // Add additional check for auth state consistency
       if (!user || user.id === undefined) {
         console.log("[v0] Auth state not ready:", { authLoading, hasUser: !!user, userId: user?.id })
-        clearTimeout(timeoutId)
         setLoading(false)
         return
       }
@@ -147,7 +133,6 @@ export default function DashboardPage() {
 
         if (error) {
           console.error("[v0] Error fetching dogs:", error.message)
-          clearTimeout(timeoutId)
           setLoading(false)
           return
         }
@@ -170,14 +155,14 @@ export default function DashboardPage() {
         // Fetch subscription data with retry mechanism for post-order scenarios
         let subscriptionsData = null
         let retryCount = 0
-        const maxRetries = 3
-        
+        const maxRetries = 5 // Increased from 3 to 5
+
         while (retryCount < maxRetries) {
           const { data: subsData, error: subsError } = await supabase
             .from("subscriptions")
             .select("*")
             .eq("user_id", user.id)
-            .in("status", ["active", "trialing", "past_due"])
+            .in("status", ["active", "trialing", "past_due", "incomplete"]) // Added 'incomplete' to catch all
 
           if (subsError) {
             console.error("[v0] Error fetching subscriptions:", subsError)
@@ -186,25 +171,35 @@ export default function DashboardPage() {
 
           subscriptionsData = subsData
           console.log("[v0] Subscriptions data (attempt", retryCount + 1, "):", subscriptionsData)
+          console.log("[v0] Number of subscriptions found:", subscriptionsData?.length || 0)
 
           // If we have subscription data or this is the last attempt, break
           if (subscriptionsData && subscriptionsData.length > 0 || retryCount === maxRetries - 1) {
+            if (subscriptionsData && subscriptionsData.length > 0) {
+              console.log("[v0] ✅ Found subscriptions on attempt", retryCount + 1)
+            } else {
+              console.log("[v0] ⚠️ No subscriptions found after", maxRetries, "attempts")
+            }
             break
           }
 
-          // Wait 1 second before retrying (for post-order scenarios)
-          console.log("[v0] No subscriptions found, retrying in 1 second...")
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Wait 2 seconds before retrying (increased from 1 second for post-order scenarios)
+          console.log("[v0] No subscriptions found, retrying in 2 seconds...")
+          await new Promise(resolve => setTimeout(resolve, 2000))
           retryCount++
         }
 
-        const { data: activePlansData } = await supabase
+        const { data: activePlansData, error: activePlansError } = await supabase
           .from("plans")
           .select("*")
           .eq("user_id", user.id)
           .eq("status", "active")
 
+        if (activePlansError) {
+          console.error("[v0] Error fetching active plans:", activePlansError)
+        }
         console.log("[v0] Active plans data:", activePlansData)
+        console.log("[v0] Number of active plans found:", activePlansData?.length || 0)
 
         // Refresh auth context subscription status to ensure consistency
         // Don't await this to prevent dashboard timeout - it will update in background
@@ -238,14 +233,22 @@ export default function DashboardPage() {
         const incompleteList: string[] = []
 
         if (dogsData && dogsData.length > 0) {
-          if ((subscriptionsData && subscriptionsData.length > 0) || (activePlansData && activePlansData.length > 0)) {
+          const hasSubscriptions = subscriptionsData && subscriptionsData.length > 0
+          const hasActivePlans = activePlansData && activePlansData.length > 0
+
+          console.log("[v0] Plan status check:", {
+            hasSubscriptions,
+            subscriptionCount: subscriptionsData?.length || 0,
+            hasActivePlans,
+            activePlanCount: activePlansData?.length || 0,
+          })
+
+          if (hasSubscriptions || hasActivePlans) {
             overallPlanStatus = "active"
             hasActiveSub = true
-            console.log("[v0] Found active subscriptions or plans:", {
-              subscriptions: subscriptionsData?.length,
-              plans: activePlansData?.length,
-            })
+            console.log("[v0] ✅ Setting plan status to ACTIVE - found subscriptions or plans")
           } else {
+            console.log("[v0] ⚠️ No active subscriptions or plans found")
             dogsData.forEach((dog) => {
               const savedPlanData = localStorage.getItem(`nouripet-saved-plan-${dog.id}`)
               const checkoutPlanData = localStorage.getItem("nouripet-checkout-plan")
@@ -260,6 +263,12 @@ export default function DashboardPage() {
             }
           }
         }
+
+        console.log("[v0] 📊 Final plan status being set:", {
+          planStatus: overallPlanStatus,
+          hasActiveSubscription: hasActiveSub,
+          incompletePlans: incompleteList.length,
+        })
 
         setPlanStatus(overallPlanStatus)
         setHasActiveSubscription(hasActiveSub)
@@ -482,7 +491,6 @@ export default function DashboardPage() {
       } catch (error) {
         console.error("[v0] Error in fetchDogs:", error)
       } finally {
-        clearTimeout(timeoutId)
         setLoading(false)
       }
     }
@@ -490,8 +498,10 @@ export default function DashboardPage() {
     // Only run fetchDogs if we have a valid user and auth is not loading
     if (user && user.id && !authLoading) {
       fetchDogs()
-    } else if (!authLoading && !user) {
-      // If auth is done loading but no user, stop loading
+    } else if (!user || !user.id) {
+      // If no user or no user ID, stop loading
+      // Don't wait for authLoading to prevent infinite spinner
+      console.log("[v0] No user found, stopping loading state")
       setLoading(false)
     }
   }, [user?.id, authLoading, refreshTrigger]) // Use user.id instead of user object to prevent unnecessary re-runs

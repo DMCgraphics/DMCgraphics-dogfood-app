@@ -1488,7 +1488,7 @@ export default function PlanBuilderPage() {
             : currentStep === TOTAL_STEPS - 1
               ? totalDogs > 1 && currentDogIndex < totalDogs - 1
                 ? `Continue to ${allDogsData[currentDogIndex + 1]?.dogProfile.name || `Dog ${currentDogIndex + 2}`}`
-                : "Save Plan"
+                : "Continue to Checkout"
               : "Continue"
         }
       >

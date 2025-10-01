@@ -8,7 +8,7 @@ import {
   Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger,
 } from "@/components/ui/drawer"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { canonicalizeBreed, type BreedOption as MixedBreedOption } from "@/lib/data/dog-breeds-mixed"
@@ -239,6 +239,7 @@ export function BreedSelector({
         <DialogContent className="sm:max-w-[480px] z-[1000]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>
+            <DialogDescription>Search and select your dog's breed.</DialogDescription>
           </DialogHeader>
           <BreedList />
         </DialogContent>

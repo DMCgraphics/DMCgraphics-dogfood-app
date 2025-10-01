@@ -119,10 +119,10 @@ export function BreedSelector({
     }
   }, [isMobile])
 
-  const BreedList = useCallback(() => (
+  const BreedList = () => (
     <div className="space-y-2">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           ref={searchInputRef}
           id={searchInputId}
@@ -130,8 +130,6 @@ export function BreedSelector({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={handleInputFocus}
-          onClick={handleInputClick}
           className="pl-10"
           inputMode="search"
           role="searchbox"
@@ -166,18 +164,22 @@ export function BreedSelector({
               return (
                 <button
                   key={opt.value}
-                  onClick={() => handleSelect(opt)}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    handleSelect(opt)
+                  }}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors focus:bg-accent focus:text-accent-foreground focus:outline-none",
+                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition-none cursor-pointer select-none",
+                    "hover:bg-accent hover:text-accent-foreground",
                     isSelected && "bg-accent text-accent-foreground",
                   )}
                   role="option"
                   aria-selected={isSelected}
                   type="button"
-                  tabIndex={0}
+                  tabIndex={-1}
                 >
-                  <span className="font-medium">{opt.label}</span>
-                  {isSelected && <Check className="h-4 w-4 text-primary" />}
+                  <span className="font-medium pointer-events-none">{opt.label}</span>
+                  {isSelected && <Check className="h-4 w-4 text-primary pointer-events-none" />}
                 </button>
               )
             })}
@@ -185,7 +187,7 @@ export function BreedSelector({
         )}
       </div>
     </div>
-  ), [search, filtered, selected, handleSelect, handleKeyDown, handleInputFocus, handleInputClick, searchInputId, searchPlaceholder, emptyMessage, isMobile, safeOptions])
+  )
 
   // Mobile: Drawer
   if (isMobile) {

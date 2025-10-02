@@ -53,19 +53,19 @@ export function BreedSelector({
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : []
 
-  // Focus the search input when modal opens
+  // Reset search when modal closes
   useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => {
-        if (searchInputRef.current) {
-          searchInputRef.current.focus()
-        }
-      }, 100)
-      return () => clearTimeout(timer)
-    } else {
+    if (!open) {
       setSearch("")
     }
   }, [open])
+
+  const handleOpenAutoFocus = useCallback((e: Event) => {
+    e.preventDefault()
+    setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 0)
+  }, [])
 
   const canonicalizedSearch = useMemo(() => canonicalizeBreed(search), [search])
   const filtered = useMemo(() => 
@@ -170,7 +170,7 @@ export function BreedSelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]">
+        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]" onOpenAutoFocus={handleOpenAutoFocus}>
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
             <DrawerDescription>Search and select your dog's breed.</DrawerDescription>
@@ -201,7 +201,7 @@ export function BreedSelector({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[480px] z-[1000]">
+        <DialogContent className="sm:max-w-[480px] z-[1000]" onOpenAutoFocus={handleOpenAutoFocus}>
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>
             <DialogDescription>Search and select your dog's breed.</DialogDescription>

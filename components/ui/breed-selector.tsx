@@ -53,18 +53,35 @@ export function BreedSelector({
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : []
 
-  // Reset search when modal closes
+  // Focus input when modal opens, reset search when it closes
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      // Multiple attempts to ensure focus happens
+      const focusInput = () => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus()
+        }
+      }
+
+      // Try immediately
+      focusInput()
+
+      // Try after a small delay
+      const timer1 = setTimeout(focusInput, 50)
+      const timer2 = setTimeout(focusInput, 150)
+
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+      }
+    } else {
       setSearch("")
     }
   }, [open])
 
   const handleOpenAutoFocus = useCallback((e: Event) => {
     e.preventDefault()
-    setTimeout(() => {
-      searchInputRef.current?.focus()
-    }, 0)
+    // Focus will be handled by the useEffect above
   }, [])
 
   const canonicalizedSearch = useMemo(() => canonicalizeBreed(search), [search])
@@ -106,6 +123,7 @@ export function BreedSelector({
           onKeyDown={handleKeyDown}
           className="pl-10"
           autoComplete="off"
+          autoFocus
         />
         <div id={`${searchInputId}-description`} className="sr-only">
           Type to search through available dog breeds
@@ -131,7 +149,12 @@ export function BreedSelector({
               return (
                 <button
                   key={opt.value}
-                  onClick={() => {
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    handleSelect(opt)
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault()
                     handleSelect(opt)
                   }}
                   className={cn(

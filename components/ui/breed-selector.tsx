@@ -34,8 +34,7 @@ export function BreedSelector({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [isMobile, setIsMobile] = useState(false)
-  const [hasInitiallyFocused, setHasInitiallyFocused] = useState(false)
-  
+
   const searchInputId = useId()
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -56,26 +55,15 @@ export function BreedSelector({
 
   // Focus the search input when modal opens
   useEffect(() => {
-    if (open && !hasInitiallyFocused) {
+    if (open) {
       const timer = setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus()
-          // For mobile, also trigger click to ensure keyboard appears
-          if (isMobile) {
-            searchInputRef.current.click()
-          }
-          setHasInitiallyFocused(true)
         }
-      }, 150) // Increased delay to ensure modal is fully rendered
+      }, 100)
       return () => clearTimeout(timer)
-    }
-  }, [open, hasInitiallyFocused, isMobile])
-
-  // Reset state when modal closes
-  useEffect(() => {
-    if (!open) {
+    } else {
       setSearch("")
-      setHasInitiallyFocused(false)
     }
   }, [open])
 
@@ -104,20 +92,6 @@ export function BreedSelector({
     }
   }, [search, filtered.length, onValueChange])
 
-  const handleInputFocus = useCallback(() => {
-    // Ensure mobile keyboard appears
-    if (isMobile && searchInputRef.current) {
-      searchInputRef.current.focus()
-    }
-  }, [isMobile])
-
-  const handleInputClick = useCallback(() => {
-    // Ensure mobile keyboard appears on click
-    if (isMobile && searchInputRef.current) {
-      searchInputRef.current.focus()
-      searchInputRef.current.click()
-    }
-  }, [isMobile])
 
   const BreedList = () => (
     <div className="space-y-2">
@@ -130,16 +104,8 @@ export function BreedSelector({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={handleInputFocus}
-          onClick={handleInputClick}
           className="pl-10"
-          inputMode="search"
-          role="searchbox"
-          aria-label="Search dog breeds"
-          aria-describedby={`${searchInputId}-description`}
           autoComplete="off"
-          autoFocus={false}
-          tabIndex={0}
         />
         <div id={`${searchInputId}-description`} className="sr-only">
           Type to search through available dog breeds
@@ -151,7 +117,7 @@ export function BreedSelector({
         </div>
       )}
 
-      <div className={cn("max-h-60 overflow-y-auto overscroll-contain", isMobile && "max-h-[50vh]")} role="listbox" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className={cn("max-h-60 overflow-y-auto overscroll-contain", isMobile && "max-h-[50vh]")}>
         {safeOptions.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">
             No breed options available. Please refresh the page.
@@ -168,19 +134,12 @@ export function BreedSelector({
                   onClick={() => {
                     handleSelect(opt)
                   }}
-                  onMouseDown={(e) => {
-                    // Only prevent default to stop focus from shifting while keeping input functional
-                    e.preventDefault()
-                  }}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition-none cursor-pointer select-none",
+                    "w-full flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm cursor-pointer",
                     "hover:bg-accent hover:text-accent-foreground",
                     isSelected && "bg-accent text-accent-foreground",
                   )}
-                  role="option"
-                  aria-selected={isSelected}
                   type="button"
-                  tabIndex={-1}
                 >
                   <span className="font-medium pointer-events-none">{opt.label}</span>
                   {isSelected && <Check className="h-4 w-4 text-primary pointer-events-none" />}
@@ -211,7 +170,7 @@ export function BreedSelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]">
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
             <DrawerDescription>Search and select your dog's breed.</DrawerDescription>
@@ -242,7 +201,7 @@ export function BreedSelector({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[480px] z-[1000]" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[480px] z-[1000]">
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>
             <DialogDescription>Search and select your dog's breed.</DialogDescription>

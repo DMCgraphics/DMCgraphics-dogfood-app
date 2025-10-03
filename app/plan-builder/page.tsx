@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { WizardLayout } from "@/components/plan-builder/wizard-layout"
 import { Step1DogProfile } from "@/components/plan-builder/step-1-dog-profile"
 import { Step2HealthGoals } from "@/components/plan-builder/step-2-health-goals"
@@ -273,7 +273,7 @@ export default function PlanBuilderPage() {
       setSubtotal_cents(data.subtotal_cents)
       setTimeout(() => setIsUpdatingFromAllDogsData(false), 50)
     }
-  }, [currentDogIndex, allDogsData]) // Add allDogsData as dependency to ensure proper sync
+  }, [currentDogIndex]) // Only depend on currentDogIndex, not allDogsData
 
   useEffect(() => {
     if (isUpdatingFromAllDogsData) return
@@ -408,34 +408,7 @@ export default function PlanBuilderPage() {
 
   const switchToDog = (index: number) => {
     if (index >= 0 && index < totalDogs) {
-      // Save current dog's data before switching
-      const currentData: DogPlanData = {
-        dogProfile,
-        healthGoals,
-        selectedAllergens,
-        selectedRecipe,
-        selectedRecipes,
-        allowMultipleSelection,
-        mealsPerDay,
-        selectedAddOns,
-        medicalNeeds,
-        foodCostPerWeek,
-        addOnsCostPerWeek,
-        totalWeeklyCost,
-        subtotal_cents,
-      }
-
-      // Update allDogsData with current dog's data
-      setAllDogsData((prev) => {
-        const newData = [...prev]
-        newData[currentDogIndex] = currentData
-        return newData
-      })
-
-      // Switch to the new dog
       setCurrentDogIndex(index)
-      
-      // Ensure the new dog has data
       if (!allDogsData[index] || !allDogsData[index].dogProfile.name) {
         setAllDogsData((prev) => {
           const newData = [...prev]
@@ -585,6 +558,12 @@ export default function PlanBuilderPage() {
 
     console.log("[v0] proceed_to_checkout_clicked")
 
+    // Prevent multiple simultaneous calls
+    if (isProcessingAuth) {
+      console.log("[v0] Checkout already processing, skipping duplicate call")
+      return
+    }
+
     const subtotal_cents = allDogsPlans.reduce((total, dog) => total + dog.subtotal_cents, 0)
     const discount_cents = 0 // plug your discounts here if any
     const total_cents = Math.max(0, subtotal_cents - discount_cents)
@@ -621,30 +600,27 @@ export default function PlanBuilderPage() {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
-        if (user) {
+        if (user && !isProcessingAuth) {
           console.log("[v0] User authenticated after loading, proceeding to save plan")
           handleAuthSuccess()
-        } else if (!user) {
+        } else if (!user && !isProcessingAuth) {
           console.log("[v0] User not authenticated after loading, showing auth modal")
-          if (!isProcessingAuth) {
-            setShowAuthModal(true)
-          }
+          setShowAuthModal(true)
+        } else {
+          console.log("[v0] Auth already processing, skipping duplicate call")
         }
       }, 500)
       return
     }
 
-    if (user || isAuthenticatedViaSession) {
+    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
       console.log("[v0] User already authenticated, proceeding directly to save plan")
       handleAuthSuccess()
     } else if (!user && !isAuthenticatedViaSession) {
-      // Only guard the auth modal to prevent duplicate modals
-      if (isProcessingAuth) {
-        console.log("[v0] Auth modal already processing, skipping duplicate modal")
-        return
-      }
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
+    } else {
+      console.log("[v0] Auth already processing, skipping duplicate call")
     }
   }
 
@@ -655,7 +631,7 @@ export default function PlanBuilderPage() {
   const [isProcessingAuth, setIsProcessingAuth] = useState(false)
   const authSuccessRef = useRef(false)
 
-  const handleAuthSuccess = useCallback(async () => {
+  const handleAuthSuccess = async () => {
     // Prevent multiple simultaneous executions using both state and ref
     if (isProcessingAuth || authSuccessRef.current) {
       console.log("[v0] Auth success already processing, skipping duplicate call")
@@ -1255,11 +1231,7 @@ export default function PlanBuilderPage() {
       setIsProcessingAuth(false)
       authSuccessRef.current = false
     }
-  }, [router])
-
-  const handleCloseAuthModal = useCallback(() => {
-    setShowAuthModal(false)
-  }, [])
+  }
 
   const updateSelectedRecipes = (recipes: string[]) => {
     setSelectedRecipes(recipes)
@@ -1479,14 +1451,13 @@ export default function PlanBuilderPage() {
         onPrevious={handlePrevious}
         canGoNext={canGoNext()}
         canGoPrevious={currentStep > 0}
-        showNextButton={currentStep !== TOTAL_STEPS - 1}
         nextLabel={
           currentStep === 0
             ? "Start Building Plans"
             : currentStep === TOTAL_STEPS - 1
               ? totalDogs > 1 && currentDogIndex < totalDogs - 1
                 ? `Continue to ${allDogsData[currentDogIndex + 1]?.dogProfile.name || `Dog ${currentDogIndex + 2}`}`
-                : "Continue to Checkout"
+                : "Save Plan"
               : "Continue"
         }
       >
@@ -1495,7 +1466,7 @@ export default function PlanBuilderPage() {
 
       <AuthModal
         isOpen={showAuthModal}
-        onClose={handleCloseAuthModal}
+        onClose={() => setShowAuthModal(false)}
         defaultMode="signup"
         onSuccess={handleAuthSuccess}
       />

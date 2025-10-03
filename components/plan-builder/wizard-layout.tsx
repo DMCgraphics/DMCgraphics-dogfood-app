@@ -18,7 +18,6 @@ interface WizardLayoutProps {
   canGoPrevious: boolean
   nextLabel?: string
   isLoading?: boolean
-  showNextButton?: boolean
 }
 
 export function WizardLayout({
@@ -33,7 +32,6 @@ export function WizardLayout({
   canGoPrevious,
   nextLabel = "Continue",
   isLoading = false,
-  showNextButton = true,
 }: WizardLayoutProps) {
   const progress = (currentStep / totalSteps) * 100
 
@@ -126,12 +124,10 @@ export function WizardLayout({
             Previous
           </Button>
 
-          {showNextButton && (
-            <Button onClick={onNext} disabled={!canGoNext || isLoading} className="flex items-center gap-2">
-              {nextLabel}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          )}
+          <Button onClick={onNext} disabled={!canGoNext || isLoading} className="flex items-center gap-2">
+            {nextLabel}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>

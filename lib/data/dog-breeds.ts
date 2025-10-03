@@ -3,10 +3,10 @@ import { dogBreeds } from "@/lib/nutrition-calculator";
 import { MIXED_AND_DESIGNER_BREEDS, type BreedOption } from "./dog-breeds-mixed";
 
 // Convert the existing dogBreeds array to BreedOption format
-export const AKC_BREEDS: BreedOption[] = dogBreeds?.map(breed => ({
+export const AKC_BREEDS: BreedOption[] = dogBreeds.map(breed => ({
   value: breed.toLowerCase().replace(/\s+/g, "-"),
   label: breed,
-})) || [];
+}));
 
 // Merge AKC breeds with mixed/designer breeds and deduplicate
 export const ALL_BREEDS: BreedOption[] = [

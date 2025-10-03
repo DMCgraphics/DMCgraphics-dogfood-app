@@ -443,10 +443,6 @@ export default function PlanBuilderPage() {
         }
         return !!(selectedRecipe || selectedRecipes.length > 0)
       case 4:
-        // For the final step, require authentication if this is the last dog
-        if (currentDogIndex === totalDogs - 1) {
-          return !!user
-        }
         return true
       default:
         return true
@@ -504,12 +500,6 @@ export default function PlanBuilderPage() {
       }
       setCurrentDogIndex(nextDogIndex)
       setCurrentStep(1)
-      return
-    }
-
-    // If this is the last dog and user is not authenticated, show auth modal
-    if (!user) {
-      setShowAuthModal(true)
       return
     }
 
@@ -601,7 +591,10 @@ export default function PlanBuilderPage() {
     const isAuthenticatedViaSession = !!directSession?.user
     console.log("[v0] Direct session check:", { isAuthenticatedViaSession, userId: directSession?.user?.id })
 
-    // No need to create anonymous plan - we'll go directly to checkout after auth
+    if (!user && !isLoading && !isAuthenticatedViaSession) {
+      console.log("[v0] Creating anonymous plan before authentication...")
+      await createAnonymousPlan()
+    }
 
     if (isLoading && !isAuthenticatedViaSession) {
       console.log("[v0] Auth still loading, waiting...")
@@ -687,16 +680,534 @@ export default function PlanBuilderPage() {
         throw new Error("No valid user ID found in session")
       }
 
-      console.log("[v0] User authenticated successfully, proceeding to checkout")
+      console.log("[v0] Claiming guest plan...")
+      await claimGuestPlan()
+
+      localStorage.removeItem("x-plan-token")
+
+      // Check for existing active plan directly instead of using the broken view
+      const { data: existingPlans, error: planFetchError } = await supabase
+        .from("plans")
+        .select("id, status")
+        .eq("user_id", session.user.id)
+        .in("status", ["draft", "active", "checkout_in_progress"])
+        .order("created_at", { ascending: false })
       
-      // Close the modal after successful authentication
+      // Clean up any duplicate plans first
+      if (existingPlans && existingPlans.length > 1) {
+        console.log("[v0] Found multiple plans, cleaning up duplicates...")
+        const plansToDelete = existingPlans.slice(1) // Keep the first one, delete the rest
+        for (const plan of plansToDelete) {
+          console.log("[v0] Deleting duplicate plan:", plan.id)
+          await supabase.from("plans").delete().eq("id", plan.id)
+        }
+      }
+      
+      const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
+
+      let planId
+      let firstDogDbData = null // Declare outside the if/else block
+      
+      if (existingPlan) {
+        planId = existingPlan.id
+        console.log("[v0] Using existing plan:", planId)
+        
+        // Clean up any existing plan items to prevent duplicates
+        console.log("[v0] Cleaning up existing plan items...")
+        const { error: deleteItemsError } = await supabase
+          .from("plan_items")
+          .delete()
+          .eq("plan_id", planId)
+        
+        if (deleteItemsError) {
+          console.error("[v0] Error deleting existing plan items:", deleteItemsError)
+          // Don't return here, continue with plan creation
+        } else {
+          console.log("[v0] Existing plan items cleaned up")
+        }
+        
+        // Update plan status to checkout_in_progress
+        const { error: updateStatusError } = await supabase
+          .from("plans")
+          .update({ status: "checkout_in_progress" })
+          .eq("id", planId)
+        
+        if (updateStatusError) {
+          console.error("[v0] Error updating plan status:", updateStatusError)
+        } else {
+          console.log("[v0] Plan status updated to checkout_in_progress")
+        }
+      } else {
+        // Get the first dog's ID to link to the plan
+        const firstDogData = allDogsData[0]
+        if (!firstDogData || !firstDogData.dogProfile.name) {
+          console.error("[v0] No dog data available for plan creation")
+          return
+        }
+
+        // Create the first dog first to get its ID
+        const weight = firstDogData.dogProfile.weight || 0
+        const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
+
+        // Check for existing dog with same name to prevent duplicates
+        const { data: existingFirstDogs, error: checkFirstError } = await supabase
+          .from("dogs")
+          .select("id, name, user_id")
+          .eq("user_id", session.user.id)
+          .eq("name", firstDogData.dogProfile.name)
+          .limit(1)
+          
+        const existingFirstDog = existingFirstDogs?.[0]
+        if (existingFirstDog) {
+          console.log(`[v0] ⚠️ First dog with name "${firstDogData.dogProfile.name}" already exists, using existing dog:`, existingFirstDog.id)
+          firstDogDbData = existingFirstDog
+        } else {
+          const { data: firstDogDataResult, error: firstDogError } = await supabase
+            .from("dogs")
+            .insert({
+              user_id: session.user.id,
+              name: firstDogData.dogProfile.name,
+              breed: firstDogData.dogProfile.breed,
+              age: firstDogData.dogProfile.age,
+              weight: weight,
+              weight_unit: weightUnit,
+              weight_kg: toKg(weight, weightUnit),
+              allergies: firstDogData.selectedAllergens,
+              conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
+            })
+            .select("id, user_id")
+            .single()
+
+          if (firstDogError) {
+            console.error("[v0] Error creating first dog:", firstDogError)
+            return
+          }
+
+          firstDogDbData = firstDogDataResult // Assign to the scoped variable
+          console.log("[v0] Created first dog with ID:", firstDogDbData.id, "user_id:", firstDogDbData.user_id)
+        }
+        
+        // Validate that the dog was created with the correct user_id
+        if (!firstDogDbData.user_id || firstDogDbData.user_id !== session.user.id) {
+          throw new Error(`Dog created with incorrect user_id. Expected: ${session.user.id}, Got: ${firstDogDbData.user_id}`)
+        }
+
+        console.log("[v0] Creating plan with user_id:", session.user.id, "and dog_id:", firstDogDbData.id)
+        
+        const { data: planData, error: planError } = await supabase
+          .from("plans")
+          .insert({
+            user_id: session.user.id,
+            dog_id: firstDogDbData.id, // CRITICAL: Link plan to the first dog
+            status: "draft",
+            current_step: 4,
+            subtotal_cents: 0,
+            discount_cents: 0,
+            total_cents: 0,
+            delivery_zipcode: null,
+          })
+          .select("id, user_id")
+          .single()
+
+        if (planError) {
+          console.error("[v0] Error creating plan:", planError)
+          alert(`Error creating plan: ${planError.message}`)
+          return
+        }
+        planId = planData.id
+        console.log("[v0] Created new plan with UUID:", planId, "linked to dog:", firstDogDbData.id, "user_id:", planData.user_id)
+        
+        // Validate that the plan was created with the correct user_id
+        if (!planData.user_id || planData.user_id !== session.user.id) {
+          throw new Error(`Plan created with incorrect user_id. Expected: ${session.user.id}, Got: ${planData.user_id}`)
+        }
+
+        // Create plan-dog relationship for the first dog
+        const { error: firstPlanDogError } = await supabase.rpc("upsert_plan_dog", {
+          p_plan_id: planId,
+          p_dog_id: firstDogDbData.id,
+          p_position: 1,
+          p_snapshot: null,
+          p_meals_per_day: firstDogData.mealsPerDay,
+          p_prescription: firstDogData.medicalNeeds.selectedPrescriptionDiet,
+          p_verify: false,
+        })
+
+        if (firstPlanDogError) {
+          console.error("[v0] Error creating plan_dog relationship for first dog:", firstPlanDogError)
+          
+          // Log specific error details for debugging
+          if (firstPlanDogError.code === 'PGRST202') {
+            console.log("[v0] 🚨 RPC function 'upsert_plan_dog' not found")
+          } else if (firstPlanDogError.code === 'PGRST301') {
+            console.log("[v0] 🚨 Invalid parameters for 'upsert_plan_dog'")
+          } else {
+            console.log("[v0] 🚨 Unexpected RPC error:", {
+              code: firstPlanDogError.code,
+              message: firstPlanDogError.message,
+              details: firstPlanDogError.details
+            })
+          }
+          
+          alert(`Error creating plan-dog relationship: ${firstPlanDogError.message}`)
+          return
+        } else {
+          console.log("[v0] Plan-dog relationship created for first dog")
+        }
+      }
+
+      console.log("[v0] Saving all dogs data...")
+
+      // Start from index 0 to process all dogs (including the first one we created above)
+      const startIndex = 0
+      let firstDogId = null
+
+      if (!existingPlan && firstDogDbData) {
+        // We already created the first dog above, get its ID
+        firstDogId = firstDogDbData.id
+        console.log(`[v0] First dog already created with ID: ${firstDogId}`)
+      }
+
+      console.log(`[v0] Processing ${allDogsData.length} dogs, starting from index ${startIndex}`)
+      for (let i = startIndex; i < allDogsData.length; i++) {
+        const dogData = allDogsData[i]
+        console.log(`[v0] Processing dog ${i + 1}: ${dogData.dogProfile.name}`)
+
+        // Define weight and weightUnit at the top level for use throughout the loop
+        const weight = dogData.dogProfile.weight || 0
+        const weightUnit = dogData.dogProfile.weightUnit || "lb"
+
+        // Skip dog creation if this is the first dog and it was already created above
+        let dogDbData
+        if (i === 0 && !existingPlan && firstDogDbData) {
+          console.log(`[v0] Using already created first dog: ${firstDogDbData.id}`)
+          dogDbData = firstDogDbData
+        } else {
+          // Create new dog
+
+          console.log(`[v0] Creating new dog ${i + 1}: ${dogData.dogProfile.name}`)
+          
+          // Check for existing dog with same name to prevent duplicates
+          const { data: existingDogs, error: checkError } = await supabase
+            .from("dogs")
+            .select("id, name")
+            .eq("user_id", session.user.id)
+            .eq("name", dogData.dogProfile.name)
+            .limit(1)
+            
+          const existingDog = existingDogs?.[0]
+          if (existingDog) {
+            console.log(`[v0] ⚠️ Dog with name "${dogData.dogProfile.name}" already exists, using existing dog:`, existingDog.id)
+            dogDbData = existingDog
+          } else {
+            const { data: newDogData, error: dogError } = await supabase
+              .from("dogs")
+              .insert({
+                user_id: session.user.id,
+                name: dogData.dogProfile.name,
+                breed: dogData.dogProfile.breed,
+                age: dogData.dogProfile.age,
+                weight: weight, // Store in original unit
+                weight_unit: weightUnit, // Store the unit
+                weight_kg: toKg(weight, weightUnit), // Also store converted weight
+                allergies: dogData.selectedAllergens,
+                conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
+              })
+              .select("id, user_id")
+              .single()
+
+            if (dogError) {
+              console.error(`[v0] Error saving dog ${i + 1}:`, dogError)
+              alert(`Error saving dog ${i + 1}: ${dogError.message}`)
+              continue
+            }
+
+            dogDbData = newDogData
+            console.log(`[v0] Dog ${i + 1} saved successfully:`, dogDbData)
+
+            // Validate that the dog was created with the correct user_id
+            if (!dogDbData.user_id || dogDbData.user_id !== session.user.id) {
+              console.error(`[v0] Dog ${i + 1} created with incorrect user_id. Expected: ${session.user.id}, Got: ${dogDbData.user_id}`)
+              alert(`Error: Dog created with incorrect user ID`)
+              continue
+            }
+          }
+        }
+
+        // Skip plan-dog relationship creation for the first dog since it was already created above
+        if (!(i === 0 && !existingPlan)) {
+          const { error: planDogError } = await supabase.rpc("upsert_plan_dog", {
+            p_plan_id: planId,
+            p_dog_id: dogDbData.id,
+            p_position: i + 1,
+            p_snapshot: null,
+            p_meals_per_day: dogData.mealsPerDay,
+            p_prescription: dogData.medicalNeeds.selectedPrescriptionDiet,
+            p_verify: false,
+          })
+
+          if (planDogError) {
+            console.error(`[v0] Error creating plan_dog relationship for dog ${i + 1}:`, planDogError)
+            
+            // Log specific error details for debugging
+            if (planDogError.code === 'PGRST202') {
+              console.log("[v0] 🚨 RPC function 'upsert_plan_dog' not found")
+            } else if (planDogError.code === 'PGRST301') {
+              console.log("[v0] 🚨 Invalid parameters for 'upsert_plan_dog'")
+            } else {
+              console.log("[v0] 🚨 Unexpected RPC error:", {
+                code: planDogError.code,
+                message: planDogError.message,
+                details: planDogError.details
+              })
+            }
+            
+            alert(`Error creating plan-dog relationship for dog ${i + 1}: ${planDogError.message}`)
+            continue
+          }
+
+          console.log(`[v0] Plan-dog relationship created for dog ${i + 1}`)
+        } else {
+          console.log(`[v0] Skipping plan-dog relationship for first dog (already created above)`)
+        }
+
+        console.log(`[v0] Dog data for recipe selection:`, {
+          selectedRecipes: dogData.selectedRecipes,
+          selectedRecipe: dogData.selectedRecipe,
+          hasSelectedRecipes: dogData.selectedRecipes?.length > 0,
+          hasSelectedRecipe: !!dogData.selectedRecipe
+        })
+
+        const recipes =
+          dogData.selectedRecipes.length > 0 ? dogData.selectedRecipes : [dogData.selectedRecipe].filter(Boolean)
+        
+        console.log(`[v0] Recipes to process for dog ${i + 1}:`, recipes)
+
+        // Get all available recipes from database
+        const { data: availableRecipes, error: recipesError } = await supabase
+          .from("recipes")
+          .select("id, name, slug")
+          .eq("is_active", true)
+
+        if (recipesError) {
+          console.error("[v0] Error fetching recipes:", recipesError)
+          continue
+        }
+
+        console.log("[v0] Available recipes:", availableRecipes)
+
+        if (recipes.length === 0) {
+          console.log(`[v0] ⚠️ No recipes found for dog ${i + 1}, skipping plan item creation`)
+        } else {
+          console.log(`[v0] Starting recipe processing loop for dog ${i + 1} with ${recipes.length} recipes`)
+        }
+
+        for (const recipeId of recipes) {
+          console.log(`[v0] Processing recipe for dog ${i + 1}:`, recipeId)
+
+          const recipeData = availableRecipes?.find(
+            (r) => r.slug === recipeId || r.id === recipeId || r.name === recipeId,
+          )
+
+          if (!recipeData) {
+            console.error(`[v0] Recipe not found in database: ${recipeId}`)
+            alert(`Recipe not found in database: ${recipeId}`)
+            continue
+          }
+
+          const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
+          const stripePricing = getStripePricingForDog(recipeData.slug, weightLbs)
+
+          if (!stripePricing) {
+            console.error(`[v0] No Stripe pricing found for recipe ${recipeId}`)
+            alert(`No Stripe pricing found for recipe ${recipeId}`)
+            continue
+          }
+
+          // Calculate DER using canonical formula
+          const dogProfile = {
+            weight: weight,
+            weightUnit: weightUnit,
+            age: dogData.dogProfile.age || 4,
+            ageUnit: "years" as const,
+            sex: dogData.dogProfile.sex || "male" as const,
+            breed: dogData.dogProfile.breed || "mixed-breed",
+            activity: dogData.dogProfile.activity || "moderate" as const,
+            bodyCondition: dogData.dogProfile.bodyCondition || 5,
+            isNeutered: dogData.dogProfile.isNeutered ?? true,
+            lifeStage: dogData.dogProfile.lifeStage || "adult" as const
+          }
+          const der = calculateDERFromProfile(dogProfile)
+          const caloriesPer100g = 175 // Realistic calories per 100g of fresh dog food
+          const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
+
+          // Calculate monthly grams (30 days)
+          const monthlyGrams = dailyGrams * 30
+
+          // Round up to nearest 100g pack size for shipping efficiency
+          const sizeG = Math.ceil(monthlyGrams / 100) * 100
+
+          console.log(
+            `[v0] Calculated portions for ${dogData.dogProfile.name}: ${dailyGrams}g/day, ${monthlyGrams}g/month, ${sizeG}g package size`,
+          )
+
+          console.log(`[v0] Creating plan item for dog ${i + 1}, recipe ${recipeId}...`)
+          
+          // Insert new plan item
+          const { data: planItem, error: planItemError } = await supabase
+            .from("plan_items")
+            .insert({
+              plan_id: planId,
+              dog_id: dogDbData.id,
+              recipe_id: recipeData.id, // Use recipe UUID instead of slug
+              qty: 1,
+              size_g: sizeG,
+              billing_interval: "week",
+              stripe_price_id: stripePricing?.priceId,
+              unit_price_cents: stripePricing?.amountCents || 2100,
+              amount_cents: stripePricing?.amountCents || 2100,
+              meta: {
+                source: "wizard",
+                dog_weight: weight,
+                weight_unit: weightUnit,
+                daily_grams: dailyGrams,
+                monthly_grams: monthlyGrams,
+                activity_level: dogData.dogProfile.activity,
+                calculated_calories: Math.round(der),
+                stripe_product_name: stripePricing?.productName,
+              },
+            })
+            .select("id")
+            .single()
+          
+          if (planItemError) {
+            console.error(`[v0] Error creating plan item for dog ${i + 1}:`, planItemError)
+            continue
+          }
+
+          console.log(`[v0] ✅ Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)
+          console.log(`[v0] Weekly price: $${((stripePricing?.amountCents || 2100) / 100).toFixed(2)}`)
+
+          // The RPC function was causing issues and we have the correct Stripe pricing
+        }
+
+        const weightInKg = toKg(weight, weightUnit)
+        const targetWeight = dogData.healthGoals.targetWeight
+        const targetWeightInKg = targetWeight ? (weightUnit === "kg" ? targetWeight * 0.453592 : targetWeight) : null
+
+        if (dogData.dogProfile.weight && dogDbData) {
+          const metricsData = {
+            weight_kg: weightInKg,
+            body_condition_score: dogData.dogProfile.bodyCondition,
+            notes: `Initial weight from plan builder${targetWeightInKg ? `. Target: ${targetWeightInKg.toFixed(1)}kg` : ""}`
+          }
+          
+          // Use improved error handling for dog metrics
+          const { error: metricsError } = await supabase.from("dog_metrics").upsert({
+            dog_id: dogDbData.id,
+            ...metricsData,
+            measured_at: new Date().toISOString().split("T")[0]
+          }, {
+            onConflict: 'dog_id,measured_at'
+          })
+
+          if (metricsError) {
+            console.error(`[v0] Error saving dog metrics for dog ${i + 1}:`, metricsError)
+            
+            // Log specific error details for debugging
+            if (metricsError.code === '23505') {
+              console.log(`[v0] 💡 Dog metrics already exist for today, this is expected behavior`)
+            } else {
+              console.log(`[v0] 🚨 Unexpected dog metrics error:`, {
+                code: metricsError.code,
+                message: metricsError.message,
+                details: metricsError.details
+              })
+            }
+          } else {
+            console.log(`[v0] ✅ Dog metrics saved for dog ${i + 1}`)
+          }
+        }
+      }
+
+      try {
+        const { error: totalsError } = await supabase.rpc("recalc_plan_totals", {
+          p_plan_id: planId,
+        })
+
+        if (totalsError) {
+          console.error("[v0] RPC totals error:", totalsError)
+          
+          // Log specific error details for debugging
+          if (totalsError.code === 'PGRST202') {
+            console.log("[v0] 🚨 RPC function 'recalc_plan_totals' not found")
+          } else if (totalsError.code === 'PGRST301') {
+            console.log("[v0] 🚨 Invalid parameters for 'recalc_plan_totals'")
+          } else {
+            console.log("[v0] 🚨 Unexpected RPC error:", {
+              code: totalsError.code,
+              message: totalsError.message,
+              details: totalsError.details
+            })
+          }
+          const { data: planItems, error: itemsError } = await supabase
+            .from("plan_items")
+            .select("amount_cents")
+            .eq("plan_id", planId)
+
+          if (!itemsError && planItems) {
+            const subtotalCents = planItems.reduce((sum, item) => sum + (item.amount_cents || 0), 0)
+            const discountCents = 0 // No discounts for now
+            const totalCents = Math.max(0, subtotalCents - discountCents)
+
+            const { error: updateError } = await supabase
+              .from("plans")
+              .update({
+                subtotal_cents: subtotalCents,
+                discount_cents: discountCents,
+                total_cents: totalCents,
+                status: "active",
+              })
+              .eq("id", planId)
+
+            if (updateError) {
+              console.error("[v0] Error updating plan totals manually:", updateError)
+            } else {
+              console.log(`[v0] Plan totals calculated manually: $${(totalCents / 100).toFixed(2)}`)
+            }
+          }
+        } else {
+          console.log("[v0] RPC plan totals recalculated successfully")
+          // Update plan status to ready for checkout
+          await supabase.from("plans").update({ status: "active" }).eq("id", planId)
+        }
+      } catch (error) {
+        console.error("[v0] Error recalculating totals:", error)
+      }
+
+      // Verify plan items were created
+      const { data: finalPlanItems, error: finalItemsError } = await supabase
+        .from("plan_items")
+        .select("id, recipe_id, unit_price_cents")
+        .eq("plan_id", planId)
+
+      if (finalItemsError) {
+        console.error("[v0] Error verifying plan items:", finalItemsError)
+      } else {
+        console.log(`[v0] ✅ Plan creation completed! Created ${finalPlanItems.length} plan items`)
+        finalPlanItems.forEach((item, index) => {
+          console.log(`   ${index + 1}. Plan item ${item.id} - $${(item.unit_price_cents / 100).toFixed(2)}`)
+        })
+      }
+
+      console.log("[v0] Proceeding to checkout...")
+      
+      // Close the modal after successful completion
       setShowAuthModal(false)
       setIsProcessingAuth(false)
       authSuccessRef.current = false
       
-      // Redirect to checkout - the plan data is already saved in localStorage
       router.push("/checkout")
-      return
     } catch (error) {
       console.error("[v0] Error in handleAuthSuccess:", error)
       
@@ -715,7 +1226,7 @@ export default function PlanBuilderPage() {
       }
       
       // For other errors, show alert and close modal
-      alert(`Error authenticating: ${errorMessage}`)
+      alert(`Error saving plan: ${errorMessage}`)
       setShowAuthModal(false)
       setIsProcessingAuth(false)
       authSuccessRef.current = false
@@ -872,9 +1383,7 @@ export default function PlanBuilderPage() {
           description:
             totalDogs > 1 && currentDogIndex < totalDogs - 1
               ? `Review ${dogProfile.name}'s plan and continue to next dog.`
-              : user 
-                ? "Review your plan and purchase your subscription to get started."
-                : "Review your plan and sign in to purchase your subscription.",
+              : "Confirm portions, schedule, add-ons, and save.",
         }
       default:
         return { title: "", description: "" }
@@ -948,9 +1457,7 @@ export default function PlanBuilderPage() {
             : currentStep === TOTAL_STEPS - 1
               ? totalDogs > 1 && currentDogIndex < totalDogs - 1
                 ? `Continue to ${allDogsData[currentDogIndex + 1]?.dogProfile.name || `Dog ${currentDogIndex + 2}`}`
-                : user 
-                  ? "Purchase Subscription"
-                  : "Sign In to Purchase"
+                : "Save Plan"
               : "Continue"
         }
       >

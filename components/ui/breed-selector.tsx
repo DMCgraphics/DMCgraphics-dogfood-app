@@ -193,7 +193,24 @@ export function BreedSelector({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="z-[60] h-[80dvh] max-h-[95vh]" onOpenAutoFocus={handleOpenAutoFocus}>
+        <DrawerContent
+          className="z-[60] h-[80dvh] max-h-[95vh]"
+          onOpenAutoFocus={handleOpenAutoFocus}
+          onPointerDownOutside={(e) => {
+            // Prevent drawer from closing when interacting with content
+            const target = e.target as HTMLElement
+            if (target.closest('[role="dialog"]')) {
+              e.preventDefault()
+            }
+          }}
+          onInteractOutside={(e) => {
+            // Prevent drawer from closing when clicking inside
+            const target = e.target as HTMLElement
+            if (target.closest('[role="dialog"]')) {
+              e.preventDefault()
+            }
+          }}
+        >
           <DrawerHeader className="pb-4">
             <DrawerTitle>Select Breed</DrawerTitle>
             <DrawerDescription>Search and select your dog's breed.</DrawerDescription>
@@ -224,7 +241,24 @@ export function BreedSelector({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[480px] z-[1000]" onOpenAutoFocus={handleOpenAutoFocus}>
+        <DialogContent
+          className="sm:max-w-[480px] z-[1000]"
+          onOpenAutoFocus={handleOpenAutoFocus}
+          onPointerDownOutside={(e) => {
+            // Only allow closing when clicking outside, not when interacting with content
+            const target = e.target as HTMLElement
+            if (target.closest('[role="dialog"]')) {
+              e.preventDefault()
+            }
+          }}
+          onInteractOutside={(e) => {
+            // Prevent dialog from closing when clicking inside
+            const target = e.target as HTMLElement
+            if (target.closest('[role="dialog"]')) {
+              e.preventDefault()
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Select Breed</DialogTitle>
             <DialogDescription>Search and select your dog's breed.</DialogDescription>

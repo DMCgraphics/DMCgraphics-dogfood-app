@@ -194,6 +194,82 @@ export default function PlanBuilderPage() {
   const [subtotal_cents, setSubtotal_cents] = useState(currentDogData.subtotal_cents)
 
   useEffect(() => {
+    // Check for modify plan mode first (takes priority)
+    const modifyPlanData = localStorage.getItem("nouripet-modify-plan")
+    if (modifyPlanData) {
+      try {
+        const modifyData = JSON.parse(modifyPlanData)
+        console.log("[v0] Pre-filling plan builder with existing plan:", modifyData)
+
+        const dogData = modifyData.dogData
+        const planData = modifyData.planData
+        const planItems = planData?.plan_items || []
+
+        // Extract recipe IDs from plan items
+        const recipeIds = planItems.map((item: any) => item.recipe_id || item.recipes?.id).filter(Boolean)
+
+        const preFilledProfile: Partial<DogProfile> = {
+          name: dogData?.name,
+          breed: dogData?.breed,
+          age: dogData?.age,
+          weight: dogData?.weight,
+          weightUnit: dogData?.weight_unit || "lb",
+          ageUnit: dogData?.age_unit || "years",
+          bodyCondition: dogData?.body_condition_score || 5,
+          activity: dogData?.activity_level || "moderate",
+          sex: dogData?.sex,
+          isNeutered: dogData?.is_neutered,
+        }
+
+        const preFilledData: DogPlanData = {
+          dogProfile: preFilledProfile,
+          healthGoals: { stoolScore: 4 },
+          selectedAllergens: dogData?.allergies || [],
+          selectedRecipe: recipeIds.length === 1 ? recipeIds[0] : null,
+          selectedRecipes: recipeIds.length > 1 ? recipeIds : [],
+          allowMultipleSelection: recipeIds.length > 1,
+          mealsPerDay: 2, // Default, can be enhanced to read from plan_dogs
+          selectedAddOns: [],
+          medicalNeeds: {
+            hasMedicalNeeds: dogData?.conditions && dogData.conditions.length > 0 ? "yes" : "no",
+            email: "",
+            selectedCondition: dogData?.conditions && dogData.conditions.length > 0 ? dogData.conditions[0] : null,
+            selectedPrescriptionDiet: null,
+            verificationRequired: false,
+          },
+          foodCostPerWeek: 0,
+          addOnsCostPerWeek: 0,
+          totalWeeklyCost: 0,
+          subtotal_cents: 0,
+        }
+
+        setIsUpdatingFromAllDogsData(true)
+        setAllDogsData([preFilledData])
+        setDogProfile(preFilledProfile)
+        setHealthGoals({ stoolScore: 4 })
+        setSelectedAllergens(dogData?.allergies || [])
+        setSelectedRecipe(preFilledData.selectedRecipe)
+        setSelectedRecipes(preFilledData.selectedRecipes)
+        setAllowMultipleSelection(preFilledData.allowMultipleSelection)
+        setMedicalNeeds(preFilledData.medicalNeeds)
+        setCurrentStep(1)
+
+        // Set modify mode flags
+        setIsModifyMode(true)
+        setModifyPlanId(modifyData.planId)
+
+        // Don't remove from localStorage yet - we'll need it during checkout
+        // localStorage.removeItem("nouripet-modify-plan")
+
+        // Reset flag after a brief delay
+        setTimeout(() => setIsUpdatingFromAllDogsData(false), 100)
+        return
+      } catch (error) {
+        console.error("[v0] Error parsing modify plan data:", error)
+      }
+    }
+
+    // Check for selected dog data (original flow)
     const selectedDogData = localStorage.getItem("nouripet-selected-dog")
     if (selectedDogData) {
       try {
@@ -637,6 +713,8 @@ export default function PlanBuilderPage() {
 
   const [isProcessingAuth, setIsProcessingAuth] = useState(false)
   const authSuccessRef = useRef(false)
+  const [isModifyMode, setIsModifyMode] = useState(false)
+  const [modifyPlanId, setModifyPlanId] = useState<string | null>(null)
 
   const handleAuthSuccess = async () => {
     // Prevent multiple simultaneous executions using both state and ref
@@ -692,30 +770,60 @@ export default function PlanBuilderPage() {
 
       localStorage.removeItem("x-plan-token")
 
-      // Check for existing active plan directly instead of using the broken view
-      const { data: existingPlans, error: planFetchError } = await supabase
-        .from("plans")
-        .select("id, status")
-        .eq("user_id", session.user.id)
-        .in("status", ["draft", "active", "checkout_in_progress"])
-        .order("created_at", { ascending: false })
-      
-      // Clean up any duplicate plans first
-      if (existingPlans && existingPlans.length > 1) {
-        console.log("[v0] Found multiple plans, cleaning up duplicates...")
-        const plansToDelete = existingPlans.slice(1) // Keep the first one, delete the rest
-        for (const plan of plansToDelete) {
-          console.log("[v0] Deleting duplicate plan:", plan.id)
-          await supabase.from("plans").delete().eq("id", plan.id)
-        }
-      }
-      
-      const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
-
       let planId
       let firstDogDbData = null // Declare outside the if/else block
-      
-      if (existingPlan) {
+
+      // If in modify mode, use the existing plan ID
+      if (isModifyMode && modifyPlanId) {
+        planId = modifyPlanId
+        console.log("[v0] Using existing plan for modification:", planId)
+
+        // Clean up existing plan items to prevent duplicates
+        console.log("[v0] Cleaning up existing plan items...")
+        const { error: deleteItemsError } = await supabase
+          .from("plan_items")
+          .delete()
+          .eq("plan_id", planId)
+
+        if (deleteItemsError) {
+          console.error("[v0] Error deleting existing plan items:", deleteItemsError)
+        } else {
+          console.log("[v0] Existing plan items cleaned up")
+        }
+
+        // Update plan status to checkout_in_progress
+        const { error: updateStatusError } = await supabase
+          .from("plans")
+          .update({ status: "checkout_in_progress" })
+          .eq("id", planId)
+
+        if (updateStatusError) {
+          console.error("[v0] Error updating plan status:", updateStatusError)
+        } else {
+          console.log("[v0] Plan status updated to checkout_in_progress")
+        }
+      } else {
+        // Original flow: Check for existing active plan
+        const { data: existingPlans, error: planFetchError } = await supabase
+          .from("plans")
+          .select("id, status")
+          .eq("user_id", session.user.id)
+          .in("status", ["draft", "active", "checkout_in_progress"])
+          .order("created_at", { ascending: false })
+
+        // Clean up any duplicate plans first
+        if (existingPlans && existingPlans.length > 1) {
+          console.log("[v0] Found multiple plans, cleaning up duplicates...")
+          const plansToDelete = existingPlans.slice(1) // Keep the first one, delete the rest
+          for (const plan of plansToDelete) {
+            console.log("[v0] Deleting duplicate plan:", plan.id)
+            await supabase.from("plans").delete().eq("id", plan.id)
+          }
+        }
+
+        const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
+
+        if (existingPlan) {
         planId = existingPlan.id
         console.log("[v0] Using existing plan:", planId)
         
@@ -861,7 +969,8 @@ export default function PlanBuilderPage() {
         } else {
           console.log("[v0] Plan-dog relationship created for first dog")
         }
-      }
+        }
+      } // End of modify mode check
 
       console.log("[v0] Saving all dogs data...")
 
@@ -1208,12 +1317,15 @@ export default function PlanBuilderPage() {
       }
 
       console.log("[v0] Proceeding to checkout...")
-      
+
       // Close the modal after successful completion
       setShowAuthModal(false)
       setIsProcessingAuth(false)
       authSuccessRef.current = false
-      
+
+      // Clean up modify plan data from localStorage if present
+      localStorage.removeItem("nouripet-modify-plan")
+
       router.push("/checkout")
     } catch (error) {
       console.error("[v0] Error in handleAuthSuccess:", error)

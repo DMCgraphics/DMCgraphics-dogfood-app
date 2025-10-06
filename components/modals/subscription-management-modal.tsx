@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Calendar, CreditCard, Package, Pause, Play, Settings, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
 
 interface SubscriptionManagementModalProps {
   open: boolean
@@ -17,6 +18,7 @@ interface SubscriptionManagementModalProps {
 
 export function SubscriptionManagementModal({ open, onOpenChange }: SubscriptionManagementModalProps) {
   const { user, refreshSubscriptionStatus } = useAuth()
+  const router = useRouter()
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -186,6 +188,33 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
     }
   }
 
+  const handleModifyPlan = async (subscription: any) => {
+    try {
+      console.log("[v0] Modifying plan for subscription:", subscription.id)
+
+      // Close the modal
+      onOpenChange(false)
+
+      // Store the subscription data for the plan builder to pick up
+      const modifyPlanData = {
+        subscriptionId: subscription.id,
+        stripeSubscriptionId: subscription.stripe_subscription_id,
+        planId: subscription.plan_id,
+        dogId: subscription.planData?.dog_id,
+        dogData: subscription.dogData,
+        planData: subscription.planData,
+      }
+
+      localStorage.setItem("nouripet-modify-plan", JSON.stringify(modifyPlanData))
+
+      // Navigate to plan builder
+      router.push("/plan-builder")
+    } catch (error) {
+      console.error("Error preparing to modify plan:", error)
+      alert("Failed to load plan for modification. Please try again.")
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -291,7 +320,7 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => alert("Modify plan - functionality coming soon")}
+                      onClick={() => handleModifyPlan(subscription)}
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Modify Plan

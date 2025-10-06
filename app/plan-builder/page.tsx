@@ -591,12 +591,21 @@ export default function PlanBuilderPage() {
     const isAuthenticatedViaSession = !!directSession?.user
     console.log("[v0] Direct session check:", { isAuthenticatedViaSession, userId: directSession?.user?.id })
 
-    if (!user && !isLoading && !isAuthenticatedViaSession) {
+    // If user is authenticated (either via context or session), proceed immediately
+    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
+      console.log("[v0] User already authenticated, proceeding directly to save plan")
+      handleAuthSuccess()
+      return
+    }
+
+    // If not authenticated, create anonymous plan
+    if (!user && !isAuthenticatedViaSession) {
       console.log("[v0] Creating anonymous plan before authentication...")
       await createAnonymousPlan()
     }
 
-    if (isLoading && !isAuthenticatedViaSession) {
+    // If auth is still loading and user is not authenticated, wait briefly then check again
+    if (isLoading && !user && !isAuthenticatedViaSession) {
       console.log("[v0] Auth still loading, waiting...")
       // Wait a bit for auth to initialize, then check again
       setTimeout(() => {
@@ -613,10 +622,8 @@ export default function PlanBuilderPage() {
       return
     }
 
-    if ((user || isAuthenticatedViaSession) && !isProcessingAuth) {
-      console.log("[v0] User already authenticated, proceeding directly to save plan")
-      handleAuthSuccess()
-    } else if (!user && !isAuthenticatedViaSession) {
+    // Show auth modal for unauthenticated users
+    if (!user && !isAuthenticatedViaSession) {
       console.log("[v0] User not authenticated, showing auth modal")
       setShowAuthModal(true)
     } else {
@@ -1451,14 +1458,11 @@ export default function PlanBuilderPage() {
         onPrevious={handlePrevious}
         canGoNext={canGoNext()}
         canGoPrevious={currentStep > 0}
+        showNextButton={currentStep !== TOTAL_STEPS - 1}
         nextLabel={
           currentStep === 0
             ? "Start Building Plans"
-            : currentStep === TOTAL_STEPS - 1
-              ? totalDogs > 1 && currentDogIndex < totalDogs - 1
-                ? `Continue to ${allDogsData[currentDogIndex + 1]?.dogProfile.name || `Dog ${currentDogIndex + 2}`}`
-                : "Save Plan"
-              : "Continue"
+            : "Continue"
         }
       >
         {getStepContent()}

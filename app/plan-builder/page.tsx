@@ -772,6 +772,7 @@ export default function PlanBuilderPage() {
 
       let planId
       let firstDogDbData = null // Declare outside the if/else block
+      let existingPlan = null // Declare outside the if/else block
 
       // If in modify mode, use the existing plan ID
       if (isModifyMode && modifyPlanId) {
@@ -821,7 +822,7 @@ export default function PlanBuilderPage() {
           }
         }
 
-        const existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
+        existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
 
         if (existingPlan) {
         planId = existingPlan.id

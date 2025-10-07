@@ -46,6 +46,63 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
 
       console.log("[v0] Modal - Raw subscriptions data:", subscriptionsData)
 
+      // If no subscriptions found, check for active plans without subscriptions
+      if (!subscriptionsData || subscriptionsData.length === 0) {
+        const { data: plansData, error: plansError } = await supabase
+          .from("plans")
+          .select(`
+            *,
+            plan_items (
+              *,
+              recipes (name)
+            )
+          `)
+          .eq("user_id", user.id)
+          .in("status", ["active", "checkout_in_progress"])
+          .order("created_at", { ascending: false })
+
+        if (plansError) {
+          console.error("Error fetching plans:", plansError)
+          setSubscriptions([])
+          return
+        }
+
+        console.log("[v0] Modal - Found plans without subscriptions:", plansData)
+
+        // Convert plans to subscription-like format
+        const planSubscriptions = []
+        for (const plan of plansData || []) {
+          let dogData = null
+          if (plan.dog_id) {
+            const { data: dog } = await supabase
+              .from("dogs")
+              .select("*")
+              .eq("id", plan.dog_id)
+              .single()
+            if (dog) {
+              dogData = dog
+            }
+          }
+
+          planSubscriptions.push({
+            id: plan.id,
+            user_id: plan.user_id,
+            plan_id: plan.id,
+            status: plan.status === "active" ? "active" : "pending",
+            created_at: plan.created_at,
+            current_period_end: null,
+            stripe_subscription_id: null,
+            planData: plan,
+            dogData,
+          })
+        }
+
+        setSubscriptions(planSubscriptions)
+        await refreshSubscriptionStatus()
+        setLoading(false)
+        return
+      }
+
       // Enrich each subscription with plan and dog data
       const enrichedSubscriptions = []
       

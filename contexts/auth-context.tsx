@@ -57,22 +57,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // Then, fetch real subscription status from database
           try {
+            // Check for both subscriptions AND active plans
             const { data: subscriptionsData } = await supabase
               .from("subscriptions")
               .select("id, status")
               .eq("user_id", session.user.id)
               .in("status", ["active", "trialing", "past_due"])
 
-            const hasActiveSubscription = subscriptionsData && subscriptionsData.length > 0
-            
+            const { data: plansData } = await supabase
+              .from("plans")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "checkout_in_progress"])
+
+            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+
             if (hasActiveSubscription) {
               const updatedUser = { ...userData, subscriptionStatus: "active" as const }
               setUser(updatedUser)
-              console.log("[v0] auth_subscription_status_updated", { 
-                userId: userData.id, 
+              console.log("[v0] auth_subscription_status_updated", {
+                userId: userData.id,
                 email: userData.email,
                 hasActiveSubscription: true,
-                subscriptionCount: subscriptionsData.length 
+                subscriptionCount: subscriptionsData?.length || 0,
+                planCount: plansData?.length || 0
               })
             } else {
               console.log("[v0] auth_no_active_subscription", { userId: userData.id, email: userData.email })
@@ -132,22 +140,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // Then, fetch real subscription status from database
           try {
+            // Check for both subscriptions AND active plans
             const { data: subscriptionsData } = await supabase
               .from("subscriptions")
               .select("id, status")
               .eq("user_id", session.user.id)
               .in("status", ["active", "trialing", "past_due"])
 
-            const hasActiveSubscription = subscriptionsData && subscriptionsData.length > 0
-            
+            const { data: plansData } = await supabase
+              .from("plans")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "checkout_in_progress"])
+
+            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+
             if (hasActiveSubscription) {
               const updatedUser = { ...userData, subscriptionStatus: "active" as const }
               setUser(updatedUser)
-              console.log("[v0] auth_subscription_status_updated_on_signin", { 
-                userId: userData.id, 
+              console.log("[v0] auth_subscription_status_updated_on_signin", {
+                userId: userData.id,
                 email: userData.email,
                 hasActiveSubscription: true,
-                subscriptionCount: subscriptionsData.length 
+                subscriptionCount: subscriptionsData?.length || 0,
+                planCount: plansData?.length || 0
               })
             } else {
               console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
@@ -269,24 +285,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id) return
 
     try {
+      // Check for both subscriptions AND active plans
       const { data: subscriptionsData } = await supabase
         .from("subscriptions")
         .select("id, status")
         .eq("user_id", user.id)
         .in("status", ["active", "trialing", "past_due"])
 
-      const hasActiveSubscription = subscriptionsData && subscriptionsData.length > 0
+      const { data: plansData } = await supabase
+        .from("plans")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .in("status", ["active", "checkout_in_progress"])
+
+      const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
       const newSubscriptionStatus = hasActiveSubscription ? "active" : "none"
-      
+
       if (user.subscriptionStatus !== newSubscriptionStatus) {
         const updatedUser = { ...user, subscriptionStatus: newSubscriptionStatus as "active" | "none" }
         setUser(updatedUser)
-        console.log("[v0] auth_subscription_status_refreshed", { 
-          userId: user.id, 
+        console.log("[v0] auth_subscription_status_refreshed", {
+          userId: user.id,
           email: user.email,
           oldStatus: user.subscriptionStatus,
           newStatus: newSubscriptionStatus,
-          subscriptionCount: subscriptionsData?.length || 0
+          subscriptionCount: subscriptionsData?.length || 0,
+          planCount: plansData?.length || 0
         })
       }
     } catch (error) {

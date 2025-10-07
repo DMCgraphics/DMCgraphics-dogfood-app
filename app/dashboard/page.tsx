@@ -126,6 +126,8 @@ export default function DashboardPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       try {
+        console.log("[v0] Starting data fetch for user:", user.id)
+
         const { data: dogsData, error } = await supabase
           .from("dogs")
           .select(`
@@ -147,6 +149,8 @@ export default function DashboardPage() {
           return
         }
 
+        console.log("[v0] Successfully fetched", dogsData?.length || 0, "dogs")
+
         const { data: planData } = await supabase
           .from("plans")
           .select(`
@@ -162,12 +166,9 @@ export default function DashboardPage() {
         console.log("[v0] Plan data:", planData)
         console.log("[v0] Dogs data:", dogsData)
 
-        // Fetch subscription data with retry mechanism for post-order scenarios
+        // Fetch subscription data - no retries needed, just fetch once
         let subscriptionsData = null
-        let retryCount = 0
-        const maxRetries = 3
-        
-        while (retryCount < maxRetries) {
+        try {
           const { data: subsData, error: subsError } = await supabase
             .from("subscriptions")
             .select("*")
@@ -176,21 +177,12 @@ export default function DashboardPage() {
 
           if (subsError) {
             console.error("[v0] Error fetching subscriptions:", subsError)
-            break
+          } else {
+            subscriptionsData = subsData
+            console.log("[v0] Subscriptions data:", subscriptionsData)
           }
-
-          subscriptionsData = subsData
-          console.log("[v0] Subscriptions data (attempt", retryCount + 1, "):", subscriptionsData)
-
-          // If we have subscription data or this is the last attempt, break
-          if (subscriptionsData && subscriptionsData.length > 0 || retryCount === maxRetries - 1) {
-            break
-          }
-
-          // Wait 1 second before retrying (for post-order scenarios)
-          console.log("[v0] No subscriptions found, retrying in 1 second...")
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          retryCount++
+        } catch (error) {
+          console.error("[v0] Exception fetching subscriptions:", error)
         }
 
         const { data: activePlansData } = await supabase
@@ -203,9 +195,11 @@ export default function DashboardPage() {
 
         // Refresh auth context subscription status to ensure consistency
         // Don't await this to prevent dashboard timeout - it will update in background
-        refreshSubscriptionStatus().catch(error => {
-          console.log("[v0] Subscription status refresh failed (non-blocking):", error)
-        })
+        if (refreshSubscriptionStatus) {
+          refreshSubscriptionStatus().catch(error => {
+            console.log("[v0] Subscription status refresh failed (non-blocking):", error)
+          })
+        }
 
         // Fetch real delivery data from orders
         const { data: ordersData } = await supabase

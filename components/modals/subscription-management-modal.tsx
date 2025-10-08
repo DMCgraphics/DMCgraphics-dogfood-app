@@ -248,6 +248,7 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
   const handleModifyPlan = async (subscription: any) => {
     try {
       console.log("[v0] Modifying plan for subscription:", subscription.id)
+      console.log("[v0] Dog data being passed to plan builder:", subscription.dogData)
 
       // Close the modal
       onOpenChange(false)
@@ -262,6 +263,7 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
         planData: subscription.planData,
       }
 
+      console.log("[v0] Full modify plan data:", modifyPlanData)
       localStorage.setItem("nouripet-modify-plan", JSON.stringify(modifyPlanData))
 
       // Navigate to plan builder

@@ -205,6 +205,8 @@ export default function PlanBuilderPage() {
         const planData = modifyData.planData
         const planItems = planData?.plan_items || []
 
+        console.log("[v0] Dog data received for modification:", dogData)
+
         // Extract recipe IDs from plan items
         const recipeIds = planItems.map((item: any) => item.recipe_id || item.recipes?.id).filter(Boolean)
 
@@ -220,6 +222,8 @@ export default function PlanBuilderPage() {
           sex: dogData?.sex,
           isNeutered: dogData?.is_neutered,
         }
+
+        console.log("[v0] Pre-filled profile:", preFilledProfile)
 
         const preFilledData: DogPlanData = {
           dogProfile: preFilledProfile,
@@ -779,6 +783,36 @@ export default function PlanBuilderPage() {
         planId = modifyPlanId
         console.log("[v0] Using existing plan for modification:", planId)
 
+        // Fetch the existing plan to get dog_id
+        const { data: modifyPlanDetails, error: planFetchError } = await supabase
+          .from("plans")
+          .select("id, dog_id, status")
+          .eq("id", planId)
+          .single()
+
+        if (planFetchError || !modifyPlanDetails) {
+          console.error("[v0] Error fetching plan for modification:", planFetchError)
+          alert("Failed to load plan for modification. Please try again.")
+          return
+        }
+
+        // Fetch the existing dog data
+        if (modifyPlanDetails.dog_id) {
+          const { data: existingDog, error: dogFetchError } = await supabase
+            .from("dogs")
+            .select("*")
+            .eq("id", modifyPlanDetails.dog_id)
+            .single()
+
+          if (!dogFetchError && existingDog) {
+            firstDogDbData = existingDog
+            console.log("[v0] Loaded existing dog for modification:", firstDogDbData.id)
+          }
+        }
+
+        // Mark that we're modifying an existing plan
+        existingPlan = modifyPlanDetails
+
         // Clean up existing plan items to prevent duplicates
         console.log("[v0] Cleaning up existing plan items...")
         const { error: deleteItemsError } = await supabase
@@ -994,16 +1028,47 @@ export default function PlanBuilderPage() {
         const weight = dogData.dogProfile.weight || 0
         const weightUnit = dogData.dogProfile.weightUnit || "lb"
 
-        // Skip dog creation if this is the first dog and it was already created above
+        // Handle dog data based on whether we're modifying or creating
         let dogDbData
-        if (i === 0 && !existingPlan && firstDogDbData) {
-          console.log(`[v0] Using already created first dog: ${firstDogDbData.id}`)
-          dogDbData = firstDogDbData
+        if (i === 0 && firstDogDbData) {
+          // We have an existing dog (either from modify mode or newly created)
+          console.log(`[v0] Using/updating first dog: ${firstDogDbData.id}`)
+
+          // Update the existing dog with new data from the form
+          const { data: updatedDog, error: updateError } = await supabase
+            .from("dogs")
+            .update({
+              name: dogData.dogProfile.name,
+              breed: dogData.dogProfile.breed,
+              age: dogData.dogProfile.age,
+              age_unit: dogData.dogProfile.ageUnit || "years",
+              weight: weight,
+              weight_unit: weightUnit,
+              weight_kg: toKg(weight, weightUnit),
+              sex: dogData.dogProfile.sex,
+              is_neutered: dogData.dogProfile.isNeutered,
+              activity_level: dogData.dogProfile.activity,
+              body_condition_score: dogData.dogProfile.bodyCondition,
+              allergies: dogData.selectedAllergens,
+              conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
+            })
+            .eq("id", firstDogDbData.id)
+            .select("id, user_id")
+            .single()
+
+          if (updateError) {
+            console.error(`[v0] Error updating dog ${i + 1}:`, updateError)
+            alert(`Error updating dog ${i + 1}: ${updateError.message}`)
+            continue
+          }
+
+          dogDbData = updatedDog
+          console.log(`[v0] Dog ${i + 1} updated successfully:`, dogDbData)
         } else {
           // Create new dog
 
           console.log(`[v0] Creating new dog ${i + 1}: ${dogData.dogProfile.name}`)
-          
+
           // Check for existing dog with same name to prevent duplicates
           const { data: existingDogs, error: checkError } = await supabase
             .from("dogs")
@@ -1011,7 +1076,7 @@ export default function PlanBuilderPage() {
             .eq("user_id", session.user.id)
             .eq("name", dogData.dogProfile.name)
             .limit(1)
-            
+
           const existingDog = existingDogs?.[0]
           if (existingDog) {
             console.log(`[v0] ⚠️ Dog with name "${dogData.dogProfile.name}" already exists, using existing dog:`, existingDog.id)
@@ -1024,9 +1089,14 @@ export default function PlanBuilderPage() {
                 name: dogData.dogProfile.name,
                 breed: dogData.dogProfile.breed,
                 age: dogData.dogProfile.age,
-                weight: weight, // Store in original unit
-                weight_unit: weightUnit, // Store the unit
-                weight_kg: toKg(weight, weightUnit), // Also store converted weight
+                age_unit: dogData.dogProfile.ageUnit || "years",
+                weight: weight,
+                weight_unit: weightUnit,
+                weight_kg: toKg(weight, weightUnit),
+                sex: dogData.dogProfile.sex,
+                is_neutered: dogData.dogProfile.isNeutered,
+                activity_level: dogData.dogProfile.activity,
+                body_condition_score: dogData.dogProfile.bodyCondition,
                 allergies: dogData.selectedAllergens,
                 conditions: dogData.medicalNeeds.selectedCondition ? [dogData.medicalNeeds.selectedCondition] : [],
               })

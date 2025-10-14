@@ -55,50 +55,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setApiStatus("connected")
           console.log("[v0] auth_supabase_session_found", { userId: userData.id, email: userData.email })
 
-          // Then, fetch real subscription status from database
-          try {
-            // Check for both subscriptions AND active plans
-            const { data: subscriptionsData } = await supabase
-              .from("subscriptions")
-              .select("id, status")
-              .eq("user_id", session.user.id)
-              .in("status", ["active", "trialing", "past_due"])
+          // Mark loading as complete BEFORE fetching subscriptions to unblock the UI
+          setIsLoading(false)
 
-            const { data: plansData } = await supabase
-              .from("plans")
-              .select("id, status")
-              .eq("user_id", session.user.id)
-              .in("status", ["active", "checkout_in_progress"])
+          // Then, fetch real subscription status from database in the background
+          // Use setTimeout to ensure this doesn't block rendering
+          setTimeout(async () => {
+            try {
+              // Check for both subscriptions AND active plans
+              const { data: subscriptionsData } = await supabase
+                .from("subscriptions")
+                .select("id, status")
+                .eq("user_id", session.user.id)
+                .in("status", ["active", "trialing", "past_due"])
 
-            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              const { data: plansData } = await supabase
+                .from("plans")
+                .select("id, status")
+                .eq("user_id", session.user.id)
+                .in("status", ["active", "checkout_in_progress", "purchased"])
 
-            if (hasActiveSubscription) {
-              const updatedUser = { ...userData, subscriptionStatus: "active" as const }
-              setUser(updatedUser)
-              console.log("[v0] auth_subscription_status_updated", {
-                userId: userData.id,
-                email: userData.email,
-                hasActiveSubscription: true,
-                subscriptionCount: subscriptionsData?.length || 0,
-                planCount: plansData?.length || 0
-              })
-            } else {
-              console.log("[v0] auth_no_active_subscription", { userId: userData.id, email: userData.email })
+              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+
+              if (hasActiveSubscription) {
+                const updatedUser = { ...userData, subscriptionStatus: "active" as const }
+                setUser(updatedUser)
+                console.log("[v0] auth_subscription_status_updated", {
+                  userId: userData.id,
+                  email: userData.email,
+                  hasActiveSubscription: true,
+                  subscriptionCount: subscriptionsData?.length || 0,
+                  planCount: plansData?.length || 0
+                })
+              } else {
+                console.log("[v0] auth_no_active_subscription", { userId: userData.id, email: userData.email })
+              }
+            } catch (subscriptionError) {
+              console.error("Error fetching subscription status:", subscriptionError)
+              // Keep the default "none" status if there's an error
             }
-          } catch (subscriptionError) {
-            console.error("Error fetching subscription status:", subscriptionError)
-            // Keep the default "none" status if there's an error
-          }
+          }, 0)
         } else {
           console.log("[v0] auth_no_session")
           setUser(null)
           setApiStatus("disconnected")
+          setIsLoading(false)
         }
       } catch (error) {
         console.error("Error initializing auth:", error)
         setUser(null)
         setApiStatus("disconnected")
-      } finally {
         setIsLoading(false)
       }
     }
@@ -124,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (userRef.current?.id !== session.user.id) {
           // Clear any existing user state first
           setUser(null)
-          
+
           // First, create user with default subscription status
           const userData: User = {
             id: session.user.id,
@@ -138,40 +144,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setApiStatus("connected")
           console.log("[v0] auth_signed_in", { userId: userData.id, email: userData.email })
 
-          // Then, fetch real subscription status from database
-          try {
-            // Check for both subscriptions AND active plans
-            const { data: subscriptionsData } = await supabase
-              .from("subscriptions")
-              .select("id, status")
-              .eq("user_id", session.user.id)
-              .in("status", ["active", "trialing", "past_due"])
+          // Then, fetch real subscription status from database in the background
+          setTimeout(async () => {
+            try {
+              // Check for both subscriptions AND active plans
+              const { data: subscriptionsData } = await supabase
+                .from("subscriptions")
+                .select("id, status")
+                .eq("user_id", session.user.id)
+                .in("status", ["active", "trialing", "past_due"])
 
-            const { data: plansData } = await supabase
-              .from("plans")
-              .select("id, status")
-              .eq("user_id", session.user.id)
-              .in("status", ["active", "checkout_in_progress"])
+              const { data: plansData } = await supabase
+                .from("plans")
+                .select("id, status")
+                .eq("user_id", session.user.id)
+                .in("status", ["active", "checkout_in_progress", "purchased"])
 
-            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
 
-            if (hasActiveSubscription) {
-              const updatedUser = { ...userData, subscriptionStatus: "active" as const }
-              setUser(updatedUser)
-              console.log("[v0] auth_subscription_status_updated_on_signin", {
-                userId: userData.id,
-                email: userData.email,
-                hasActiveSubscription: true,
-                subscriptionCount: subscriptionsData?.length || 0,
-                planCount: plansData?.length || 0
-              })
-            } else {
-              console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
+              if (hasActiveSubscription) {
+                const updatedUser = { ...userData, subscriptionStatus: "active" as const }
+                setUser(updatedUser)
+                console.log("[v0] auth_subscription_status_updated_on_signin", {
+                  userId: userData.id,
+                  email: userData.email,
+                  hasActiveSubscription: true,
+                  subscriptionCount: subscriptionsData?.length || 0,
+                  planCount: plansData?.length || 0
+                })
+              } else {
+                console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
+              }
+            } catch (subscriptionError) {
+              console.error("Error fetching subscription status on signin:", subscriptionError)
+              // Keep the default "none" status if there's an error
             }
-          } catch (subscriptionError) {
-            console.error("Error fetching subscription status on signin:", subscriptionError)
-            // Keep the default "none" status if there's an error
-          }
+          }, 0)
         } else {
           console.log("[v0] auth_signed_in_duplicate_ignored", { userId: session.user.id, email: session.user.email })
         }
@@ -296,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from("plans")
         .select("id, status")
         .eq("user_id", user.id)
-        .in("status", ["active", "checkout_in_progress"])
+        .in("status", ["active", "checkout_in_progress", "purchased"])
 
       const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
       const newSubscriptionStatus = hasActiveSubscription ? "active" : "none"

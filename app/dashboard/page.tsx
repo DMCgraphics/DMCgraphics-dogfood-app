@@ -189,7 +189,7 @@ export default function DashboardPage() {
           .from("plans")
           .select("*")
           .eq("user_id", user.id)
-          .eq("status", "active")
+          .in("status", ["active", "purchased", "checkout_in_progress"])
 
         console.log("[v0] Active plans data:", activePlansData)
 

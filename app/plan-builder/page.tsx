@@ -206,9 +206,11 @@ export default function PlanBuilderPage() {
         const planItems = planData?.plan_items || []
 
         console.log("[v0] Dog data received for modification:", dogData)
+        console.log("[v0] Plan items:", planItems)
 
         // Extract recipe IDs from plan items
         const recipeIds = planItems.map((item: any) => item.recipe_id || item.recipes?.id).filter(Boolean)
+        console.log("[v0] Extracted recipe IDs for modification:", recipeIds)
 
         const preFilledProfile: Partial<DogProfile> = {
           name: dogData?.name,
@@ -225,13 +227,14 @@ export default function PlanBuilderPage() {
 
         console.log("[v0] Pre-filled profile:", preFilledProfile)
 
+        // In modify mode, ALWAYS use multiple selection mode so users can add/remove recipes
         const preFilledData: DogPlanData = {
           dogProfile: preFilledProfile,
           healthGoals: { stoolScore: 4 },
           selectedAllergens: dogData?.allergies || [],
-          selectedRecipe: recipeIds.length === 1 ? recipeIds[0] : null,
-          selectedRecipes: recipeIds.length > 1 ? recipeIds : [],
-          allowMultipleSelection: recipeIds.length > 1,
+          selectedRecipe: null, // Always null in modify mode
+          selectedRecipes: recipeIds, // Include all existing recipes
+          allowMultipleSelection: true, // Always allow multiple in modify mode
           mealsPerDay: 2, // Default, can be enhanced to read from plan_dogs
           selectedAddOns: [],
           medicalNeeds: {
@@ -261,6 +264,12 @@ export default function PlanBuilderPage() {
         // Set modify mode flags
         setIsModifyMode(true)
         setModifyPlanId(modifyData.planId)
+        setModifyStripeSubscriptionId(modifyData.stripeSubscriptionId || null)
+
+        console.log("[v0] Modify mode enabled with:", {
+          planId: modifyData.planId,
+          stripeSubscriptionId: modifyData.stripeSubscriptionId
+        })
 
         // Don't remove from localStorage yet - we'll need it during checkout
         // localStorage.removeItem("nouripet-modify-plan")
@@ -719,6 +728,7 @@ export default function PlanBuilderPage() {
   const authSuccessRef = useRef(false)
   const [isModifyMode, setIsModifyMode] = useState(false)
   const [modifyPlanId, setModifyPlanId] = useState<string | null>(null)
+  const [modifyStripeSubscriptionId, setModifyStripeSubscriptionId] = useState<string | null>(null)
 
   const handleAuthSuccess = async () => {
     // Prevent multiple simultaneous executions using both state and ref
@@ -1392,17 +1402,58 @@ export default function PlanBuilderPage() {
         })
       }
 
-      console.log("[v0] Proceeding to checkout...")
+      // Check if we're modifying an existing subscription
+      if (isModifyMode && modifyStripeSubscriptionId) {
+        console.log("[v0] Updating existing subscription instead of creating new one...")
 
-      // Close the modal after successful completion
-      setShowAuthModal(false)
-      setIsProcessingAuth(false)
-      authSuccessRef.current = false
+        try {
+          const response = await fetch("/api/subscriptions/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              stripeSubscriptionId: modifyStripeSubscriptionId,
+              planId: planId,
+            }),
+          })
 
-      // Clean up modify plan data from localStorage if present
-      localStorage.removeItem("nouripet-modify-plan")
+          const result = await response.json()
 
-      router.push("/checkout")
+          if (!response.ok) {
+            throw new Error(result.error || "Failed to update subscription")
+          }
+
+          console.log("[v0] Subscription updated successfully:", result)
+
+          // Close the modal after successful completion
+          setShowAuthModal(false)
+          setIsProcessingAuth(false)
+          authSuccessRef.current = false
+
+          // Clean up modify plan data from localStorage
+          localStorage.removeItem("nouripet-modify-plan")
+
+          // Redirect to dashboard with success message
+          router.push("/dashboard?updated=true")
+        } catch (error: any) {
+          console.error("[v0] Error updating subscription:", error)
+          alert(`Failed to update subscription: ${error.message}`)
+
+          setIsProcessingAuth(false)
+          authSuccessRef.current = false
+        }
+      } else {
+        console.log("[v0] Proceeding to checkout...")
+
+        // Close the modal after successful completion
+        setShowAuthModal(false)
+        setIsProcessingAuth(false)
+        authSuccessRef.current = false
+
+        // Clean up modify plan data from localStorage if present
+        localStorage.removeItem("nouripet-modify-plan")
+
+        router.push("/checkout")
+      }
     } catch (error) {
       console.error("[v0] Error in handleAuthSuccess:", error)
       

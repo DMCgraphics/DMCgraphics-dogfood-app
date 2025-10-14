@@ -69,6 +69,7 @@ export default function DashboardPage() {
   const { user, hasSubscription, refreshSubscriptionStatus, isLoading: authLoading } = useAuth()
   const [dogs, setDogs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showUpdateSuccess, setShowUpdateSuccess] = useState(false)
   const [weightEntries, setWeightEntries] = useState([])
   const [stoolEntries, setStoolEntries] = useState([])
   const [isStoolLoading, setIsStoolLoading] = useState(false)
@@ -88,6 +89,18 @@ export default function DashboardPage() {
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
 
   const selectedDog = dogs.find((dog) => dog.id === selectedDogId) || dogs[0]
+
+  // Check for update success message in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("updated") === "true") {
+      setShowUpdateSuccess(true)
+      // Remove the parameter from URL
+      window.history.replaceState({}, "", window.location.pathname)
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowUpdateSuccess(false), 5000)
+    }
+  }, [])
 
   // Fetch recommendations for the selected dog
   const { data: recommendations, isLoading: recLoading, error: recError } = useSWR(
@@ -953,6 +966,32 @@ export default function DashboardPage() {
         <Header />
 
         <main className="container py-8">
+          {showUpdateSuccess && (
+            <Card className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-green-900 dark:text-green-100">Subscription Updated!</h4>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Your subscription has been successfully updated with your new meal selections.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowUpdateSuccess(false)}
+                    className="ml-auto"
+                  >
+                    ×
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="font-manrope text-2xl lg:text-3xl font-bold">Welcome back, {user?.name || "there"}!</h1>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +22,19 @@ export function MultipleMealSelector({
   maxSelections = 3,
 }: MultipleMealSelectorProps) {
   const [showAllRecipes, setShowAllRecipes] = useState(false)
+
+  // Debug logging for selected recipes
+  useEffect(() => {
+    console.log("[v0] MultipleMealSelector - Received selectedRecipes:", selectedRecipes)
+    if (selectedRecipes.length > 0) {
+      const recipeNames = selectedRecipes
+        .map((id) => mockRecipes.find((r) => r.id === id)?.name || `Unknown (${id})`)
+        .join(", ")
+      console.log("[v0] MultipleMealSelector - Recipe names:", recipeNames)
+    } else {
+      console.log("[v0] MultipleMealSelector - No recipes selected")
+    }
+  }, [selectedRecipes])
 
   const availableRecipes = mockRecipes.filter((recipe) =>
     recipe.allergens.every((allergen) => !excludedAllergens.includes(allergen)),

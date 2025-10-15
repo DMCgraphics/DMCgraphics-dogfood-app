@@ -67,6 +67,7 @@ export async function POST(req: Request) {
         console.log("[v0] Plan ID from session:", planId)
 
         // First, check if the plan exists and belongs to the current user
+        console.log("[v0] Looking up plan with ID:", planId, "for user:", userId)
         const { data: planData, error: planError } = await supabase
           .from("plans")
           .select("id, user_id, status, delivery_zipcode")
@@ -75,8 +76,33 @@ export async function POST(req: Request) {
           .single()
 
         if (planError || !planData) {
-          console.error("[v0] Plan not found or doesn't belong to user:", planError)
-          return NextResponse.json({ error: "Plan not found" }, { status: 404 })
+          console.error("[v0] Plan not found or doesn't belong to user")
+          console.error("[v0] planError:", planError)
+          console.error("[v0] Searched for plan_id:", planId, "user_id:", userId)
+
+          // Try to find the plan without user_id filter to see if it exists
+          const { data: anyPlan } = await supabase
+            .from("plans")
+            .select("id, user_id, status")
+            .eq("id", planId)
+            .single()
+
+          if (anyPlan) {
+            console.error("[v0] Plan EXISTS but belongs to different user!")
+            console.error("[v0] Plan user_id:", anyPlan.user_id, "vs auth user_id:", userId)
+          } else {
+            console.error("[v0] Plan does not exist in database at all")
+          }
+
+          return NextResponse.json({
+            error: "Plan not found",
+            details: {
+              planId,
+              userId,
+              planExists: !!anyPlan,
+              planUserId: anyPlan?.user_id
+            }
+          }, { status: 404 })
         }
 
         console.log("[v0] Found plan:", planData)

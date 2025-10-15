@@ -20,25 +20,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing subscription_id" }, { status: 400 })
     }
 
-    console.log("[v0] Resuming subscription:", subscription_id, "for user:", user.id)
+    console.log("[v0] Reactivating subscription:", subscription_id, "for user:", user.id)
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" })
 
-    // Resume the subscription in Stripe by clearing pause_collection
-    const resumedSubscription = await stripe.subscriptions.update(subscription_id, {
-      pause_collection: "", // Clear pause to resume
+    // Reactivate the subscription in Stripe by removing cancel_at_period_end
+    const reactivatedSubscription = await stripe.subscriptions.update(subscription_id, {
+      cancel_at_period_end: false,
     })
 
-    console.log("[v0] Subscription resumed in Stripe:", resumedSubscription.id)
+    console.log("[v0] Subscription reactivated in Stripe:", reactivatedSubscription.id)
 
     // Update subscription status in database
     const { error: updateError } = await supabase
       .from("subscriptions")
       .update({
-        status: resumedSubscription.status,
-        pause_json: resumedSubscription.pause_collection ?? null,
-        current_period_start: new Date(resumedSubscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(resumedSubscription.current_period_end * 1000).toISOString(),
+        status: "active",
+        cancel_at_period_end: false,
+        canceled_at: null,
         updated_at: new Date().toISOString(),
       })
       .eq("stripe_subscription_id", subscription_id)
@@ -49,16 +48,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 })
     }
 
-    console.log("[v0] Subscription resumed successfully")
+    console.log("[v0] Subscription reactivated successfully")
 
     return NextResponse.json({
       success: true,
-      message: "Subscription resumed successfully"
+      message: "Subscription reactivated successfully"
     })
   } catch (error: any) {
-    console.error("[v0] Error resuming subscription:", error)
+    console.error("[v0] Error reactivating subscription:", error)
     return NextResponse.json(
-      { error: error?.message || "Failed to resume subscription" },
+      { error: error?.message || "Failed to reactivate subscription" },
       { status: 500 }
     )
   }

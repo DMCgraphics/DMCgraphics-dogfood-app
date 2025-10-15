@@ -194,93 +194,137 @@ export default function PlanBuilderPage() {
   const [subtotal_cents, setSubtotal_cents] = useState(currentDogData.subtotal_cents)
 
   useEffect(() => {
-    // Check for modify plan mode first (takes priority)
-    const modifyPlanData = localStorage.getItem("nouripet-modify-plan")
-    if (modifyPlanData) {
-      try {
-        const modifyData = JSON.parse(modifyPlanData)
-        console.log("[v0] Pre-filling plan builder with existing plan:", modifyData)
+    // Check for modify plan mode from URL params and fetch from database
+    const fetchModifyPlanData = async () => {
+      if (typeof window === "undefined") return
 
-        const dogData = modifyData.dogData
-        const planData = modifyData.planData
-        const planItems = planData?.plan_items || []
+      const urlParams = new URLSearchParams(window.location.search)
+      const isModify = urlParams.get("modify") === "true"
+      const planId = urlParams.get("plan_id")
+      const stripeSubscriptionId = urlParams.get("stripe_subscription_id")
 
-        console.log("[v0] Dog data received for modification:", dogData)
-        console.log("[v0] Plan items:", planItems)
+      if (isModify && planId) {
+        console.log("[v0] Modify mode detected, fetching plan from database:", planId)
 
-        // Extract recipe IDs from plan items
-        const recipeIds = planItems.map((item: any) => item.recipe_id || item.recipes?.id).filter(Boolean)
-        console.log("[v0] Extracted recipe IDs for modification:", recipeIds)
+        try {
+          // Fetch plan data with all relations from database
+          const { data: planData, error: planError } = await supabase
+            .from("plans")
+            .select(`
+              *,
+              plan_items (
+                *,
+                recipes (id, name, slug)
+              )
+            `)
+            .eq("id", planId)
+            .single()
 
-        const preFilledProfile: Partial<DogProfile> = {
-          name: dogData?.name,
-          breed: dogData?.breed,
-          age: dogData?.age,
-          weight: dogData?.weight,
-          weightUnit: dogData?.weight_unit || "lb",
-          ageUnit: dogData?.age_unit || "years",
-          bodyCondition: dogData?.body_condition_score || 5,
-          activity: dogData?.activity_level || "moderate",
-          sex: dogData?.sex,
-          isNeutered: dogData?.is_neutered,
+          if (planError || !planData) {
+            console.error("[v0] Failed to fetch plan data:", planError)
+            alert("Failed to load plan data. Please try again.")
+            router.push("/dashboard")
+            return
+          }
+
+          console.log("[v0] Fetched plan data from database:", planData)
+
+          // Fetch dog data
+          const { data: dogData, error: dogError } = await supabase
+            .from("dogs")
+            .select("*")
+            .eq("id", planData.dog_id)
+            .single()
+
+          if (dogError || !dogData) {
+            console.error("[v0] Failed to fetch dog data:", dogError)
+            alert("Failed to load dog data. Please try again.")
+            router.push("/dashboard")
+            return
+          }
+
+          console.log("[v0] Fetched dog data from database:", dogData)
+
+          // Extract recipe SLUGS from plan items (mockRecipes uses slugs, not UUIDs)
+          const recipeIds = (planData.plan_items || [])
+            .map((item: any) => {
+              // Get slug from the nested recipes object
+              const slug = item.recipes?.slug || item.recipe_slug
+              console.log("[v0] Plan item:", item, "extracted slug:", slug)
+              return slug
+            })
+            .filter(Boolean)
+
+          console.log("[v0] Extracted recipe slugs from database:", recipeIds)
+
+          const preFilledProfile: Partial<DogProfile> = {
+            name: dogData.name,
+            breed: dogData.breed,
+            age: dogData.age,
+            weight: dogData.weight,
+            weightUnit: dogData.weight_unit || "lb",
+            ageUnit: dogData.age_unit || "years",
+            bodyCondition: dogData.body_condition_score || 5,
+            activity: dogData.activity_level || "moderate",
+            sex: dogData.sex,
+            isNeutered: dogData.is_neutered,
+          }
+
+          const preFilledData: DogPlanData = {
+            dogProfile: preFilledProfile,
+            healthGoals: { stoolScore: 4 },
+            selectedAllergens: dogData.allergies || [],
+            selectedRecipe: null, // Always null for modify mode
+            selectedRecipes: recipeIds, // All current recipes from database
+            allowMultipleSelection: true, // Always allow multiple in modify mode
+            mealsPerDay: planData.meals_per_day || 2,
+            selectedAddOns: planData.addons || [],
+            medicalNeeds: {
+              hasMedicalNeeds: dogData.conditions && dogData.conditions.length > 0 ? "yes" : "no",
+              email: "",
+              selectedCondition: dogData.conditions && dogData.conditions.length > 0 ? dogData.conditions[0] : null,
+              selectedPrescriptionDiet: null,
+              verificationRequired: false,
+            },
+            foodCostPerWeek: 0,
+            addOnsCostPerWeek: 0,
+            totalWeeklyCost: 0,
+            subtotal_cents: planData.subtotal_cents || 0,
+          }
+
+          setIsUpdatingFromAllDogsData(true)
+          setAllDogsData([preFilledData])
+          setDogProfile(preFilledProfile)
+          setHealthGoals({ stoolScore: 4 })
+          setSelectedAllergens(dogData.allergies || [])
+          setSelectedRecipe(null)
+          setSelectedRecipes(recipeIds)
+          setAllowMultipleSelection(true)
+          setMedicalNeeds(preFilledData.medicalNeeds)
+          setCurrentStep(1)
+
+          console.log("[v0] State updated for modify mode from database:", {
+            selectedRecipes: recipeIds,
+            allowMultipleSelection: true
+          })
+
+          // Set modify mode flags
+          setIsModifyMode(true)
+          setModifyPlanId(planId)
+          setModifyStripeSubscriptionId(stripeSubscriptionId || null)
+
+          // Reset flag after a brief delay
+          setTimeout(() => setIsUpdatingFromAllDogsData(false), 100)
+        } catch (error) {
+          console.error("[v0] Error fetching modify plan data:", error)
+          alert("Failed to load plan data. Please try again.")
+          router.push("/dashboard")
         }
-
-        console.log("[v0] Pre-filled profile:", preFilledProfile)
-
-        // In modify mode, ALWAYS use multiple selection mode so users can add/remove recipes
-        const preFilledData: DogPlanData = {
-          dogProfile: preFilledProfile,
-          healthGoals: { stoolScore: 4 },
-          selectedAllergens: dogData?.allergies || [],
-          selectedRecipe: null, // Always null in modify mode
-          selectedRecipes: recipeIds, // Include all existing recipes
-          allowMultipleSelection: true, // Always allow multiple in modify mode
-          mealsPerDay: 2, // Default, can be enhanced to read from plan_dogs
-          selectedAddOns: [],
-          medicalNeeds: {
-            hasMedicalNeeds: dogData?.conditions && dogData.conditions.length > 0 ? "yes" : "no",
-            email: "",
-            selectedCondition: dogData?.conditions && dogData.conditions.length > 0 ? dogData.conditions[0] : null,
-            selectedPrescriptionDiet: null,
-            verificationRequired: false,
-          },
-          foodCostPerWeek: 0,
-          addOnsCostPerWeek: 0,
-          totalWeeklyCost: 0,
-          subtotal_cents: 0,
-        }
-
-        setIsUpdatingFromAllDogsData(true)
-        setAllDogsData([preFilledData])
-        setDogProfile(preFilledProfile)
-        setHealthGoals({ stoolScore: 4 })
-        setSelectedAllergens(dogData?.allergies || [])
-        setSelectedRecipe(preFilledData.selectedRecipe)
-        setSelectedRecipes(preFilledData.selectedRecipes)
-        setAllowMultipleSelection(preFilledData.allowMultipleSelection)
-        setMedicalNeeds(preFilledData.medicalNeeds)
-        setCurrentStep(1)
-
-        // Set modify mode flags
-        setIsModifyMode(true)
-        setModifyPlanId(modifyData.planId)
-        setModifyStripeSubscriptionId(modifyData.stripeSubscriptionId || null)
-
-        console.log("[v0] Modify mode enabled with:", {
-          planId: modifyData.planId,
-          stripeSubscriptionId: modifyData.stripeSubscriptionId
-        })
-
-        // Don't remove from localStorage yet - we'll need it during checkout
-        // localStorage.removeItem("nouripet-modify-plan")
-
-        // Reset flag after a brief delay
-        setTimeout(() => setIsUpdatingFromAllDogsData(false), 100)
         return
-      } catch (error) {
-        console.error("[v0] Error parsing modify plan data:", error)
       }
     }
+
+    fetchModifyPlanData()
 
     // Check for selected dog data (original flow)
     const selectedDogData = localStorage.getItem("nouripet-selected-dog")
@@ -1429,9 +1473,6 @@ export default function PlanBuilderPage() {
           setIsProcessingAuth(false)
           authSuccessRef.current = false
 
-          // Clean up modify plan data from localStorage
-          localStorage.removeItem("nouripet-modify-plan")
-
           // Redirect to dashboard with success message
           router.push("/dashboard?updated=true")
         } catch (error: any) {
@@ -1448,9 +1489,6 @@ export default function PlanBuilderPage() {
         setShowAuthModal(false)
         setIsProcessingAuth(false)
         authSuccessRef.current = false
-
-        // Clean up modify plan data from localStorage if present
-        localStorage.removeItem("nouripet-modify-plan")
 
         router.push("/checkout")
       }

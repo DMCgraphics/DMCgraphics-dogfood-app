@@ -186,7 +186,7 @@ export default function DashboardPage() {
             .from("subscriptions")
             .select("*")
             .eq("user_id", user.id)
-            .in("status", ["active", "trialing", "past_due"])
+            .in("status", ["active", "trialing", "past_due", "canceled", "paused"])
 
           if (subsError) {
             console.error("[v0] Error fetching subscriptions:", subsError)
@@ -293,10 +293,15 @@ export default function DashboardPage() {
 
             const dogPlan = planData?.find((plan) => plan.dog_id === dog.id)
             if (dogPlan) {
-              const planItem = dogPlan.plan_items?.[0]
-              if (planItem?.recipes?.name) {
-                currentRecipe = planItem.recipes.name
-                console.log("[v0] Found recipe from plan:", currentRecipe, "for", dog.name)
+              // Get all recipe names if multiple recipes are selected
+              if (dogPlan.plan_items && dogPlan.plan_items.length > 0) {
+                const recipeNames = dogPlan.plan_items
+                  .map(item => item.recipes?.name)
+                  .filter(Boolean)
+                if (recipeNames.length > 0) {
+                  currentRecipe = recipeNames.join(", ")
+                  console.log("[v0] Found recipes from plan:", currentRecipe, "for", dog.name)
+                }
               }
 
               // Check if plan includes medical or prescription items
@@ -321,32 +326,65 @@ export default function DashboardPage() {
             const isActivePlan = dogPlan && dogPlan.status === "active"
 
             if (dogSubscription || isActivePlan) {
-              subscriptionStatus = "active"
-
-              // Use the subscription's current_period_end for next delivery date
-              if (dogSubscription && dogSubscription.current_period_end) {
-                const nextDeliveryDate = new Date(dogSubscription.current_period_end)
-                nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-                console.log("[v0] Using subscription current_period_end for next delivery:", nextDelivery)
+              // Use the actual subscription status from the database
+              // Check both status and cancel_at_period_end flag
+              if (dogSubscription) {
+                if (dogSubscription.status === "canceled" || dogSubscription.cancel_at_period_end) {
+                  subscriptionStatus = "cancelled"
+                } else if (dogSubscription.status === "paused") {
+                  subscriptionStatus = "paused"
+                } else {
+                  subscriptionStatus = "active"
+                }
               } else {
-                // Fallback to calculating from subscription date
-                const subscriptionDate = dogSubscription
-                  ? new Date(dogSubscription.created_at)
-                  : new Date(dogPlan.updated_at)
-                const nextDeliveryDate = new Date(subscriptionDate)
-                nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
-                nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-                console.log("[v0] Calculated next delivery from subscription date:", nextDelivery)
+                subscriptionStatus = "active"
               }
-              console.log("[v0] Active subscription/plan found for", dog.name, "next delivery:", nextDelivery)
+
+              // Handle next delivery for canceled subscriptions
+              if (dogSubscription && (dogSubscription.status === "canceled" || dogSubscription.cancel_at_period_end)) {
+                if (dogSubscription.current_period_end) {
+                  const periodEnd = new Date(dogSubscription.current_period_end)
+                  const now = new Date()
+                  // If period hasn't ended yet, show when access ends
+                  if (periodEnd > now) {
+                    nextDelivery = `Ends ${periodEnd.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}`
+                  } else {
+                    nextDelivery = "Subscription Canceled"
+                  }
+                } else {
+                  nextDelivery = "Subscription Canceled"
+                }
+                console.log("[v0] Canceled subscription for", dog.name, "next delivery:", nextDelivery)
+              } else {
+                // Use the subscription's current_period_end for next delivery date
+                if (dogSubscription && dogSubscription.current_period_end) {
+                  const nextDeliveryDate = new Date(dogSubscription.current_period_end)
+                  nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                  console.log("[v0] Using subscription current_period_end for next delivery:", nextDelivery)
+                } else {
+                  // Fallback to calculating from subscription date
+                  const subscriptionDate = dogSubscription
+                    ? new Date(dogSubscription.created_at)
+                    : new Date(dogPlan.updated_at)
+                  const nextDeliveryDate = new Date(subscriptionDate)
+                  nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 7)
+                  nextDelivery = nextDeliveryDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                  console.log("[v0] Calculated next delivery from subscription date:", nextDelivery)
+                }
+                console.log("[v0] Active subscription/plan found for", dog.name, "next delivery:", nextDelivery)
+              }
             } else {
               const savedPlanData = localStorage.getItem(`nouripet-saved-plan-${dog.id}`)
               if (savedPlanData) {

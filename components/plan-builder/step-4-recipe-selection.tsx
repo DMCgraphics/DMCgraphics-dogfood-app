@@ -36,6 +36,20 @@ export function Step4RecipeSelection({
     allowMultipleSelection ? "multiple" : "single",
   )
 
+  // Sync selectionMode with allowMultipleSelection prop when it changes (e.g., in modify mode)
+  useEffect(() => {
+    if (allowMultipleSelection) {
+      console.log("[v0] Recipe Selection - Switching to multiple mode (modify mode detected)")
+      setSelectionMode("multiple")
+    }
+  }, [allowMultipleSelection])
+
+  // Debug logging for selection mode
+  useEffect(() => {
+    console.log("[v0] Recipe Selection - Current mode:", selectionMode)
+    console.log("[v0] Recipe Selection - Selected recipes:", selectedRecipes)
+  }, [selectionMode, selectedRecipes])
+
   useEffect(() => {
     if (dogProfile && dogProfile.name && dogProfile.weight && dogProfile.breed) {
       const mockDog: MultiDogProfile = {

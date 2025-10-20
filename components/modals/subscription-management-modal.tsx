@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Calendar, CreditCard, Package, Pause, Play, Settings, Trash2 } from "lucide-react"
+import { Calendar, CreditCard, Package, Pause, Play, Plus, Settings, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
@@ -20,6 +20,7 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
   const { user, refreshSubscriptionStatus } = useAuth()
   const router = useRouter()
   const [subscriptions, setSubscriptions] = useState([])
+  const [dogsWithoutSubscriptions, setDogsWithoutSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [subscriptionToCancel, setSubscriptionToCancel] = useState<string | null>(null)
@@ -190,12 +191,28 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
       console.log("[v0] Modal - Showing unique subscriptions (most recent per dog):", uniqueSubscriptions.length)
 
       setSubscriptions(uniqueSubscriptions)
-      
+
+      // Fetch all dogs to find those without subscriptions
+      const { data: allDogs, error: dogsError } = await supabase
+        .from("dogs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (!dogsError && allDogs) {
+        // Find dogs that don't have subscriptions
+        const dogsWithSubs = new Set(uniqueSubscriptions.map(sub => sub.planData?.dog_id).filter(Boolean))
+        const dogsWithoutSubs = allDogs.filter(dog => !dogsWithSubs.has(dog.id))
+        console.log("[v0] Modal - Dogs without subscriptions:", dogsWithoutSubs.length)
+        setDogsWithoutSubscriptions(dogsWithoutSubs)
+      }
+
       // Refresh auth context subscription status to ensure consistency
       await refreshSubscriptionStatus()
     } catch (error) {
       console.error("Error fetching subscriptions:", error)
       setSubscriptions([])
+      setDogsWithoutSubscriptions([])
     } finally {
       setLoading(false)
     }
@@ -547,6 +564,41 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
                 </CardContent>
               </Card>
             ))}
+
+            {/* Show dogs without subscriptions */}
+            {dogsWithoutSubscriptions.length > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <div className="text-center py-2">
+                    <h3 className="text-lg font-semibold">Dogs Without Subscriptions</h3>
+                    <p className="text-sm text-muted-foreground">Create a meal plan for these dogs</p>
+                  </div>
+                  {dogsWithoutSubscriptions.map((dog: any) => (
+                    <Card key={dog.id}>
+                      <CardHeader>
+                        <CardTitle>{dog.name}</CardTitle>
+                        <CardDescription>
+                          {dog.breed} • {dog.weight} {dog.weight_unit || "lbs"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button
+                          onClick={() => {
+                            onOpenChange(false)
+                            router.push(`/plan-builder?dog_id=${dog.id}`)
+                          }}
+                          className="w-full sm:w-auto"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Subscription Plan
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end">
               <Button variant="outline" onClick={() => onOpenChange(false)}>

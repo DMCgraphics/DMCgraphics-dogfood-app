@@ -54,146 +54,150 @@ export default function PlanBuilderPage() {
   const TOTAL_STEPS = 5
   const [showAuthModal, setShowAuthModal] = useState(false)
 
+  // Multi-dog state
   const [currentDogIndex, setCurrentDogIndex] = useState(0)
   const [totalDogs, setTotalDogs] = useState(1)
-  const [allDogsData, setAllDogsData] = useState<DogPlanData[]>([])
-  const [showDogCountSelector, setShowDogCountSelector] = useState(false)
+  const [showDogCountSelector, setShowDogCountSelector] = useState(true)
 
-  const [isUpdatingFromAllDogsData, setIsUpdatingFromAllDogsData] = useState(false)
-
-  const getDefaultDogData = (): DogPlanData => ({
-    dogProfile: { weightUnit: "lb", ageUnit: "years", bodyCondition: 5, activity: "moderate" },
-    healthGoals: { stoolScore: 4 },
-    selectedAllergens: [],
-    selectedRecipe: null,
-    selectedRecipes: [],
-    allowMultipleSelection: false,
-    mealsPerDay: 2,
-    selectedAddOns: [],
-    medicalNeeds: {
-      hasMedicalNeeds: null,
-      email: "",
-      selectedCondition: null,
-      selectedPrescriptionDiet: null,
-      verificationRequired: false,
-    },
-    foodCostPerWeek: 0,
-    addOnsCostPerWeek: 0,
-    totalWeeklyCost: 0,
-    subtotal_cents: 0,
-  })
-
-  useEffect(() => {
-    if (allDogsData.length === 0) {
-      setAllDogsData([getDefaultDogData()])
+  const [allDogsData, setAllDogsData] = useState<DogPlanData[]>([
+    {
+      dogProfile: {
+        weightUnit: "lb",
+        ageUnit: "years",
+        bodyCondition: 5,
+        activity: "moderate"
+      },
+      healthGoals: { stoolScore: 4 },
+      selectedAllergens: [],
+      selectedRecipe: null,
+      selectedRecipes: [],
+      allowMultipleSelection: false,
+      mealsPerDay: 2,
+      selectedAddOns: [],
+      medicalNeeds: {
+        hasMedicalNeeds: null,
+        email: "",
+        selectedCondition: null,
+        selectedPrescriptionDiet: null,
+        verificationRequired: false,
+      },
+      foodCostPerWeek: 0,
+      addOnsCostPerWeek: 0,
+      totalWeeklyCost: 0,
+      subtotal_cents: 0,
     }
-  }, [])
+  ])
 
-  // Check for add-dog-mode parameters
+  const [dogProfile, setDogProfile] = useState<Partial<DogProfile>>({
+    weightUnit: "lb",
+    ageUnit: "years",
+    bodyCondition: 5,
+    activity: "moderate"
+  })
+  const [healthGoals, setHealthGoals] = useState<Partial<HealthGoals>>({ stoolScore: 4 })
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([])
+  const [selectedRecipe, setSelectedRecipe] = useState<string | null>(null)
+  const [selectedRecipes, setSelectedRecipes] = useState<string[]>([])
+  const [allowMultipleSelection, setAllowMultipleSelection] = useState(false)
+  const [mealsPerDay, setMealsPerDay] = useState(2)
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([])
+  const [medicalNeeds, setMedicalNeeds] = useState({
+    hasMedicalNeeds: null,
+    email: "",
+    selectedCondition: null,
+    selectedPrescriptionDiet: null,
+    verificationRequired: false,
+  })
+  const [foodCostPerWeek, setFoodCostPerWeek] = useState(0)
+  const [addOnsCostPerWeek, setAddOnsCostPerWeek] = useState(0)
+  const [totalWeeklyCost, setTotalWeeklyCost] = useState(0)
+  const [subtotal_cents, setSubtotal_cents] = useState(0)
+
+  // Ref to prevent infinite loops when syncing allDogsData
+  const isUpdatingFromAllDogsData = useRef(false)
+
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === "undefined") return
-    
-    const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
-    const totalDogsFromStorage = localStorage.getItem("nouripet-total-dogs")
-    
-    if (isAddDogMode && totalDogsFromStorage) {
-      const dogCount = parseInt(totalDogsFromStorage)
-      setTotalDogs(dogCount)
-      setShowDogCountSelector(false)
-      setCurrentStep(1) // Skip to step 1 (Dog Basics)
-      
-      // Fetch existing dog data from database
-      const fetchExistingDogs = async () => {
+    // Check for dog_id parameter and pre-fill dog data
+    const fetchDogDataById = async () => {
+      if (typeof window === "undefined") return
+
+      const urlParams = new URLSearchParams(window.location.search)
+      const dogId = urlParams.get("dog_id")
+
+      if (dogId) {
+        console.log("[v0] Dog ID detected in URL, fetching dog data:", dogId)
+
         try {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (!user) return
+          const { data: dogData, error: dogError } = await supabase
+            .from("dogs")
+            .select("*")
+            .eq("id", dogId)
+            .single()
 
-          const { data: existingDogs, error } = await supabase
-            .from('dogs')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: true })
-
-          if (error) {
-            console.error('Error fetching existing dogs:', error)
+          if (dogError || !dogData) {
+            console.error("[v0] Failed to fetch dog data:", dogError)
             return
           }
 
-          // Initialize with existing dog data + new dog
-          const newDogsData = Array.from({ length: dogCount }, (_, index) => {
-            if (existingDogs && existingDogs.length > index) {
-              // Use existing dog data for this position
-              const existingDog = existingDogs[index]
-              return {
-                dogProfile: {
-                  name: existingDog.name,
-                  weight: existingDog.weight,
-                  weightUnit: existingDog.weight_unit || "lb",
-                  age: existingDog.age,
-                  ageUnit: existingDog.age_unit || "years",
-                  sex: existingDog.sex,
-                  breed: existingDog.breed,
-                  activity: existingDog.activity_level || "moderate",
-                  bodyCondition: existingDog.body_condition_score || 5,
-                  isNeutered: existingDog.is_neutered,
-                },
-                healthGoals: { stoolScore: 4 },
-                selectedAllergens: [],
-                selectedRecipe: null,
-                selectedRecipes: [],
-                allowMultipleSelection: false,
-                mealsPerDay: 2,
-                selectedAddOns: [],
-                medicalNeeds: {
-                  hasMedicalNeeds: null,
-                  email: "",
-                  selectedCondition: null,
-                  selectedPrescriptionDiet: null,
-                  verificationRequired: false,
-                },
-                foodCostPerWeek: 0,
-                addOnsCostPerWeek: 0,
-                totalWeeklyCost: 0,
-                subtotal_cents: 0,
-              }
-            }
-            return getDefaultDogData()
-          })
-          
-          setAllDogsData(newDogsData)
-          setCurrentDogIndex(dogCount - 1) // Start with the new dog (last index)
+          console.log("[v0] Fetched dog data from database:", dogData)
+
+          const preFilledProfile: Partial<DogProfile> = {
+            name: dogData.name,
+            breed: dogData.breed,
+            age: dogData.age,
+            weight: dogData.weight,
+            weightUnit: dogData.weight_unit || "lb",
+            ageUnit: dogData.age_unit || "years",
+            bodyCondition: dogData.body_condition_score || 5,
+            activity: dogData.activity_level || "moderate",
+            sex: dogData.sex,
+            isNeutered: dogData.is_neutered,
+          }
+
+          const preFilledMedicalNeeds = {
+            hasMedicalNeeds: dogData.conditions && dogData.conditions.length > 0 ? "yes" : null,
+            email: "",
+            selectedCondition: dogData.conditions && dogData.conditions.length > 0 ? dogData.conditions[0] : null,
+            selectedPrescriptionDiet: null,
+            verificationRequired: false,
+          }
+
+          // Pre-fill the state with dog data
+          setDogProfile(preFilledProfile)
+          setHealthGoals({ stoolScore: 4 })
+          setSelectedAllergens(dogData.allergies || [])
+          setMedicalNeeds(preFilledMedicalNeeds)
+
+          // Also update allDogsData for multi-dog support
+          setAllDogsData([{
+            dogProfile: preFilledProfile,
+            healthGoals: { stoolScore: 4 },
+            selectedAllergens: dogData.allergies || [],
+            selectedRecipe: null,
+            selectedRecipes: [],
+            allowMultipleSelection: false,
+            mealsPerDay: 2,
+            selectedAddOns: [],
+            medicalNeeds: preFilledMedicalNeeds,
+            foodCostPerWeek: 0,
+            addOnsCostPerWeek: 0,
+            totalWeeklyCost: 0,
+            subtotal_cents: 0,
+          }])
+
+          // Skip to step 1 (Dog Basics) if coming from management modal
+          setCurrentStep(1)
+          setShowDogCountSelector(false)
+
+          console.log("[v0] Dog data pre-filled successfully")
         } catch (error) {
-          console.error('Error in fetchExistingDogs:', error)
+          console.error("[v0] Error fetching dog data:", error)
         }
       }
-
-      fetchExistingDogs()
-      
-      // Clean up localStorage
-      localStorage.removeItem("nouripet-add-dog-mode")
-      localStorage.removeItem("nouripet-total-dogs")
     }
-  }, [])
 
-  // Current dog's data (derived from allDogsData)
-  const currentDogData = allDogsData[currentDogIndex] || getDefaultDogData()
+    fetchDogDataById()
 
-  const [dogProfile, setDogProfile] = useState<Partial<DogProfile>>(currentDogData.dogProfile)
-  const [healthGoals, setHealthGoals] = useState<Partial<HealthGoals>>(currentDogData.healthGoals)
-  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(currentDogData.selectedAllergens)
-  const [selectedRecipe, setSelectedRecipe] = useState<string | null>(currentDogData.selectedRecipe)
-  const [selectedRecipes, setSelectedRecipes] = useState<string[]>(currentDogData.selectedRecipes)
-  const [allowMultipleSelection, setAllowMultipleSelection] = useState(currentDogData.allowMultipleSelection)
-  const [mealsPerDay, setMealsPerDay] = useState(currentDogData.mealsPerDay)
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>(currentDogData.selectedAddOns)
-  const [medicalNeeds, setMedicalNeeds] = useState(currentDogData.medicalNeeds)
-  const [foodCostPerWeek, setFoodCostPerWeek] = useState(currentDogData.foodCostPerWeek)
-  const [addOnsCostPerWeek, setAddOnsCostPerWeek] = useState(currentDogData.addOnsCostPerWeek)
-  const [totalWeeklyCost, setTotalWeeklyCost] = useState(currentDogData.totalWeeklyCost)
-  const [subtotal_cents, setSubtotal_cents] = useState(currentDogData.subtotal_cents)
-
-  useEffect(() => {
     // Check for modify plan mode from URL params and fetch from database
     const fetchModifyPlanData = async () => {
       if (typeof window === "undefined") return
@@ -292,7 +296,7 @@ export default function PlanBuilderPage() {
             subtotal_cents: planData.subtotal_cents || 0,
           }
 
-          setIsUpdatingFromAllDogsData(true)
+          isUpdatingFromAllDogsData.current = true
           setAllDogsData([preFilledData])
           setDogProfile(preFilledProfile)
           setHealthGoals({ stoolScore: 4 })
@@ -314,7 +318,7 @@ export default function PlanBuilderPage() {
           setModifyStripeSubscriptionId(stripeSubscriptionId || null)
 
           // Reset flag after a brief delay
-          setTimeout(() => setIsUpdatingFromAllDogsData(false), 100)
+          setTimeout(() => { isUpdatingFromAllDogsData.current = false }, 100)
         } catch (error) {
           console.error("[v0] Error fetching modify plan data:", error)
           alert("Failed to load plan data. Please try again.")
@@ -367,7 +371,7 @@ export default function PlanBuilderPage() {
           subtotal_cents: 0,
         }
 
-        setIsUpdatingFromAllDogsData(true)
+        isUpdatingFromAllDogsData.current = true
         setAllDogsData([preFilledData])
         setDogProfile(preFilledProfile)
         setHealthGoals({ stoolScore: 4 })
@@ -378,7 +382,7 @@ export default function PlanBuilderPage() {
         localStorage.removeItem("nouripet-selected-dog")
 
         // Reset flag after a brief delay
-        setTimeout(() => setIsUpdatingFromAllDogsData(false), 100)
+        setTimeout(() => { isUpdatingFromAllDogsData.current = false }, 100)
       } catch (error) {
         console.error("[v0] Error parsing selected dog data:", error)
       }
@@ -386,11 +390,11 @@ export default function PlanBuilderPage() {
   }, [])
 
   useEffect(() => {
-    if (isUpdatingFromAllDogsData) return
+    if (isUpdatingFromAllDogsData.current) return
 
     const data = allDogsData[currentDogIndex]
     if (data) {
-      setIsUpdatingFromAllDogsData(true)
+      isUpdatingFromAllDogsData.current = true
       setDogProfile(data.dogProfile)
       setHealthGoals(data.healthGoals)
       setSelectedAllergens(data.selectedAllergens)
@@ -404,12 +408,12 @@ export default function PlanBuilderPage() {
       setAddOnsCostPerWeek(data.addOnsCostPerWeek)
       setTotalWeeklyCost(data.totalWeeklyCost)
       setSubtotal_cents(data.subtotal_cents)
-      setTimeout(() => setIsUpdatingFromAllDogsData(false), 50)
+      setTimeout(() => { isUpdatingFromAllDogsData.current = false }, 50)
     }
   }, [currentDogIndex]) // Only depend on currentDogIndex, not allDogsData
 
   useEffect(() => {
-    if (isUpdatingFromAllDogsData) return
+    if (isUpdatingFromAllDogsData.current) return
 
     const timeoutId = setTimeout(() => {
       const currentData: DogPlanData = {
@@ -447,7 +451,6 @@ export default function PlanBuilderPage() {
     selectedAddOns,
     medicalNeeds,
     currentDogIndex,
-    isUpdatingFromAllDogsData,
     foodCostPerWeek,
     addOnsCostPerWeek,
     totalWeeklyCost,
@@ -892,25 +895,39 @@ export default function PlanBuilderPage() {
           console.log("[v0] Plan status updated to checkout_in_progress")
         }
       } else {
-        // Original flow: Check for existing active plan
-        const { data: existingPlans, error: planFetchError } = await supabase
-          .from("plans")
-          .select("id, status")
-          .eq("user_id", session.user.id)
-          .in("status", ["draft", "active", "checkout_in_progress"])
-          .order("created_at", { ascending: false })
-
-        // Clean up any duplicate plans first
-        if (existingPlans && existingPlans.length > 1) {
-          console.log("[v0] Found multiple plans, cleaning up duplicates...")
-          const plansToDelete = existingPlans.slice(1) // Keep the first one, delete the rest
-          for (const plan of plansToDelete) {
-            console.log("[v0] Deleting duplicate plan:", plan.id)
-            await supabase.from("plans").delete().eq("id", plan.id)
-          }
+        // Original flow: Check for existing plan for THIS SPECIFIC DOG
+        // Get the first dog to check if we need to create or update a plan
+        const firstDogData = allDogsData[0]
+        if (!firstDogData || !firstDogData.dogProfile.name) {
+          console.error("[v0] No dog data available for plan creation")
+          return
         }
 
-        existingPlan = existingPlans && existingPlans.length > 0 ? existingPlans[0] : null
+        // Check if this dog already has a plan
+        const { data: dog, error: dogLookupError } = await supabase
+          .from("dogs")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .eq("name", firstDogData.dogProfile.name)
+          .single()
+
+        let dogSpecificPlan = null
+        if (dog && !dogLookupError) {
+          // Check for existing plan for THIS dog
+          const { data: dogPlans, error: dogPlansError } = await supabase
+            .from("plans")
+            .select("id, status, dog_id")
+            .eq("user_id", session.user.id)
+            .eq("dog_id", dog.id)
+            .in("status", ["draft", "active", "checkout_in_progress"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+
+          dogSpecificPlan = dogPlans && dogPlans.length > 0 ? dogPlans[0] : null
+          console.log("[v0] Checked for existing plan for dog:", dog.id, "found:", !!dogSpecificPlan)
+        }
+
+        existingPlan = dogSpecificPlan
 
         if (existingPlan) {
         planId = existingPlan.id

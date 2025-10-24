@@ -145,54 +145,24 @@ export default function AboutPage() {
         {/* Team Section */}
         <section className="bg-gray-50 py-16 lg:py-24">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Meet Our Expert Team</h2>
+                <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Expert Nutritional Formulation</h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                  Our team combines decades of veterinary expertise, nutritional science, and a shared passion for
-                  improving dogs' lives through better nutrition.
+                  Our recipes are formulated by a board-certified veterinary nutritionist to ensure complete and balanced nutrition for your dog.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <Card className="text-center hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <span className="text-white font-bold text-xl">DR</span>
-                    </div>
-                    <h3 className="font-serif text-xl font-semibold mb-2">Dr. Sarah Chen</h3>
-                    <p className="text-green-600 font-medium mb-3">Chief Veterinary Officer</p>
-                    <p className="text-gray-600 text-sm">
-                      Board-certified veterinary nutritionist with 15+ years specializing in canine dietary therapy and
-                      metabolic disorders.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="text-center hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
+              <div className="flex justify-center">
+                <Card className="text-center hover:shadow-lg transition-shadow max-w-md">
+                  <CardContent className="p-8">
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full mx-auto mb-4 flex items-center justify-center">
                       <span className="text-white font-bold text-xl">JP</span>
                     </div>
-                    <h3 className="font-serif text-xl font-semibold mb-2">Dr. James Pendergast</h3>
-                    <p className="text-blue-600 font-medium mb-3">Head of Nutrition Science</p>
-                    <p className="text-gray-600 text-sm">
-                      PhD in Animal Nutrition from UC Davis, former researcher at leading pet food companies with 20+
-                      published papers.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="text-center hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <span className="text-white font-bold text-xl">EJ</span>
-                    </div>
-                    <h3 className="font-serif text-xl font-semibold mb-2">Emily Johnson</h3>
-                    <p className="text-purple-600 font-medium mb-3">Director of Quality Assurance</p>
-                    <p className="text-gray-600 text-sm">
-                      Food safety expert ensuring every meal meets the highest standards for nutritional accuracy and
-                      safety.
+                    <h3 className="font-serif text-2xl font-semibold mb-2">Dr. James Pendergast</h3>
+                    <p className="text-blue-600 font-medium mb-4">Veterinary Nutritionist</p>
+                    <p className="text-gray-600">
+                      Dr. Pendergast formulated our recipes to meet AAFCO standards using whole food ingredients, minimizing the need for supplements while ensuring complete nutritional balance, including developing our custom vitamin and mineral premix.
                     </p>
                   </CardContent>
                 </Card>

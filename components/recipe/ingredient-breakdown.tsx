@@ -21,7 +21,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Carrots", percentage: 10, source: "Local Farms", benefits: ["Beta-carotene", "Eye health"] },
     { name: "Zucchini", percentage: 8, source: "Local Farms", benefits: ["Hydration", "Low-calorie fiber"] },
     { name: "Spinach", percentage: 8, source: "Local Farms", benefits: ["Iron", "Folate"] },
-    { name: "Balance IT", percentage: 2, source: "Balance IT", benefits: ["Complete micronutrients"] },
+    { name: "Custom Premix", percentage: 2, source: "NouriPet", benefits: ["Complete micronutrients"] },
     { name: "Fish oil", percentage: 2, source: "IFOS-certified", benefits: ["EPA/DHA for skin & coat"] },
   ],
   "lamb-pumpkin-feast": [
@@ -30,7 +30,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Quinoa", percentage: 15, source: "Organic Supplier", benefits: ["Complete amino acids"] },
     { name: "Carrots", percentage: 8, source: "Local Farms", benefits: ["Antioxidants"] },
     { name: "Kale or spinach", percentage: 8, source: "Local Farms", benefits: ["Minerals & vitamins"] },
-    { name: "Balance IT", percentage: 2, source: "Balance IT", benefits: ["Complete micronutrients"] },
+    { name: "Custom Premix", percentage: 2, source: "NouriPet", benefits: ["Complete micronutrients"] },
     { name: "Fish oil", percentage: 2, source: "IFOS-certified", benefits: ["EPA/DHA for skin & coat"] },
   ],
   "low-fat-chicken-garden-veggie": [
@@ -39,7 +39,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Quinoa", percentage: 15, source: "Organic Supplier", benefits: ["Digestible carb, complete amino acids"] },
     { name: "Carrots (lightened with zucchini)", percentage: 8, source: "Local Farms", benefits: ["Fiber, beta-carotene"] },
     { name: "Spinach", percentage: 8, source: "Local Farms", benefits: ["Iron, folate"] },
-    { name: "Balance IT Canine-K (Low Fat)", percentage: 3, source: "Balance IT", benefits: ["Essential vitamins/minerals for low-fat diets"] },
+    { name: "Custom Premix (Low Fat)", percentage: 3, source: "NouriPet", benefits: ["Essential vitamins/minerals for low-fat diets"] },
   ],
   "turkey-brown-rice-comfort": [
     { name: "Lean ground turkey", percentage: 50, source: "Mosner Family Brands", benefits: ["Lean protein"] },
@@ -47,7 +47,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Carrots", percentage: 10, source: "Local Farms", benefits: ["Beta-carotene"] },
     { name: "Zucchini", percentage: 10, source: "Local Farms", benefits: ["Hydration", "Fiber"] },
     { name: "Spinach", percentage: 10, source: "Local Farms", benefits: ["Iron", "Vitamins"] },
-    { name: "Balance IT", percentage: 1, source: "Balance IT", benefits: ["Complete micronutrients"] },
+    { name: "Custom Premix", percentage: 1, source: "NouriPet", benefits: ["Complete micronutrients"] },
     { name: "Fish oil", percentage: 1, source: "IFOS-certified", benefits: ["EPA/DHA"] },
   ],
 }

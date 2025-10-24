@@ -10,6 +10,7 @@ import { CheckCircle2, Sparkles, Heart, Brain } from "lucide-react"
 export default function RafflePage() {
   const [dogName, setDogName] = useState("")
   const [email, setEmail] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
   const [zipCode, setZipCode] = useState("")
   const [subscribeToUpdates, setSubscribeToUpdates] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,6 +29,7 @@ export default function RafflePage() {
         body: JSON.stringify({
           dogName,
           email,
+          phoneNumber,
           zipCode,
           subscribeToUpdates,
           utmSource: "harborpoint_event",
@@ -123,6 +125,20 @@ export default function RafflePage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="text-lg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="phoneNumber" className="text-sm font-medium text-gray-700">
+                    Phone Number <span className="text-gray-400">(optional)</span>
+                  </label>
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    placeholder="(203) 555-1234"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                     className="text-lg"
                   />
                 </div>

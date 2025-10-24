@@ -79,11 +79,18 @@ async function upsertSubscriptionFromIds({
       return
     }
 
+    // Determine status: Stripe keeps status as "active" when using pause_collection
+    // So we need to check pause_collection to detect paused subscriptions
+    let subscriptionStatus = stripeSubscription.status
+    if (stripeSubscription.pause_collection && stripeSubscription.pause_collection.behavior) {
+      subscriptionStatus = 'paused'
+    }
+
     const subscriptionData = {
       user_id: userId,
       plan_id: planId,
       stripe_subscription_id: subscriptionId,
-      status: "active",
+      status: subscriptionStatus,
       current_period_start: stripeSubscription.current_period_start ? new Date(stripeSubscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
       current_period_end: stripeSubscription.current_period_end ? new Date(stripeSubscription.current_period_end * 1000).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       currency: stripeSubscription.currency,
@@ -408,25 +415,34 @@ export async function POST(req: Request) {
 
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription
-      console.log("[v0] Processing customer.subscription.updated:", sub.id, "status:", sub.status)
+      console.log("[v0] Processing customer.subscription.updated:", sub.id, "status:", sub.status, "pause_collection:", sub.pause_collection)
+
+      // Determine actual status: Stripe keeps status as "active" when using pause_collection
+      // So we need to check pause_collection to detect paused subscriptions
+      let subscriptionStatus = sub.status
+      if (sub.pause_collection && sub.pause_collection.behavior) {
+        subscriptionStatus = 'paused'
+        console.log("[v0] Detected pause_collection, setting status to 'paused'")
+      }
 
       // Update the subscription status in our database
       const { error: updateError } = await getSupabaseAdmin()
         .from("subscriptions")
         .update({
-          status: sub.status,
+          status: subscriptionStatus,
           current_period_start: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
           current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
           cancel_at_period_end: sub.cancel_at_period_end ?? false,
           canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
           updated_at: new Date().toISOString(),
+          pause_json: sub.pause_collection || null,
         })
         .eq("stripe_subscription_id", sub.id)
 
       if (updateError) {
         console.error("[v0] Failed to update subscription status:", updateError)
       } else {
-        console.log("[v0] Subscription status updated to:", sub.status)
+        console.log("[v0] Subscription status updated to:", subscriptionStatus)
       }
 
       return NextResponse.json({ received: true })

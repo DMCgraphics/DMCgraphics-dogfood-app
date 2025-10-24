@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { dogName, email, zipCode, subscribeToUpdates, utmSource } = body
+    const { dogName, email, phoneNumber, zipCode, subscribeToUpdates, utmSource } = body
 
     // Validate required fields
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
         event_name: "harbor_point_raffle",
         dog_name: dogName?.trim() || null,
         email: email.toLowerCase().trim(),
+        phone_number: phoneNumber?.trim() || null,
         zip_code: zipCode?.trim() || null,
         subscribe_to_updates: subscribeToUpdates,
         utm_source: utmSource || "harborpoint_event",

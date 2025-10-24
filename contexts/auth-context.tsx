@@ -298,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from("subscriptions")
         .select("id, status")
         .eq("user_id", user.id)
-        .in("status", ["active", "trialing", "past_due"])
+        .in("status", ["active", "trialing", "past_due", "paused", "canceled"])
 
       const { data: plansData } = await supabase
         .from("plans")

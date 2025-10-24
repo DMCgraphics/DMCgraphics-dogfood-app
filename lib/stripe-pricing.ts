@@ -5,109 +5,110 @@ interface StripePricing {
   interval: string
 }
 
-// Stripe pricing data from user's CSV - weekly recurring subscriptions
+// Stripe pricing data - weekly recurring subscriptions
+// Updated 2025-10-22 with new pricing structure
 const STRIPE_PRICING: Record<string, StripePricing[]> = {
   "beef-quinoa-harvest": [
     {
-      priceId: "price_1S32GB0R4BbWwBbfY0N2OQyo",
+      priceId: "price_1SKqwA0WbfuHe9kAtFwQJJpC",
       productName: "Beef & Quinoa Harvest – Small (5–20 lbs) (Weekly)",
-      amountCents: 2100,
+      amountCents: 2900,
       interval: "week",
     },
     {
-      priceId: "price_1S330D0R4BbWwBbfsZMb9vOm",
+      priceId: "price_1SKqxh0WbfuHe9kAqrT9zev1",
       productName: "Beef & Quinoa Harvest – Medium (21–50 lbs) (Weekly)",
-      amountCents: 3500,
+      amountCents: 4700,
       interval: "week",
     },
     {
-      priceId: "price_1S33yk0R4BbWwBbfKd5a0Jpk",
+      priceId: "price_1SKr010WbfuHe9kA6ici7Itt",
       productName: "Beef & Quinoa Harvest – Large (51–90 lbs) (Weekly)",
-      amountCents: 4900,
+      amountCents: 6900,
       interval: "week",
     },
     {
-      priceId: "price_1S33zx0R4BbWwBbf1AC8sUHf",
+      priceId: "price_1SKr0U0WbfuHe9kAsrwjzjAt",
       productName: "Beef & Quinoa Harvest – XL (91+ lbs) (Weekly)",
-      amountCents: 6300,
+      amountCents: 8700,
       interval: "week",
     },
   ],
   "lamb-pumpkin-feast": [
     {
-      priceId: "price_1S345x0R4BbWwBbfJRGIQ4g5",
+      priceId: "price_1SKr0w0WbfuHe9kAa0hxVCHK",
       productName: "Lamb & Pumpkin Feast – Small (5–20 lbs) (Weekly)",
-      amountCents: 2100,
+      amountCents: 2900,
       interval: "week",
     },
     {
-      priceId: "price_1S346x0R4BbWwBbf1FENODao",
+      priceId: "price_1SKr1T0WbfuHe9kA6LiBOgO3",
       productName: "Lamb & Pumpkin Feast – Medium (21–50 lbs) (Weekly)",
-      amountCents: 3500,
+      amountCents: 4700,
       interval: "week",
     },
     {
-      priceId: "price_1S347g0R4BbWwBbfvaKYdyLs",
+      priceId: "price_1SKr1q0WbfuHe9kAsCidrsh9",
       productName: "Lamb & Pumpkin Feast – Large (51–90 lbs) (Weekly)",
-      amountCents: 4900,
+      amountCents: 6900,
       interval: "week",
     },
     {
-      priceId: "price_1S348p0R4BbWwBbfHoE8iLli",
+      priceId: "price_1SKr2l0WbfuHe9kAAOhmv5qP",
       productName: "Lamb & Pumpkin Feast – XL (91+ lbs) (Weekly)",
-      amountCents: 6300,
+      amountCents: 8700,
       interval: "week",
     },
   ],
   "low-fat-chicken-garden-veggie": [
     {
-      priceId: "price_1S340d0R4BbWwBbfqjQqMlhv",
-      productName: "Low-Fat Chicken & Garden Veggie – Small (5–20 lbs) (Weekly)",
-      amountCents: 2100,
+      priceId: "price_1SKr3Y0WbfuHe9kA1wFFHqKw",
+      productName: "Chicken & Garden Veggie – Small (5–20 lbs) (Weekly)",
+      amountCents: 2900,
       interval: "week",
     },
     {
-      priceId: "price_1S341d0R4BbWwBbf7S33jVQr",
-      productName: "Low-Fat Chicken & Garden Veggie – Medium (21–50 lbs) (Weekly)",
-      amountCents: 3500,
+      priceId: "price_1SKr3x0WbfuHe9kABRfAJ5de",
+      productName: "Chicken & Garden Veggie – Medium (21–50 lbs) (Weekly)",
+      amountCents: 4700,
       interval: "week",
     },
     {
-      priceId: "price_1S342T0R4BbWwBbfQ0v71HSC",
-      productName: "Low-Fat Chicken & Garden Veggie – Large (51–90 lbs) (Weekly)",
-      amountCents: 4900,
+      priceId: "price_1SKr4a0WbfuHe9kAkiYk2ckP",
+      productName: "Chicken & Garden Veggie – Large (51–90 lbs) (Weekly)",
+      amountCents: 6900,
       interval: "week",
     },
     {
-      priceId: "price_1S34300R4BbWwBbf5RVMEC8L",
-      productName: "Low-Fat Chicken & Garden Veggie – XL (91+ lbs) (Weekly)",
-      amountCents: 6300,
+      priceId: "price_1SKr5Y0WbfuHe9kAn0wsixX6",
+      productName: "Chicken & Garden Veggie – XL (91+ lbs) (Weekly)",
+      amountCents: 8700,
       interval: "week",
     },
   ],
   "turkey-brown-rice-comfort": [
     {
-      priceId: "price_1S8ktS0R4BbWwBbfTY4sxMrL",
+      priceId: "price_1SKr690WbfuHe9kAPmGhPxBD",
       productName: "Turkey & Brown Rice Comfort – Small (5–20 lbs) (Weekly)",
-      amountCents: 2100,
+      amountCents: 2900,
       interval: "week",
     },
     {
-      priceId: "price_1S8ktx0R4BbWwBbfPf6vt2qs",
+      priceId: "price_1SKr6o0WbfuHe9kA7xEryQBt",
       productName: "Turkey & Brown Rice Comfort – Medium (21–50 lbs) (Weekly)",
-      amountCents: 3500,
+      amountCents: 4700,
       interval: "week",
     },
     {
-      priceId: "price_1S8kuf0R4BbWwBbfRB6gwhiA",
+      priceId: "price_1SKr770WbfuHe9kAZzxskUuo",
       productName: "Turkey & Brown Rice Comfort – Large (51–90 lbs) (Weekly)",
-      amountCents: 4900,
+      amountCents: 6900,
       interval: "week",
     },
     {
-      priceId: "price_1S8kww0R4BbWwBbfGsB8CiwP",
+      priceId: "price_1SKr7r0WbfuHe9kAkBWHICvz",
       productName: "Turkey & Brown Rice Comfort – XL (91+ lbs) (Weekly)",
-      amountCents: 6300,
+      amountCents: 8700,
       interval: "week",
     },
   ],
@@ -143,7 +144,7 @@ export function calculateWeeklyPricing(dogData: any): { weeklyAmountCents: numbe
   const pricing = getStripePricingForDog(primaryRecipe, weightLbs)
 
   return {
-    weeklyAmountCents: pricing?.amountCents || 2100, // Default to small size
+    weeklyAmountCents: pricing?.amountCents || 2900, // Default to small size
     stripePriceId: pricing?.priceId || null,
   }
 }

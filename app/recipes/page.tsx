@@ -10,10 +10,10 @@ import { mockRecipes } from "@/lib/nutrition-calculator"
 export default function RecipesPage() {
   const getRecipeImage = (recipeId: string) => {
     const imageMap: Record<string, string> = {
-      "beef-quinoa-harvest": "/images/recipes/beef-quinoa.jpg",
+      "beef-quinoa-harvest": "/images/recipes/beef-quinoa.png",
       "lamb-pumpkin-feast": "/images/recipes/lamb-pumpkin.png",
-      "low-fat-chicken-garden-veggie": "/images/recipes/low-fat-chicken-garden-veggie.jpg",
-      "turkey-brown-rice-comfort": "/images/recipes/turkey-brown-rice.jpg",
+      "low-fat-chicken-garden-veggie": "/images/recipes/low-fat-chicken-garden-veggie.png",
+      "turkey-brown-rice-comfort": "/images/recipes/turkey-brown-rice.png",
     }
     return imageMap[recipeId] || "/placeholder.svg?height=300&width=400"
   }

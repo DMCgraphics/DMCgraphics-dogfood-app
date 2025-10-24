@@ -69,7 +69,7 @@ export async function POST(req: Request) {
         )
       `)
       .eq("user_id", user.id)
-      .eq("status", "active")
+      .in("status", ["active", "checkout_in_progress", "draft"])
       .order("created_at", { ascending: false })
       .limit(1)
 

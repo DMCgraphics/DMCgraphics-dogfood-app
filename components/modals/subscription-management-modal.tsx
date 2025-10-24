@@ -494,9 +494,34 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
 
                   <div className="flex flex-wrap gap-2">
                     {!subscription.stripe_subscription_id ? (
-                      <div className="text-sm text-muted-foreground">
-                        No Stripe subscription found
-                      </div>
+                      <>
+                        <div className="text-sm text-muted-foreground w-full mb-2">
+                          No Stripe subscription found
+                        </div>
+                        {subscription.status === "pending" && (
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => {
+                                onOpenChange(false)
+                                router.push("/checkout")
+                              }}
+                            >
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Complete Checkout
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleModifyPlan(subscription)}
+                            >
+                              <Settings className="h-4 w-4 mr-2" />
+                              Modify Plan
+                            </Button>
+                          </>
+                        )}
+                      </>
                     ) : subscription.status === "canceled" ? (
                       <Button
                         variant="default"

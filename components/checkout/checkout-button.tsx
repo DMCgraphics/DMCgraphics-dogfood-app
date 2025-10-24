@@ -24,11 +24,14 @@ export default function CheckoutButton({ planId, total }: CheckoutButtonProps) {
         body: JSON.stringify({ plan_id: planId }),
       })
 
-      if (!response.ok) {
-        throw new Error("Checkout failed")
-      }
-
       const data = await response.json()
+
+      if (!response.ok) {
+        const errorMessage = data.error || "Checkout failed"
+        console.error("Checkout error:", errorMessage)
+        alert(`Unable to start checkout: ${errorMessage}`)
+        return
+      }
 
       if (data.url) {
         window.location.href = data.url

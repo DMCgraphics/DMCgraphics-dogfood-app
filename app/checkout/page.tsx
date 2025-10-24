@@ -112,7 +112,7 @@ export default async function CheckoutPage() {
   }))
 
   const subtotal = (data.total_cents ?? 0) / 100
-  const shipping = subtotal > 50 ? 0 : 9.99
+  const shipping = 0 // Free local delivery
   const tax = subtotal * 0.08
   const total = subtotal + shipping + tax
 

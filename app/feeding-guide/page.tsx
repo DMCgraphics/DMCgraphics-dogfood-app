@@ -47,8 +47,8 @@ export default function FeedingGuidePage() {
         </div>
 
         {/* Download Button */}
-        <div className="text-center mb-12">
-          <Button size="lg" asChild className="flex items-center gap-2">
+        <div className="flex justify-center mb-12">
+          <Button size="lg" asChild className="w-full md:w-auto inline-flex items-center gap-2">
             <a href="/np-feeding-guide.pdf" download="nouripet-feeding-guide.pdf">
               <Download className="h-5 w-5" />
               Download PDF Guide

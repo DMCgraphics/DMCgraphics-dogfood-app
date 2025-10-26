@@ -48,7 +48,7 @@ export default function FeedingGuidePage() {
 
         {/* Download Button */}
         <div className="text-center mb-12">
-          <Button size="lg" asChild className="flex items-center gap-2 mx-auto">
+          <Button size="lg" asChild className="flex items-center gap-2">
             <a href="/np-feeding-guide.pdf" download="nouripet-feeding-guide.pdf">
               <Download className="h-5 w-5" />
               Download PDF Guide
@@ -71,22 +71,20 @@ export default function FeedingGuidePage() {
                           <circle cx="100" cy="100" r="80" fill="#22c55e" />
                         ) : (
                           <>
-                            {/* Create pie chart using path */}
-                            {/* Current Food portion (brown) */}
+                            {/* Background circle - Current Food (brown) */}
+                            <circle cx="100" cy="100" r="80" fill="#9b8b6f" />
+                            {/* NouriPet portion (green) - overlaid as a pie slice */}
                             <path
-                              d={`M 100 100 L 100 20 A 80 80 0 ${step.percentage > 50 ? 1 : 0} 1 ${
-                                100 + 80 * Math.sin((step.percentage * 360 * Math.PI) / 180)
-                              } ${100 - 80 * Math.cos((step.percentage * 360 * Math.PI) / 180)} Z`}
+                              d={(() => {
+                                const percentage = step.percentage
+                                const angle = (percentage / 100) * 360
+                                const radians = (angle - 90) * (Math.PI / 180)
+                                const x = 100 + 80 * Math.cos(radians)
+                                const y = 100 + 80 * Math.sin(radians)
+                                const largeArc = percentage > 50 ? 1 : 0
+                                return `M 100 100 L 100 20 A 80 80 0 ${largeArc} 1 ${x} ${y} Z`
+                              })()}
                               fill="#22c55e"
-                            />
-                            {/* NouriPet portion (green) - fills the rest */}
-                            <path
-                              d={`M 100 100 L ${
-                                100 + 80 * Math.sin((step.percentage * 360 * Math.PI) / 180)
-                              } ${100 - 80 * Math.cos((step.percentage * 360 * Math.PI) / 180)} A 80 80 0 ${
-                                step.percentage > 50 ? 0 : 1
-                              } 1 100 20 Z`}
-                              fill="#9b8b6f"
                             />
                           </>
                         )}

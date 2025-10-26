@@ -22,12 +22,12 @@ const reviews = [
     dogName: "Professional",
   },
   {
-    name: "Jennifer Park",
-    role: "German Shepherd Mom",
+    name: "Bri Garus",
+    role: "Mini Goldendoodle Mom",
     avatar: "/placeholder.svg?height=40&width=40",
     rating: 5,
     review:
-      "Luna's coat has never looked better. The personalized portions and add-on recommendations made all the difference.",
+      "I've tried every fresh dog food on the market and none of them have compared to this.",
     dogName: "Luna",
   },
 ]
@@ -100,7 +100,7 @@ export function SocialProofSection() {
               />
             </div>
             <div className="text-sm">
-              <span className="font-semibold">10,000+</span> happy dogs and counting
+              <span className="font-semibold">Join the pack</span> feeding fresh, local nutrition
             </div>
           </div>
         </div>

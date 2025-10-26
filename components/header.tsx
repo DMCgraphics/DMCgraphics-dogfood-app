@@ -125,6 +125,9 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/recipes/prescription">Prescription Diets</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/feeding-guide">Feeding Guide</Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link href="/calculators" className="text-sm font-medium hover:text-primary transition-colors">
@@ -196,6 +199,12 @@ export function Header() {
                 className="block text-sm font-medium hover:text-primary transition-colors pl-4"
               >
                 Prescription Diets
+              </Link>
+              <Link
+                href="/feeding-guide"
+                className="block text-sm font-medium hover:text-primary transition-colors pl-4"
+              >
+                Feeding Guide
               </Link>
               <Link href="/calculators" className="block text-sm font-medium hover:text-primary transition-colors">
                 Calculators

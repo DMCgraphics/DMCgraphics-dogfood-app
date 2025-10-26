@@ -64,7 +64,7 @@ export function Footer() {
         </div>
 
         <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-muted-foreground">© 2024 NouriPet. All rights reserved.</div>
+          <div className="text-sm text-muted-foreground">© 2025 NouriPet. All rights reserved.</div>
           <div className="flex gap-6 text-sm">
             <Link href="/privacy" className="hover:text-primary transition-colors">
               Privacy Policy

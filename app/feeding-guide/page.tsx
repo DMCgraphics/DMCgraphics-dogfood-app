@@ -65,23 +65,31 @@ export default function FeedingGuidePage() {
                   <div className="flex flex-col items-center space-y-6">
                     {/* Pie Chart */}
                     <div className="relative w-48 h-48">
-                      <svg viewBox="0 0 100 100" className="transform -rotate-90">
-                        {/* Background circle (Current Food) */}
-                        <circle cx="50" cy="50" r="40" fill="#9b8b6f" />
-                        {/* NouriPet portion */}
-                        {step.percentage < 100 && (
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="transparent"
-                            stroke="#22c55e"
-                            strokeWidth="80"
-                            strokeDasharray={`${step.percentage * 2.51} ${(100 - step.percentage) * 2.51}`}
-                            className="transition-all duration-500"
-                          />
+                      <svg viewBox="0 0 200 200" className="w-full h-full">
+                        {step.percentage === 100 ? (
+                          // Full green circle for 100%
+                          <circle cx="100" cy="100" r="80" fill="#22c55e" />
+                        ) : (
+                          <>
+                            {/* Create pie chart using path */}
+                            {/* Current Food portion (brown) */}
+                            <path
+                              d={`M 100 100 L 100 20 A 80 80 0 ${step.percentage > 50 ? 1 : 0} 1 ${
+                                100 + 80 * Math.sin((step.percentage * 360 * Math.PI) / 180)
+                              } ${100 - 80 * Math.cos((step.percentage * 360 * Math.PI) / 180)} Z`}
+                              fill="#22c55e"
+                            />
+                            {/* NouriPet portion (green) - fills the rest */}
+                            <path
+                              d={`M 100 100 L ${
+                                100 + 80 * Math.sin((step.percentage * 360 * Math.PI) / 180)
+                              } ${100 - 80 * Math.cos((step.percentage * 360 * Math.PI) / 180)} A 80 80 0 ${
+                                step.percentage > 50 ? 0 : 1
+                              } 1 100 20 Z`}
+                              fill="#9b8b6f"
+                            />
+                          </>
                         )}
-                        {step.percentage === 100 && <circle cx="50" cy="50" r="40" fill="#22c55e" />}
                       </svg>
                       {/* Percentage Label */}
                       <div className="absolute inset-0 flex items-center justify-center">

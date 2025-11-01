@@ -10,52 +10,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
 
-    // Format email content
-    const emailContent = `
-New Contact Form Submission from NouriPet
-
-Name: ${name}
-Email: ${email}
-Subject: ${subject}
-
-Message:
-${message}
-
----
-Sent from NouriPet Contact Form
-    `.trim()
-
-    // Using Resend API (https://resend.com)
-    // You'll need to add RESEND_API_KEY to your .env.local
-    const resendApiKey = process.env.RESEND_API_KEY
-
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY not configured")
-      // Still return success to user, but log the error
-      return NextResponse.json({
-        success: true,
-        message: "Form submitted (email service not configured)"
-      })
-    }
-
-    const response = await fetch("https://api.resend.com/emails", {
+    // Submit to Formspree
+    const response = await fetch("https://formspree.io/f/xnnoolqd", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "NouriPet Contact <noreply@nouripet.net>",
-        to: ["dcohen@nouripet.net"],
-        reply_to: email,
-        subject: `Contact Form: ${subject}`,
-        text: emailContent,
+        name,
+        email,
+        subject,
+        message,
+        _replyto: email,
       }),
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Resend API error:", errorData)
+      console.error("Formspree API error:", response.status)
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 })
     }
 

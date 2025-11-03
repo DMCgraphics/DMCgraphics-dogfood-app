@@ -385,6 +385,45 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
     }
   }
 
+  const handleSkipDelivery = async (subscriptionId: string) => {
+    try {
+      if (!subscriptionId) {
+        console.error("[v0] Modal - No subscription ID provided to skip delivery")
+        alert("Cannot skip delivery: No subscription ID found")
+        return
+      }
+
+      console.log("[v0] Modal - Skipping next delivery for subscription:", subscriptionId)
+      const response = await fetch("/api/subscriptions/skip-delivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription_id: subscriptionId }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        console.log("[v0] Modal - Delivery skipped successfully:", result)
+        await fetchSubscriptions() // Refresh data
+        await refreshSubscriptionStatus() // Update auth context
+
+        const resumeDate = new Date(result.resumes_at).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+        alert(`Next delivery skipped successfully! Your subscription will resume on ${resumeDate}.`)
+      } else {
+        const errorText = result.error || "Failed to skip delivery"
+        console.error("[v0] Modal - Failed to skip delivery:", errorText)
+        alert(`Failed to skip delivery: ${errorText}`)
+      }
+    } catch (error) {
+      console.error("Error skipping delivery:", error)
+      alert("Failed to skip delivery. Please try again.")
+    }
+  }
+
   const handleModifyPlan = async (subscription: any) => {
     try {
       console.log("[v0] Modifying plan for subscription:", subscription.id)
@@ -556,7 +595,7 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => alert("Skip next delivery - functionality coming soon")}
+                          onClick={() => handleSkipDelivery(subscription.stripe_subscription_id)}
                         >
                           <Calendar className="h-4 w-4 mr-2" />
                           Skip Next Delivery

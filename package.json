@@ -6,7 +6,10 @@
     "build": "next build",
     "dev": "next dev -H 0.0.0.0",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "env:test": "bash scripts/switch-env.sh test",
+    "env:prod": "bash scripts/switch-env.sh production",
+    "env:status": "bash scripts/switch-env.sh status"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -5,9 +5,20 @@ interface StripePricing {
   interval: string
 }
 
-// Stripe pricing data - weekly recurring subscriptions
-// Updated 2025-10-22 with new pricing structure
-const STRIPE_PRICING: Record<string, StripePricing[]> = {
+// Detect if we're in test mode or production mode based on Stripe keys
+function isTestMode(): boolean {
+  // Check if we're in browser (client-side)
+  if (typeof window !== 'undefined') {
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    return publishableKey?.startsWith('pk_test_') ?? true
+  }
+  // Server-side: check secret key
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  return secretKey?.startsWith('sk_test_') ?? true
+}
+
+// PRODUCTION Stripe pricing - weekly recurring subscriptions
+const STRIPE_PRICING_PRODUCTION: Record<string, StripePricing[]> = {
   "beef-quinoa-harvest": [
     {
       priceId: "price_1SKqwA0WbfuHe9kAtFwQJJpC",
@@ -114,8 +125,122 @@ const STRIPE_PRICING: Record<string, StripePricing[]> = {
   ],
 }
 
+// TEST MODE Stripe pricing - weekly recurring subscriptions
+// These are the actual test price IDs from your Stripe test account
+const STRIPE_PRICING_TEST: Record<string, StripePricing[]> = {
+  "beef-quinoa-harvest": [
+    {
+      priceId: "price_1SOlze0R4BbWwBbfnGtRhmpr",
+      productName: "Beef & Quinoa Harvest – Small (5–20 lbs) (Weekly)",
+      amountCents: 2900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1SOlzQ0R4BbWwBbfHXu1vnVC",
+      productName: "Beef & Quinoa Harvest – Medium (21–50 lbs) (Weekly)",
+      amountCents: 4700,
+      interval: "week",
+    },
+    {
+      priceId: "price_1S33yk0R4BbWwBbfKd5aOJpk",
+      productName: "Beef & Quinoa Harvest – Large (51–90 lbs) (Weekly)",
+      amountCents: 6900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1S33zx0R4BbWwBbf1AC8sUHf",
+      productName: "Beef & Quinoa Harvest – XL (91+ lbs) (Weekly)",
+      amountCents: 8700,
+      interval: "week",
+    },
+  ],
+  "lamb-pumpkin-feast": [
+    {
+      priceId: "price_1SOlxL0R4BbWwBbfFfZJAx0A",
+      productName: "Lamb & Pumpkin Feast – Small (5–20 lbs) (Weekly)",
+      amountCents: 2900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1SOlx40R4BbWwBbfsBTtag7d",
+      productName: "Lamb & Pumpkin Feast – Medium (21–50 lbs) (Weekly)",
+      amountCents: 4700,
+      interval: "week",
+    },
+    {
+      priceId: "price_1SOlwj0R4BbWwBbfVVtzIQCO",
+      productName: "Lamb & Pumpkin Feast – Large (51–90 lbs) (Weekly)",
+      amountCents: 6900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1S348p0R4BbWwBbfHoE8iLIi",
+      productName: "Lamb & Pumpkin Feast – XL (91+ lbs) (Weekly)",
+      amountCents: 8700,
+      interval: "week",
+    },
+  ],
+  "low-fat-chicken-garden-veggie": [
+    {
+      priceId: "price_1SOlyb0R4BbWwBbfElVciayU",
+      productName: "Chicken & Garden Veggie – Small (5–20 lbs) (Weekly)",
+      amountCents: 2900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1SOlyG0R4BbWwBbfFa0nVZOH",
+      productName: "Chicken & Garden Veggie – Medium (21–50 lbs) (Weekly)",
+      amountCents: 4700,
+      interval: "week",
+    },
+    {
+      priceId: "price_1SOlxy0R4BbWwBbflsEWYE34",
+      productName: "Chicken & Garden Veggie – Large (51–90 lbs) (Weekly)",
+      amountCents: 6900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1S343o0R4BbWwBbf5RVMEC8L",
+      productName: "Chicken & Garden Veggie – XL (91+ lbs) (Weekly)",
+      amountCents: 8700,
+      interval: "week",
+    },
+  ],
+  "turkey-brown-rice-comfort": [
+    {
+      priceId: "price_1SOlvp0R4BbWwBbfa5xkLVd9",
+      productName: "Turkey & Brown Rice Comfort – Small (5–20 lbs) (Weekly)",
+      amountCents: 2900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1SOlvT0R4BbWwBbfPgFG1MH9",
+      productName: "Turkey & Brown Rice Comfort – Medium (21–50 lbs) (Weekly)",
+      amountCents: 4700,
+      interval: "week",
+    },
+    {
+      priceId: "price_1S8kuf0R4BbWwBbfRB6gwhiA",
+      productName: "Turkey & Brown Rice Comfort – Large (51–90 lbs) (Weekly)",
+      amountCents: 6900,
+      interval: "week",
+    },
+    {
+      priceId: "price_1S8kww0R4BbWwBbfGsB8CiwP",
+      productName: "Turkey & Brown Rice Comfort – XL (91+ lbs) (Weekly)",
+      amountCents: 8700,
+      interval: "week",
+    },
+  ],
+}
+
+// Get the appropriate pricing based on current Stripe mode
+function getStripePricing(): Record<string, StripePricing[]> {
+  return isTestMode() ? STRIPE_PRICING_TEST : STRIPE_PRICING_PRODUCTION
+}
+
 export function getStripePricingForDog(recipeSlug: string, weightLbs: number): StripePricing | null {
-  const recipePricing = STRIPE_PRICING[recipeSlug]
+  const recipePricing = getStripePricing()[recipeSlug]
   if (!recipePricing) return null
 
   // Determine size category based on weight
@@ -149,4 +274,5 @@ export function calculateWeeklyPricing(dogData: any): { weeklyAmountCents: numbe
   }
 }
 
-export default STRIPE_PRICING
+// Export the appropriate pricing based on current mode
+export default getStripePricing()

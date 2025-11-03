@@ -16,23 +16,69 @@ interface MedicalNeedsProps {
 
 export function StepMedicalNeeds({ hasMedicalNeeds, email, selectedCondition, onUpdate }: MedicalNeedsProps) {
   const [emailInput, setEmailInput] = useState(email)
+  const [conditionInput, setConditionInput] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const handleEmailSubmit = () => {
-    if (emailInput && emailInput.includes("@")) {
+  // Track multiple selected conditions (convert from comma-separated string if needed)
+  const [selectedConditions, setSelectedConditions] = useState<string[]>(() => {
+    if (!selectedCondition) return []
+    return selectedCondition.split(',').map(c => c.trim()).filter(Boolean)
+  })
+
+  const toggleCondition = (conditionId: string) => {
+    setSelectedConditions(prev => {
+      const newSelection = prev.includes(conditionId)
+        ? prev.filter(id => id !== conditionId)
+        : [...prev, conditionId]
+
+      // Update parent with comma-separated string
+      onUpdate("yes", email, newSelection.join(','))
+      return newSelection
+    })
+  }
+
+  const isConditionSelected = (conditionId: string) => selectedConditions.includes(conditionId)
+
+  const handleEmailSubmit = async () => {
+    if (emailInput && emailInput.includes("@") && conditionInput.trim()) {
       onUpdate(hasMedicalNeeds || "yes", emailInput)
-      setIsSubmitted(true)
-      // Track validation/demand
-      console.log("[v0] Medical needs email captured:", emailInput)
+
+      // Save to database
+      try {
+        const response = await fetch("/api/medical-condition-request", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: emailInput,
+            condition_name: conditionInput.trim(),
+            notes: "User requested support for a condition not yet available"
+          }),
+        })
+
+        if (response.ok) {
+          console.log("[v0] Medical condition request saved to database:", {
+            email: emailInput,
+            condition: conditionInput
+          })
+          setIsSubmitted(true)
+        } else {
+          console.error("[v0] Failed to save medical condition request")
+          // Still mark as submitted for UX
+          setIsSubmitted(true)
+        }
+      } catch (error) {
+        console.error("[v0] Error saving medical condition request:", error)
+        // Still mark as submitted for UX
+        setIsSubmitted(true)
+      }
     }
   }
 
   const medicalConditions = [
-    { id: "kidney-disease", name: "Kidney Disease", description: "Chronic kidney disease or renal issues" },
-    { id: "liver-disease", name: "Liver Disease", description: "Hepatic conditions or liver dysfunction" },
-    { id: "heart-disease", name: "Heart Disease", description: "Cardiac conditions requiring dietary management" },
-    { id: "diabetes", name: "Diabetes", description: "Blood sugar management and glucose control" },
     { id: "pancreatitis", name: "Pancreatitis", description: "Pancreatic inflammation requiring low-fat diet" },
+    { id: "arthritis", name: "Arthritis", description: "Joint inflammation and mobility support" },
     { id: "other", name: "Other Condition", description: "Other medical condition requiring special diet" },
   ]
 
@@ -106,13 +152,13 @@ export function StepMedicalNeeds({ hasMedicalNeeds, email, selectedCondition, on
 
               {/* Medical Condition Selection */}
               <div className="space-y-4">
-                <Label className="text-base font-semibold">What medical condition does your dog have?</Label>
+                <Label className="text-base font-semibold">What medical conditions does your dog have? (Select all that apply)</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {medicalConditions.map((condition) => (
                     <Button
                       key={condition.id}
-                      variant={selectedCondition === condition.id ? "default" : "outline"}
-                      onClick={() => onUpdate("yes", email, condition.id)}
+                      variant={isConditionSelected(condition.id) ? "default" : "outline"}
+                      onClick={() => toggleCondition(condition.id)}
                       className="h-auto py-4 text-left justify-start"
                     >
                       <div className="space-y-1">
@@ -125,7 +171,7 @@ export function StepMedicalNeeds({ hasMedicalNeeds, email, selectedCondition, on
               </div>
 
               {/* Next Steps Info */}
-              {selectedCondition && selectedCondition !== "other" && (
+              {selectedConditions.length > 0 && !selectedConditions.includes("other") && (
                 <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -146,7 +192,7 @@ export function StepMedicalNeeds({ hasMedicalNeeds, email, selectedCondition, on
               )}
 
               {/* Other Condition Email Capture */}
-              {selectedCondition === "other" && (
+              {selectedConditions.includes("other") && (
                 <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
@@ -157,12 +203,25 @@ export function StepMedicalNeeds({ hasMedicalNeeds, email, selectedCondition, on
                             We're expanding our prescription diet options.
                           </p>
                           <p className="text-sm text-amber-700 dark:text-amber-300">
-                            Enter your email to be notified when we add support for your dog's specific condition.
+                            Tell us what condition your dog has and we'll notify you when we add support for it.
                           </p>
                         </div>
 
                         {!isSubmitted ? (
                           <div className="space-y-3">
+                            <div>
+                              <Label htmlFor="condition-name">
+                                What condition does your dog have?
+                              </Label>
+                              <Input
+                                id="condition-name"
+                                type="text"
+                                placeholder="e.g., Kidney disease, Liver disease, Heart disease"
+                                value={conditionInput}
+                                onChange={(e) => setConditionInput(e.target.value)}
+                                className="bg-white dark:bg-gray-900 mt-1"
+                              />
+                            </div>
                             <div className="flex gap-2">
                               <div className="flex-1">
                                 <Label htmlFor="medical-email" className="sr-only">
@@ -179,7 +238,7 @@ export function StepMedicalNeeds({ hasMedicalNeeds, email, selectedCondition, on
                               </div>
                               <Button
                                 onClick={handleEmailSubmit}
-                                disabled={!emailInput || !emailInput.includes("@")}
+                                disabled={!emailInput || !emailInput.includes("@") || !conditionInput.trim()}
                                 className="bg-amber-600 hover:bg-amber-700 text-white"
                               >
                                 <Mail className="h-4 w-4 mr-2" />

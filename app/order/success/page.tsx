@@ -96,9 +96,11 @@ export default function OrderSuccessPage() {
             console.log("[v0] Subscription creation backup error (this is OK if webhook already handled it):", createError)
           }
         } else {
-          const errorText = await verifyResponse.text()
-          console.error("[v0] Verify payment failed:", verifyResponse.status, errorText)
-          setError(`Payment verification failed: ${errorText}`)
+          const errorData = await verifyResponse.json().catch(() => ({ error: "Unknown error" }))
+          console.error("[v0] Verify payment failed:", verifyResponse.status, errorData)
+          const errorMessage = errorData.error || errorData.message || "Unknown error"
+          const errorDetails = errorData.details ? `\n\nDetails: ${errorData.details}` : ""
+          setError(`Payment verification failed: ${errorMessage}${errorDetails}`)
         }
       } catch (error) {
         console.error("Error verifying payment:", error)

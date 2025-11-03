@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   if (!sessionId) return NextResponse.json({ error: "Missing sessionId" }, { status: 400 })
 
   const stripe = new Stripe(secret, { apiVersion: "2024-06-20" })
-  const supabase = await createServerSupabase()
+  const supabase = createServerSupabase() // Fixed: removed await (function is synchronous)
 
   try {
     // Get the current user
@@ -222,9 +222,20 @@ export async function POST(req: Request) {
       mode: session.mode,
       subscriptionId: session.subscription ? (typeof session.subscription === 'string' ? session.subscription : session.subscription.id) : null,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Error in verify-payment:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[v0] Error stack:", error?.stack)
+    console.error("[v0] Error message:", error?.message)
+
+    // Return more specific error information
+    const errorMessage = error?.message || "Internal server error"
+    const errorCode = error?.code || "UNKNOWN_ERROR"
+
+    return NextResponse.json({
+      error: errorMessage,
+      code: errorCode,
+      details: error?.toString()
+    }, { status: 500 })
   }
 }
 

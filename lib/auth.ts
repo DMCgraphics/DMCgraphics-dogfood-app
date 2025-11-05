@@ -8,6 +8,7 @@ export interface User {
   avatar_url?: string
   createdAt?: string
   subscriptionStatus?: "none" | "active" | "paused" | "cancelled"
+  isAdmin?: boolean
 }
 
 export function getCurrentUser(): User | null {

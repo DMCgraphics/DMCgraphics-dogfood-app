@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Mark loading as complete BEFORE fetching subscriptions to unblock the UI
           setIsLoading(false)
 
-          // Then, fetch real subscription status from database in the background
+          // Then, fetch real subscription status and admin status from database in the background
           // Use setTimeout to ensure this doesn't block rendering
           setTimeout(async () => {
             try {
@@ -75,21 +75,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq("user_id", session.user.id)
                 .in("status", ["active", "checkout_in_progress", "purchased"])
 
-              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              // Check admin status from profile
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("is_admin")
+                .eq("id", session.user.id)
+                .single()
 
-              if (hasActiveSubscription) {
-                const updatedUser = { ...userData, subscriptionStatus: "active" as const }
-                setUser(updatedUser)
-                console.log("[v0] auth_subscription_status_updated", {
-                  userId: userData.id,
-                  email: userData.email,
-                  hasActiveSubscription: true,
-                  subscriptionCount: subscriptionsData?.length || 0,
-                  planCount: plansData?.length || 0
-                })
-              } else {
-                console.log("[v0] auth_no_active_subscription", { userId: userData.id, email: userData.email })
+              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              const isAdmin = profileData?.is_admin || false
+
+              const updatedUser = {
+                ...userData,
+                subscriptionStatus: hasActiveSubscription ? "active" as const : "none" as const,
+                isAdmin
               }
+              setUser(updatedUser)
+              console.log("[v0] auth_subscription_status_updated", {
+                userId: userData.id,
+                email: userData.email,
+                hasActiveSubscription,
+                isAdmin,
+                subscriptionCount: subscriptionsData?.length || 0,
+                planCount: plansData?.length || 0
+              })
             } catch (subscriptionError) {
               console.error("Error fetching subscription status:", subscriptionError)
               // Keep the default "none" status if there's an error
@@ -144,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setApiStatus("connected")
           console.log("[v0] auth_signed_in", { userId: userData.id, email: userData.email })
 
-          // Then, fetch real subscription status from database in the background
+          // Then, fetch real subscription status and admin status from database in the background
           setTimeout(async () => {
             try {
               // Check for both subscriptions AND active plans
@@ -160,21 +169,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq("user_id", session.user.id)
                 .in("status", ["active", "checkout_in_progress", "purchased"])
 
-              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              // Check admin status from profile
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("is_admin")
+                .eq("id", session.user.id)
+                .single()
 
-              if (hasActiveSubscription) {
-                const updatedUser = { ...userData, subscriptionStatus: "active" as const }
-                setUser(updatedUser)
-                console.log("[v0] auth_subscription_status_updated_on_signin", {
-                  userId: userData.id,
-                  email: userData.email,
-                  hasActiveSubscription: true,
-                  subscriptionCount: subscriptionsData?.length || 0,
-                  planCount: plansData?.length || 0
-                })
-              } else {
-                console.log("[v0] auth_no_active_subscription_on_signin", { userId: userData.id, email: userData.email })
+              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              const isAdmin = profileData?.is_admin || false
+
+              const updatedUser = {
+                ...userData,
+                subscriptionStatus: hasActiveSubscription ? "active" as const : "none" as const,
+                isAdmin
               }
+              setUser(updatedUser)
+              console.log("[v0] auth_subscription_status_updated_on_signin", {
+                userId: userData.id,
+                email: userData.email,
+                hasActiveSubscription,
+                isAdmin,
+                subscriptionCount: subscriptionsData?.length || 0,
+                planCount: plansData?.length || 0
+              })
             } catch (subscriptionError) {
               console.error("Error fetching subscription status on signin:", subscriptionError)
               // Keep the default "none" status if there's an error
@@ -269,18 +287,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('full_name, avatar_url, is_admin')
         .eq('id', user.id)
         .single()
 
       if (!profileError && profile) {
-        const updatedUser = { 
-          ...user, 
+        const updatedUser = {
+          ...user,
           name: profile.full_name || user.name,
-          avatar_url: profile.avatar_url 
+          avatar_url: profile.avatar_url,
+          isAdmin: profile.is_admin || false
         }
         setUser(updatedUser)
-        console.log("[v0] auth_profile_refreshed", { userId: user.id })
+        console.log("[v0] auth_profile_refreshed", { userId: user.id, isAdmin: profile.is_admin })
       } else {
         console.log("[v0] No profile found during refresh:", profileError?.message)
       }

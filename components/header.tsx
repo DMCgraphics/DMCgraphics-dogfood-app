@@ -138,6 +138,11 @@ export function Header() {
                 Dashboard
               </Link>
             )}
+            {isAuthenticated && user?.isAdmin && (
+              <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors text-purple-600">
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center space-x-4">
@@ -212,6 +217,11 @@ export function Header() {
               {isAuthenticated && (
                 <Link href="/dashboard" className="block text-sm font-medium hover:text-primary transition-colors">
                   Dashboard
+                </Link>
+              )}
+              {isAuthenticated && user?.isAdmin && (
+                <Link href="/admin" className="block text-sm font-medium hover:text-primary transition-colors text-purple-600">
+                  Admin
                 </Link>
               )}
 

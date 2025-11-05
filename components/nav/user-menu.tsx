@@ -97,6 +97,18 @@ export function UserMenu() {
               </div>
               Order History
             </Link>
+            {user?.isAdmin && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors duration-150"
+                onClick={() => setOpen(false)}
+              >
+                <div className="flex items-center justify-center w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-md">
+                  <User className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                </div>
+                Admin
+              </Link>
+            )}
             <div className="my-2 h-px bg-border"></div>
             <button
               onClick={handleLogout}

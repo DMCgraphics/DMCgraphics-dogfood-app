@@ -235,7 +235,7 @@ const STRIPE_PRICING_TEST: Record<string, StripePricing[]> = {
 }
 
 // Get the appropriate pricing based on current Stripe mode
-function getStripePricing(): Record<string, StripePricing[]> {
+export function getStripePricing(): Record<string, StripePricing[]> {
   return isTestMode() ? STRIPE_PRICING_TEST : STRIPE_PRICING_PRODUCTION
 }
 

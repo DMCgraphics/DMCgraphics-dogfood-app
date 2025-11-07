@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev -H 0.0.0.0",
+    "dev:test": "dotenv -e .env.local.test -- next dev -H 0.0.0.0",
     "lint": "next lint",
     "start": "next start",
     "env:test": "bash scripts/switch-env.sh test",
@@ -74,6 +75,7 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "dotenv-cli": "^11.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",

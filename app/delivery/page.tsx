@@ -68,7 +68,7 @@ async function getDeliveries() {
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name")
+    .select("id, full_name, email")
     .in("id", userIds)
 
   // Combine the data
@@ -114,11 +114,11 @@ export default async function DeliveryPage() {
                           Delivery for {dog?.name || "Unknown Dog"}
                         </CardTitle>
                         <CardDescription className="mt-2">
-                          Customer: {customer?.full_name || "Unknown"} ({delivery.user_id})
+                          Customer: {customer?.full_name || "Unknown"} ({customer?.email || "No email"})
                         </CardDescription>
                       </div>
                       <DeliveryEmailButton
-                        customerEmail={delivery.user_id}
+                        customerEmail={customer?.email || ""}
                         customerName={customer?.full_name || "Customer"}
                         dogName={dog?.name || "your dog"}
                       />

@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { mockAddOns } from "@/lib/nutrition-calculator"
-import { calculateWeeklyPricing, getStripePricingForDog } from "@/lib/stripe-pricing"
+import { calculateBiweeklyPricing, getStripePricingBiweeklyForDog } from "@/lib/stripe-pricing"
 
 interface DogPlanData {
   dogProfile: Partial<DogProfile>
@@ -640,19 +640,19 @@ export default function PlanBuilderPage() {
     }
 
     const calculateDogPricing = (dogData: DogPlanData) => {
-      const { weeklyAmountCents } = calculateWeeklyPricing(dogData)
+      const { biweeklyAmountCents } = calculateBiweeklyPricing(dogData)
 
       const selectedAddOnItems = mockAddOns.filter((a) => dogData.selectedAddOns.includes(a.id))
-      const addOnsCostPerWeek = selectedAddOnItems.reduce((total, addOn) => total + addOn.pricePerMonth / 4, 0) // Convert monthly add-ons to weekly
+      const addOnsCostPerBiweek = selectedAddOnItems.reduce((total, addOn) => total + addOn.pricePerMonth / 2, 0) // Convert monthly add-ons to biweekly
 
-      const weeklyFoodCost = weeklyAmountCents / 100
-      const totalWeeklyCost = weeklyFoodCost + addOnsCostPerWeek
+      const biweeklyFoodCost = biweeklyAmountCents / 100
+      const totalBiweeklyCost = biweeklyFoodCost + addOnsCostPerBiweek
 
       return {
-        foodCostPerWeek: weeklyFoodCost,
-        addOnsCostPerWeek,
-        totalWeeklyCost,
-        subtotal_cents: Math.round(totalWeeklyCost * 100),
+        foodCostPerWeek: biweeklyFoodCost,
+        addOnsCostPerWeek: addOnsCostPerBiweek,
+        totalWeeklyCost: totalBiweeklyCost,
+        subtotal_cents: Math.round(totalBiweeklyCost * 100),
       }
     }
 
@@ -1279,7 +1279,7 @@ export default function PlanBuilderPage() {
           }
 
           const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
-          const stripePricing = getStripePricingForDog(recipeData.slug, weightLbs)
+          const stripePricing = getStripePricingBiweeklyForDog(recipeData.slug, weightLbs)
 
           if (!stripePricing) {
             console.error(`[v0] No Stripe pricing found for recipe ${recipeId}`)
@@ -1324,17 +1324,19 @@ export default function PlanBuilderPage() {
               dog_id: dogDbData.id,
               recipe_id: recipeData.id, // Use recipe UUID instead of slug
               qty: 1,
-              size_g: sizeG,
+              size_g: sizeG * 2, // Double the size for biweekly delivery
               billing_interval: "week",
+              billing_interval_count: 2, // Biweekly = every 2 weeks
               stripe_price_id: stripePricing?.priceId,
-              unit_price_cents: stripePricing?.amountCents || 2100,
-              amount_cents: stripePricing?.amountCents || 2100,
+              unit_price_cents: stripePricing?.amountCents || 5800,
+              amount_cents: stripePricing?.amountCents || 5800,
               meta: {
                 source: "wizard",
                 dog_weight: weight,
                 weight_unit: weightUnit,
                 daily_grams: dailyGrams,
                 monthly_grams: monthlyGrams,
+                biweekly_grams: monthlyGrams / 30 * 14, // 2 weeks worth
                 activity_level: dogData.dogProfile.activity,
                 calculated_calories: Math.round(der),
                 stripe_product_name: stripePricing?.productName,
@@ -1349,7 +1351,7 @@ export default function PlanBuilderPage() {
           }
 
           console.log(`[v0] ✅ Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)
-          console.log(`[v0] Weekly price: $${((stripePricing?.amountCents || 2100) / 100).toFixed(2)}`)
+          console.log(`[v0] Biweekly price: $${((stripePricing?.amountCents || 5800) / 100).toFixed(2)}`)
 
           // The RPC function was causing issues and we have the correct Stripe pricing
         }

@@ -5,9 +5,9 @@ import { Resend } from "resend"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(req: Request) {
+  // Initialize Resend only when needed (not at build time)
+  const resend = new Resend(process.env.RESEND_API_KEY)
   try {
     // Check if user is a delivery driver
     const supabase = createServerSupabase()

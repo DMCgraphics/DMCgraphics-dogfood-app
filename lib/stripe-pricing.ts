@@ -3,6 +3,7 @@ interface StripePricing {
   productName: string
   amountCents: number
   interval: string
+  intervalCount?: number
 }
 
 // Detect if we're in test mode or production mode based on Stripe keys
@@ -125,6 +126,130 @@ const STRIPE_PRICING_PRODUCTION: Record<string, StripePricing[]> = {
   ],
 }
 
+// PRODUCTION Stripe pricing - biweekly (every 2 weeks) recurring subscriptions
+const STRIPE_PRICING_PRODUCTION_BIWEEKLY: Record<string, StripePricing[]> = {
+  "beef-quinoa-harvest": [
+    {
+      priceId: "price_1SSTP90WbfuHe9kAqToPhXX3",
+      productName: "Beef & Quinoa Harvest – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTOp0WbfuHe9kAxIvdOQph",
+      productName: "Beef & Quinoa Harvest – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTO40WbfuHe9kAGRe8pzIp",
+      productName: "Beef & Quinoa Harvest – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTNT0WbfuHe9kAp9ywoC5R",
+      productName: "Beef & Quinoa Harvest – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+  "lamb-pumpkin-feast": [
+    {
+      priceId: "price_1SSTRO0WbfuHe9kA99F2cggt",
+      productName: "Lamb & Pumpkin Feast – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTR30WbfuHe9kAWPpW1vzp",
+      productName: "Lamb & Pumpkin Feast – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTQQ0WbfuHe9kAMOesqXji",
+      productName: "Lamb & Pumpkin Feast – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTQ30WbfuHe9kALKMu7d0w",
+      productName: "Lamb & Pumpkin Feast – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+  "low-fat-chicken-garden-veggie": [
+    {
+      priceId: "price_1SSTSc0WbfuHe9kA13wvBCic",
+      productName: "Chicken & Garden Veggie – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTSR0WbfuHe9kAxrLok4Tp",
+      productName: "Chicken & Garden Veggie – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTSA0WbfuHe9kAOWdETJi7",
+      productName: "Chicken & Garden Veggie – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTRw0WbfuHe9kAjsA97L9S",
+      productName: "Chicken & Garden Veggie – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+  "turkey-brown-rice-comfort": [
+    {
+      priceId: "price_1SSTTg0WbfuHe9kAV61mhHJq",
+      productName: "Turkey & Brown Rice Comfort – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTTS0WbfuHe9kAF9BaE2bA",
+      productName: "Turkey & Brown Rice Comfort – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTTD0WbfuHe9kA5WzTgnc8",
+      productName: "Turkey & Brown Rice Comfort – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SSTSv0WbfuHe9kAKV9N9wea",
+      productName: "Turkey & Brown Rice Comfort – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+}
+
 // TEST MODE Stripe pricing - weekly recurring subscriptions
 // These are the actual test price IDs from your Stripe test account
 const STRIPE_PRICING_TEST: Record<string, StripePricing[]> = {
@@ -234,6 +359,130 @@ const STRIPE_PRICING_TEST: Record<string, StripePricing[]> = {
   ],
 }
 
+// TEST MODE Stripe pricing - biweekly (every 2 weeks) recurring subscriptions
+const STRIPE_PRICING_TEST_BIWEEKLY: Record<string, StripePricing[]> = {
+  "beef-quinoa-harvest": [
+    {
+      priceId: "price_1SOlze0R4BbWwBbfnGtRhmpr",
+      productName: "Beef & Quinoa Harvest – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SOlzQ0R4BbWwBbfHXu1vnVC",
+      productName: "Beef & Quinoa Harvest – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1S33yk0R4BbWwBbfKd5aOJpk",
+      productName: "Beef & Quinoa Harvest – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1S33zx0R4BbWwBbf1AC8sUHf",
+      productName: "Beef & Quinoa Harvest – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+  "lamb-pumpkin-feast": [
+    {
+      priceId: "price_1SRg1U0R4BbWwBbfjVHM4nam",
+      productName: "Lamb & Pumpkin Feast – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SOlx40R4BbWwBbfsBTtag7d",
+      productName: "Lamb & Pumpkin Feast – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SOlwj0R4BbWwBbfVVtzIQCO",
+      productName: "Lamb & Pumpkin Feast – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1S348p0R4BbWwBbfHoE8iLIi",
+      productName: "Lamb & Pumpkin Feast – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+  "low-fat-chicken-garden-veggie": [
+    {
+      priceId: "price_1SOlyb0R4BbWwBbfElVciayU",
+      productName: "Chicken & Garden Veggie – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SOlyG0R4BbWwBbfFa0nVZOH",
+      productName: "Chicken & Garden Veggie – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SOlxy0R4BbWwBbflsEWYE34",
+      productName: "Chicken & Garden Veggie – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1S343o0R4BbWwBbf5RVMEC8L",
+      productName: "Chicken & Garden Veggie – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+  "turkey-brown-rice-comfort": [
+    {
+      priceId: "price_1SOlvp0R4BbWwBbfa5xkLVd9",
+      productName: "Turkey & Brown Rice Comfort – Small (5–20 lbs) (Every Two Weeks)",
+      amountCents: 5800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1SOlvT0R4BbWwBbfPgFG1MH9",
+      productName: "Turkey & Brown Rice Comfort – Medium (21–50 lbs) (Every Two Weeks)",
+      amountCents: 9400,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1S8kuf0R4BbWwBbfRB6gwhiA",
+      productName: "Turkey & Brown Rice Comfort – Large (51–90 lbs) (Every Two Weeks)",
+      amountCents: 13800,
+      interval: "week",
+      intervalCount: 2,
+    },
+    {
+      priceId: "price_1S8kww0R4BbWwBbfGsB8CiwP",
+      productName: "Turkey & Brown Rice Comfort – XL (91+ lbs) (Every Two Weeks)",
+      amountCents: 17400,
+      interval: "week",
+      intervalCount: 2,
+    }
+  ],
+}
+
 // Get the appropriate pricing based on current Stripe mode
 export function getStripePricing(): Record<string, StripePricing[]> {
   return isTestMode() ? STRIPE_PRICING_TEST : STRIPE_PRICING_PRODUCTION
@@ -270,6 +519,48 @@ export function calculateWeeklyPricing(dogData: any): { weeklyAmountCents: numbe
 
   return {
     weeklyAmountCents: pricing?.amountCents || 2900, // Default to small size
+    stripePriceId: pricing?.priceId || null,
+  }
+}
+
+// Get the appropriate biweekly pricing based on current Stripe mode
+export function getStripePricingBiweekly(): Record<string, StripePricing[]> {
+  return isTestMode() ? STRIPE_PRICING_TEST_BIWEEKLY : STRIPE_PRICING_PRODUCTION_BIWEEKLY
+}
+
+// Get biweekly pricing for a specific dog
+export function getStripePricingBiweeklyForDog(recipeSlug: string, weightLbs: number): StripePricing | null {
+  const recipePricing = getStripePricingBiweekly()[recipeSlug]
+  if (!recipePricing) return null
+
+  // Determine size category based on weight
+  let sizeIndex = 0 // Small (5-20 lbs)
+  if (weightLbs >= 21 && weightLbs <= 50)
+    sizeIndex = 1 // Medium
+  else if (weightLbs >= 51 && weightLbs <= 90)
+    sizeIndex = 2 // Large
+  else if (weightLbs >= 91) sizeIndex = 3 // XL
+
+  return recipePricing[sizeIndex] || recipePricing[0]
+}
+
+// Calculate biweekly pricing (same as weekly but with biweekly prices)
+export function calculateBiweeklyPricing(dogData: any): { biweeklyAmountCents: number; stripePriceId: string | null } {
+  const weight = dogData.dogProfile?.weight || 20
+  const weightUnit = dogData.dogProfile?.weightUnit || "lb"
+
+  // Convert to lbs if needed
+  const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
+
+  // Get primary recipe (use first selected recipe or fallback to selectedRecipe)
+  const recipes =
+    dogData.selectedRecipes?.length > 0 ? dogData.selectedRecipes : [dogData.selectedRecipe].filter(Boolean)
+  const primaryRecipe = recipes[0] || "beef-quinoa-harvest"
+
+  const pricing = getStripePricingBiweeklyForDog(primaryRecipe, weightLbs)
+
+  return {
+    biweeklyAmountCents: pricing?.amountCents || 5800, // Default to small size biweekly
     stripePriceId: pricing?.priceId || null,
   }
 }

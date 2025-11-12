@@ -50,6 +50,7 @@ export default async function CheckoutPage() {
         amount_cents,
         billing_interval,
         stripe_price_id,
+        meta,
         recipes (name, slug),
         dogs (name)
       )
@@ -95,21 +96,27 @@ export default async function CheckoutPage() {
     )
   }
 
-  const lineItems: CartItem[] = data.line_items.map((li: any) => ({
-    id: li.id,
-    name: `${li.dogs?.name || 'Dog'}'s Plan`,
-    description: li.recipes?.name || "Custom Recipe",
-    price: (li.unit_price_cents || 0) / 100,
-    quantity: li.qty || 1,
-    frequency: li.billing_interval === "week" ? "Weekly delivery" : li.billing_interval || "Weekly delivery",
-    dogWeight: undefined,
-    dogActivity: undefined,
-    foodCostPerWeek: (li.unit_price_cents || 0) / 100,
-    addOnsCostPerWeek: 0,
-    totalWeeklyCost: (li.unit_price_cents || 0) / 100,
-    recipes: li.recipes?.name ? [li.recipes.name] : [],
-    addOns: [],
-  }))
+  const lineItems: CartItem[] = data.line_items.map((li: any) => {
+    // Check if this is a biweekly delivery
+    const intervalCount = li.meta?.billing_interval_count || 1
+    const isBiweekly = li.billing_interval === "week" && intervalCount === 2
+
+    return {
+      id: li.id,
+      name: `${li.dogs?.name || 'Dog'}'s Plan`,
+      description: li.recipes?.name || "Custom Recipe",
+      price: (li.unit_price_cents || 0) / 100,
+      quantity: li.qty || 1,
+      frequency: isBiweekly ? "Every 2 weeks" : (li.billing_interval === "week" ? "Weekly delivery" : li.billing_interval || "Weekly delivery"),
+      dogWeight: undefined,
+      dogActivity: undefined,
+      foodCostPerWeek: (li.unit_price_cents || 0) / 100,
+      addOnsCostPerWeek: 0,
+      totalWeeklyCost: (li.unit_price_cents || 0) / 100,
+      recipes: li.recipes?.name ? [li.recipes.name] : [],
+      addOns: [],
+    }
+  })
 
   const subtotal = (data.total_cents ?? 0) / 100
   const shipping = 0 // Free local delivery

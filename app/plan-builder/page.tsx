@@ -1326,7 +1326,6 @@ export default function PlanBuilderPage() {
               qty: 1,
               size_g: sizeG * 2, // Double the size for biweekly delivery
               billing_interval: "week",
-              billing_interval_count: 2, // Biweekly = every 2 weeks
               stripe_price_id: stripePricing?.priceId,
               unit_price_cents: stripePricing?.amountCents || 5800,
               amount_cents: stripePricing?.amountCents || 5800,
@@ -1337,6 +1336,7 @@ export default function PlanBuilderPage() {
                 daily_grams: dailyGrams,
                 monthly_grams: monthlyGrams,
                 biweekly_grams: monthlyGrams / 30 * 14, // 2 weeks worth
+                billing_interval_count: 2, // Biweekly = every 2 weeks
                 activity_level: dogData.dogProfile.activity,
                 calculated_calories: Math.round(der),
                 stripe_product_name: stripePricing?.productName,

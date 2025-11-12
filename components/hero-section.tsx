@@ -182,8 +182,8 @@ export function HeroSection() {
           <div className="relative">
             <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/10 to-secondary/10 p-8">
               <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-08-16%20at%2010.01.13%E2%80%AFPM-ugxXyFlGSBnNz3PAfB1j8Q21r6wqvK.png"
-                alt="Fresh natural ingredients including salmon, vegetables, and wholesome foods for premium dog nutrition"
+                src="/hero-puppy-ingredients.png"
+                alt="Adorable puppy with fresh natural ingredients including sweet potato, rice, and leafy greens for premium dog nutrition"
                 className="w-full h-full object-cover rounded-2xl"
               />
             </div>

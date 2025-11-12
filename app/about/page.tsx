@@ -206,8 +206,8 @@ export default function AboutPage() {
                 <div className="relative">
                   <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-3xl p-8 text-center">
                     <img
-                      src="/happy-healthy-dogs-eating.png"
-                      alt="Happy dogs enjoying NouriPet meals"
+                      src="/teddy-cartoon.PNG"
+                      alt="Happy dog enjoying NouriPet meals"
                       className="w-full h-64 object-cover rounded-2xl mb-6"
                     />
                     <blockquote className="text-lg italic text-gray-700 mb-4">

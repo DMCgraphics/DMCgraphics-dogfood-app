@@ -2,6 +2,21 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function updateSession(request: NextRequest) {
+  // Handle auth callback codes that land on root or other paths
+  const code = request.nextUrl.searchParams.get("code")
+  if (code && !request.nextUrl.pathname.startsWith("/auth/callback")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/auth/callback"
+    // Preserve existing query params
+    url.searchParams.set("code", code)
+    // Check if this might be a recovery flow (password reset)
+    const errorCode = request.nextUrl.searchParams.get("error_code")
+    if (errorCode === "otp_expired" || request.nextUrl.searchParams.has("type")) {
+      url.searchParams.set("type", "recovery")
+    }
+    return NextResponse.redirect(url)
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

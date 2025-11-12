@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAdminUser } from "@/lib/admin/auth"
-import { createServerSupabase } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
-    const supabase = createServerSupabase()
+    // Use admin client for creating users
+    const supabase = supabaseAdmin
 
     // Create user in Supabase Auth
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({

@@ -138,6 +138,11 @@ export function Header() {
                 Dashboard
               </Link>
             )}
+            {isAuthenticated && user?.roles?.includes('delivery_driver') && (
+              <Link href="/delivery" className="text-sm font-medium hover:text-primary transition-colors text-blue-600">
+                Delivery
+              </Link>
+            )}
             {isAuthenticated && user?.isAdmin && (
               <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors text-purple-600">
                 Admin
@@ -217,6 +222,11 @@ export function Header() {
               {isAuthenticated && (
                 <Link href="/dashboard" className="block text-sm font-medium hover:text-primary transition-colors">
                   Dashboard
+                </Link>
+              )}
+              {isAuthenticated && user?.roles?.includes('delivery_driver') && (
+                <Link href="/delivery" className="block text-sm font-medium hover:text-primary transition-colors text-blue-600">
+                  Delivery
                 </Link>
               )}
               {isAuthenticated && user?.isAdmin && (

@@ -1,7 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Package, Calendar, DollarSign } from "lucide-react"
+import { OrdersTable } from "@/components/admin/orders-table"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -70,140 +68,10 @@ export default async function OrdersManagementPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Orders Management</h1>
-        <p className="text-gray-600 mt-2">{orders.length} active orders</p>
+        <p className="text-gray-600 mt-2">{orders.length} total orders</p>
       </div>
 
-      <div className="grid gap-4">
-        {orders.map((order) => {
-          const subscription = order.subscriptions?.[0]
-          const dog = order.dogs
-          const profile = order.profiles
-          const planItems = order.plan_items || []
-
-          return (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Order for {dog?.name || "Unknown Dog"}
-                      <Badge
-                        className={
-                          order.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }
-                      >
-                        {order.status}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      Customer: {profile?.full_name || "Unknown"} • Created{" "}
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">
-                      ${((order.total_cents || 0) / 100).toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-600">per week</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Order Details */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
-                        <Package className="h-3 w-3" />
-                        Plan Items
-                      </div>
-                      <div className="text-lg font-bold">{planItems.length}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Delivery ZIP
-                      </div>
-                      <div className="text-lg font-bold">
-                        {order.delivery_zipcode || "Not set"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-600">Dog</div>
-                      <div className="text-sm font-medium">
-                        {dog?.breed} • {dog?.weight} lbs
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-600">Subscription</div>
-                      <div className="text-sm">
-                        {subscription ? (
-                          <Badge
-                            className={
-                              subscription.status === "active"
-                                ? "bg-green-100 text-green-800"
-                                : subscription.status === "paused"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-gray-100 text-gray-800"
-                            }
-                          >
-                            {subscription.status}
-                          </Badge>
-                        ) : (
-                          <span className="text-gray-500">No subscription</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recipe Details */}
-                  {planItems.length > 0 && (
-                    <div className="border-t pt-4">
-                      <div className="text-sm font-medium mb-2">Recipes:</div>
-                      <div className="space-y-1">
-                        {planItems.map((item: any) => (
-                          <div key={item.id} className="text-sm text-gray-600 flex justify-between">
-                            <span>• {item.recipes?.name || "Unknown recipe"}</span>
-                            <span className="font-medium">
-                              ${((item.unit_price_cents || 0) / 100).toFixed(2)} × {item.qty}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Stripe Info */}
-                  {subscription?.stripe_subscription_id && (
-                    <div className="border-t pt-4">
-                      <div className="text-xs text-gray-500 font-mono">
-                        Stripe: {subscription.stripe_subscription_id}
-                      </div>
-                      {subscription.current_period_end && (
-                        <div className="text-xs text-gray-500">
-                          Next billing:{" "}
-                          {new Date(subscription.current_period_end).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {orders.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No active orders found</p>
-          </CardContent>
-        </Card>
-      )}
+      <OrdersTable orders={orders} />
     </div>
   )
 }

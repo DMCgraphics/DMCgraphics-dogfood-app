@@ -9,6 +9,7 @@ export interface User {
   createdAt?: string
   subscriptionStatus?: "none" | "active" | "paused" | "cancelled"
   isAdmin?: boolean
+  roles?: string[]
 }
 
 export function getCurrentUser(): User | null {

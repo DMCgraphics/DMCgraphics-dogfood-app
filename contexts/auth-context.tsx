@@ -75,20 +75,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq("user_id", session.user.id)
                 .in("status", ["active", "checkout_in_progress", "purchased"])
 
-              // Check admin status from profile
+              // Check admin status and roles from profile
               const { data: profileData } = await supabase
                 .from("profiles")
-                .select("is_admin")
+                .select("is_admin, roles")
                 .eq("id", session.user.id)
                 .single()
 
               const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
               const isAdmin = profileData?.is_admin || false
+              const roles = profileData?.roles || []
 
               const updatedUser = {
                 ...userData,
                 subscriptionStatus: hasActiveSubscription ? "active" as const : "none" as const,
-                isAdmin
+                isAdmin,
+                roles
               }
               setUser(updatedUser)
               console.log("[v0] auth_subscription_status_updated", {
@@ -169,20 +171,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq("user_id", session.user.id)
                 .in("status", ["active", "checkout_in_progress", "purchased"])
 
-              // Check admin status from profile
+              // Check admin status and roles from profile
               const { data: profileData } = await supabase
                 .from("profiles")
-                .select("is_admin")
+                .select("is_admin, roles")
                 .eq("id", session.user.id)
                 .single()
 
               const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
               const isAdmin = profileData?.is_admin || false
+              const roles = profileData?.roles || []
 
               const updatedUser = {
                 ...userData,
                 subscriptionStatus: hasActiveSubscription ? "active" as const : "none" as const,
-                isAdmin
+                isAdmin,
+                roles
               }
               setUser(updatedUser)
               console.log("[v0] auth_subscription_status_updated_on_signin", {
@@ -287,7 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url, is_admin')
+        .select('full_name, avatar_url, is_admin, roles')
         .eq('id', user.id)
         .single()
 
@@ -296,10 +300,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...user,
           name: profile.full_name || user.name,
           avatar_url: profile.avatar_url,
-          isAdmin: profile.is_admin || false
+          isAdmin: profile.is_admin || false,
+          roles: profile.roles || []
         }
         setUser(updatedUser)
-        console.log("[v0] auth_profile_refreshed", { userId: user.id, isAdmin: profile.is_admin })
+        console.log("[v0] auth_profile_refreshed", { userId: user.id, isAdmin: profile.is_admin, roles: profile.roles })
       } else {
         console.log("[v0] No profile found during refresh:", profileError?.message)
       }

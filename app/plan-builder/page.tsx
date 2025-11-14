@@ -1243,7 +1243,7 @@ export default function PlanBuilderPage() {
 
         const recipes =
           dogData.selectedRecipes.length > 0 ? dogData.selectedRecipes : [dogData.selectedRecipe].filter(Boolean)
-        
+
         console.log(`[v0] Recipes to process for dog ${i + 1}:`, recipes)
 
         // Get all available recipes from database
@@ -1261,100 +1261,115 @@ export default function PlanBuilderPage() {
 
         if (recipes.length === 0) {
           console.log(`[v0] ⚠️ No recipes found for dog ${i + 1}, skipping plan item creation`)
-        } else {
-          console.log(`[v0] Starting recipe processing loop for dog ${i + 1} with ${recipes.length} recipes`)
+          continue
         }
 
-        for (const recipeId of recipes) {
-          console.log(`[v0] Processing recipe for dog ${i + 1}:`, recipeId)
+        console.log(`[v0] Creating ONE plan item for dog ${i + 1} with ${recipes.length} recipe(s) as variety`)
 
-          const recipeData = availableRecipes?.find(
-            (r) => r.slug === recipeId || r.id === recipeId || r.name === recipeId,
-          )
+        // Use the first/primary recipe for Stripe pricing
+        const primaryRecipeId = recipes[0]
+        const primaryRecipeData = availableRecipes?.find(
+          (r) => r.slug === primaryRecipeId || r.id === primaryRecipeId || r.name === primaryRecipeId,
+        )
 
-          if (!recipeData) {
-            console.error(`[v0] Recipe not found in database: ${recipeId}`)
-            alert(`Recipe not found in database: ${recipeId}`)
-            continue
-          }
-
-          const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
-          const stripePricing = getStripePricingBiweeklyForDog(recipeData.slug, weightLbs)
-
-          if (!stripePricing) {
-            console.error(`[v0] No Stripe pricing found for recipe ${recipeId}`)
-            alert(`No Stripe pricing found for recipe ${recipeId}`)
-            continue
-          }
-
-          // Calculate DER using canonical formula
-          const dogProfile = {
-            weight: weight,
-            weightUnit: weightUnit,
-            age: dogData.dogProfile.age || 4,
-            ageUnit: "years" as const,
-            sex: dogData.dogProfile.sex || "male" as const,
-            breed: dogData.dogProfile.breed || "mixed-breed",
-            activity: dogData.dogProfile.activity || "moderate" as const,
-            bodyCondition: dogData.dogProfile.bodyCondition || 5,
-            isNeutered: dogData.dogProfile.isNeutered ?? true,
-            lifeStage: dogData.dogProfile.lifeStage || "adult" as const
-          }
-          const der = calculateDERFromProfile(dogProfile)
-          const caloriesPer100g = 175 // Realistic calories per 100g of fresh dog food
-          const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
-
-          // Calculate monthly grams (30 days)
-          const monthlyGrams = dailyGrams * 30
-
-          // Round up to nearest 100g pack size for shipping efficiency
-          const sizeG = Math.ceil(monthlyGrams / 100) * 100
-
-          console.log(
-            `[v0] Calculated portions for ${dogData.dogProfile.name}: ${dailyGrams}g/day, ${monthlyGrams}g/month, ${sizeG}g package size`,
-          )
-
-          console.log(`[v0] Creating plan item for dog ${i + 1}, recipe ${recipeId}...`)
-          
-          // Insert new plan item
-          const { data: planItem, error: planItemError } = await supabase
-            .from("plan_items")
-            .insert({
-              plan_id: planId,
-              dog_id: dogDbData.id,
-              recipe_id: recipeData.id, // Use recipe UUID instead of slug
-              qty: 1,
-              size_g: sizeG * 2, // Double the size for biweekly delivery
-              billing_interval: "week",
-              stripe_price_id: stripePricing?.priceId,
-              unit_price_cents: stripePricing?.amountCents || 5800,
-              amount_cents: stripePricing?.amountCents || 5800,
-              meta: {
-                source: "wizard",
-                dog_weight: weight,
-                weight_unit: weightUnit,
-                daily_grams: dailyGrams,
-                monthly_grams: monthlyGrams,
-                biweekly_grams: monthlyGrams / 30 * 14, // 2 weeks worth
-                billing_interval_count: 2, // Biweekly = every 2 weeks
-                activity_level: dogData.dogProfile.activity,
-                calculated_calories: Math.round(der),
-                stripe_product_name: stripePricing?.productName,
-              },
-            })
-            .select("id")
-            .single()
-          
-          if (planItemError) {
-            console.error(`[v0] Error creating plan item for dog ${i + 1}:`, planItemError)
-            continue
-          }
-
-          console.log(`[v0] ✅ Plan item saved for dog ${i + 1}, recipe ${recipeId}:`, planItem.id)
-          console.log(`[v0] Biweekly price: $${((stripePricing?.amountCents || 5800) / 100).toFixed(2)}`)
-
-          // The RPC function was causing issues and we have the correct Stripe pricing
+        if (!primaryRecipeData) {
+          console.error(`[v0] Primary recipe not found in database: ${primaryRecipeId}`)
+          alert(`Primary recipe not found in database: ${primaryRecipeId}`)
+          continue
         }
+
+        // Get all recipe data for metadata
+        const allRecipeData = recipes
+          .map(recipeId => availableRecipes?.find(r => r.slug === recipeId || r.id === recipeId || r.name === recipeId))
+          .filter(Boolean)
+
+        const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
+        const stripePricing = getStripePricingBiweeklyForDog(primaryRecipeData.slug, weightLbs)
+
+        if (!stripePricing) {
+          console.error(`[v0] No Stripe pricing found for recipe ${primaryRecipeId}`)
+          alert(`No Stripe pricing found for recipe ${primaryRecipeId}`)
+          continue
+        }
+
+        // Calculate DER using canonical formula
+        const dogProfile = {
+          weight: weight,
+          weightUnit: weightUnit,
+          age: dogData.dogProfile.age || 4,
+          ageUnit: "years" as const,
+          sex: dogData.dogProfile.sex || "male" as const,
+          breed: dogData.dogProfile.breed || "mixed-breed",
+          activity: dogData.dogProfile.activity || "moderate" as const,
+          bodyCondition: dogData.dogProfile.bodyCondition || 5,
+          isNeutered: dogData.dogProfile.isNeutered ?? true,
+          lifeStage: dogData.dogProfile.lifeStage || "adult" as const
+        }
+        const der = calculateDERFromProfile(dogProfile)
+        const caloriesPer100g = 175 // Realistic calories per 100g of fresh dog food
+        const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
+
+        // Calculate monthly grams (30 days)
+        const monthlyGrams = dailyGrams * 30
+
+        // Round up to nearest 100g pack size for shipping efficiency
+        const sizeG = Math.ceil(monthlyGrams / 100) * 100
+
+        console.log(
+          `[v0] Calculated portions for ${dogData.dogProfile.name}: ${dailyGrams}g/day, ${monthlyGrams}g/month, ${sizeG}g package size`,
+        )
+
+        console.log(`[v0] Creating plan item for dog ${i + 1} with primary recipe ${primaryRecipeId}...`)
+
+        // Insert ONE plan item with all recipes in metadata
+        const { data: planItem, error: planItemError } = await supabase
+          .from("plan_items")
+          .insert({
+            plan_id: planId,
+            dog_id: dogDbData.id,
+            recipe_id: primaryRecipeData.id, // Use primary recipe UUID
+            qty: 1,
+            size_g: sizeG * 2, // Double the size for biweekly delivery
+            billing_interval: "week",
+            stripe_price_id: stripePricing?.priceId,
+            unit_price_cents: stripePricing?.amountCents || 5800,
+            amount_cents: stripePricing?.amountCents || 5800,
+            meta: {
+              source: "wizard",
+              dog_weight: weight,
+              weight_unit: weightUnit,
+              daily_grams: dailyGrams,
+              monthly_grams: monthlyGrams,
+              biweekly_grams: monthlyGrams / 30 * 14, // 2 weeks worth
+              billing_interval_count: 2, // Biweekly = every 2 weeks
+              activity_level: dogData.dogProfile.activity,
+              calculated_calories: Math.round(der),
+              stripe_product_name: stripePricing?.productName,
+              // Store ALL selected recipes as variety options
+              recipe_variety: allRecipeData.map(r => ({
+                id: r.id,
+                name: r.name,
+                slug: r.slug
+              })),
+              primary_recipe: {
+                id: primaryRecipeData.id,
+                name: primaryRecipeData.name,
+                slug: primaryRecipeData.slug
+              }
+            },
+          })
+          .select("id")
+          .single()
+
+        if (planItemError) {
+          console.error(`[v0] Error creating plan item for dog ${i + 1}:`, planItemError)
+          continue
+        }
+
+        console.log(`[v0] ✅ Plan item saved for dog ${i + 1}:`, planItem.id)
+        console.log(`[v0] Primary recipe: ${primaryRecipeData.name}`)
+        console.log(`[v0] Recipe variety (${allRecipeData.length} total):`, allRecipeData.map(r => r.name).join(", "))
+        console.log(`[v0] Biweekly price: $${((stripePricing?.amountCents || 5800) / 100).toFixed(2)}`)
 
         const weightInKg = toKg(weight, weightUnit)
         const targetWeight = dogData.healthGoals.targetWeight

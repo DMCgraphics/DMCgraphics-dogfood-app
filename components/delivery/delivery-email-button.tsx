@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail } from "lucide-react"
@@ -28,8 +27,13 @@ export function DeliveryEmailButton({ customerEmail, customerName, dogName }: De
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  const [subject, setSubject] = useState(`Delivery Update for ${dogName}`)
-  const [message, setMessage] = useState(`Hi ${customerName},\n\nThis is a delivery notification regarding your order for ${dogName}.\n\nBest regards,\nNouriPet Delivery Team`)
+
+  // Delivery details with defaults
+  const today = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+  const [deliveryDate, setDeliveryDate] = useState(today)
+  const [deliveryWindow, setDeliveryWindow] = useState("9:00 AM - 5:00 PM")
+  const [recipes, setRecipes] = useState("Fresh dog food")
+  const [schedule, setSchedule] = useState("As scheduled")
 
   const handleSendEmail = async () => {
     setIsLoading(true)
@@ -44,8 +48,12 @@ export function DeliveryEmailButton({ customerEmail, customerName, dogName }: De
         },
         body: JSON.stringify({
           to: customerEmail,
-          subject,
-          message,
+          dogName,
+          customerName,
+          deliveryDate,
+          deliveryWindow,
+          recipes,
+          schedule,
         }),
       })
 
@@ -59,9 +67,6 @@ export function DeliveryEmailButton({ customerEmail, customerName, dogName }: De
       setTimeout(() => {
         setIsOpen(false)
         setSuccess(false)
-        // Reset message for next time
-        setSubject(`Delivery Update for ${dogName}`)
-        setMessage(`Hi ${customerName},\n\nThis is a delivery notification regarding your order for ${dogName}.\n\nBest regards,\nNouriPet Delivery Team`)
       }, 2000)
     } catch (err: any) {
       setError(err.message)
@@ -83,29 +88,48 @@ export function DeliveryEmailButton({ customerEmail, customerName, dogName }: De
         <DialogHeader>
           <DialogTitle>Send Delivery Email</DialogTitle>
           <DialogDescription>
-            Send a notification to {customerName} ({customerEmail})
+            Send a delivery notification to {customerName} ({customerEmail})
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="subject">Subject</Label>
+            <Label htmlFor="deliveryDate">Delivery Date</Label>
             <Input
-              id="subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Email subject"
+              id="deliveryDate"
+              value={deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
+              placeholder="11/15/2025"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message">Message</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Your message to the customer"
-              rows={8}
+            <Label htmlFor="deliveryWindow">Delivery Window</Label>
+            <Input
+              id="deliveryWindow"
+              value={deliveryWindow}
+              onChange={(e) => setDeliveryWindow(e.target.value)}
+              placeholder="9:00 AM - 5:00 PM"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="recipes">Recipes</Label>
+            <Input
+              id="recipes"
+              value={recipes}
+              onChange={(e) => setRecipes(e.target.value)}
+              placeholder="Beef & Quinoa, Lamb & Pumpkin"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="schedule">Schedule</Label>
+            <Input
+              id="schedule"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+              placeholder="Weekly (Sundays)"
             />
           </div>
 
@@ -128,7 +152,7 @@ export function DeliveryEmailButton({ customerEmail, customerName, dogName }: De
           <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSendEmail} disabled={isLoading || !subject || !message}>
+          <Button onClick={handleSendEmail} disabled={isLoading}>
             {isLoading ? "Sending..." : "Send Email"}
           </Button>
         </DialogFooter>

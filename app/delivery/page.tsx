@@ -3,8 +3,10 @@ import { supabaseAdmin } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { DeliveryEmailButton } from "@/components/delivery/delivery-email-button"
-import { Truck, Package } from "lucide-react"
+import { Truck, Package, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -90,11 +92,19 @@ export default async function DeliveryPage() {
     <div className="min-h-screen bg-background">
       <div className="container py-8">
         <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <Truck className="h-8 w-8 text-blue-600" />
-            <div>
-              <h1 className="text-3xl font-bold">Delivery Management</h1>
-              <p className="text-gray-600 mt-1">{deliveries.length} active deliveries</p>
+          <div>
+            <Button variant="ghost" asChild className="mb-4">
+              <Link href="/">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Link>
+            </Button>
+            <div className="flex items-center gap-3">
+              <Truck className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-3xl font-bold">Delivery Management</h1>
+                <p className="text-gray-600 mt-1">{deliveries.length} active deliveries</p>
+              </div>
             </div>
           </div>
 

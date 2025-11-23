@@ -4,31 +4,22 @@ import { Star } from "lucide-react"
 
 const reviews = [
   {
-    name: "Sarah Chen",
-    role: "Golden Retriever Mom",
+    name: "Audra Nicole",
+    role: "Senior Dog Mom",
     avatar: "/placeholder.svg?height=40&width=40",
     rating: 5,
     review:
-      "Finally, a dog food company that shows their work! The nutrition transparency gives me confidence I'm feeding Max the best.",
-    dogName: "Max",
-  },
-  {
-    name: "Dr. Michael Rodriguez",
-    role: "Veterinarian",
-    avatar: "/placeholder.svg?height=40&width=40",
-    rating: 5,
-    review:
-      "I recommend NouriPet to clients who want science-backed nutrition. The AAFCO compliance visualization is brilliant.",
-    dogName: "Professional",
+      "Koda Bear loves NouriPet! As a Queen she gets the homemade, fresh, and personalized meals she knows she deserves. We've tried several different \"fresh\" pet foods and she refuses all the rest. As a senior dog, we always want to ensure she's getting all her nutrients and calorie needs met and this has been such a great way to ensure that she stays healthy into her old age! Added bonus: she doesn't even notice when we hide her medications in her food anymore ❤️",
+    dogName: "Koda Bear",
   },
   {
     name: "Bri Garus",
-    role: "Mini Goldendoodle Mom",
+    role: "Dog Mom",
     avatar: "/placeholder.svg?height=40&width=40",
     rating: 5,
     review:
-      "I've tried every fresh dog food on the market and none of them have compared to this.",
-    dogName: "Luna",
+      "I've tried all the fresh dog foods out there, and NouriPet is by far the best. You can actually see the real ingredients, and my dog Mabel is so excited to eat her meals for once. It's such a game changer! The customer service has also been amazing, super responsive and helpful. I couldn't be happier with the switch. Highly recommend!",
+    dogName: "Mabel",
   },
 ]
 

@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Edit, Calendar, Weight, Activity, Check } from "lucide-react"
+import { Edit, Calendar, Weight, Activity, Check, ShoppingBag, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { TopperPurchaseDialog } from "./topper-purchase-dialog"
 
 interface DogProfile {
   id: string
@@ -134,6 +136,43 @@ export function DogCard({ dog, onEdit, onSelect, isSelected = false, showSelecti
           <Badge className={getStatusColor(dog.subscriptionStatus)} variant="secondary">
             {dog.subscriptionStatus}
           </Badge>
+        </div>
+
+        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Purchase
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <TopperPurchaseDialog
+              dogId={dog.id}
+              dogName={dog.name}
+              dogWeight={dog.weight}
+              dogWeightUnit={dog.weightUnit}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-background"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Topper Plans
+              </Button>
+            </TopperPurchaseDialog>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full bg-background"
+              asChild
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Link href={`/shop/individual-packs?dogId=${dog.id}&dogName=${encodeURIComponent(dog.name)}`}>
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Individual Packs
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {showSelection && !isSelected && (

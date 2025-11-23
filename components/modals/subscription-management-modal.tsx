@@ -6,10 +6,22 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Calendar, CreditCard, Package, Pause, Play, Plus, Settings, Trash2 } from "lucide-react"
+import { Calendar, CreditCard, Package, Pause, Play, Plus, Settings, Trash2, Sparkles, XCircle } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
+
+interface TopperSubscription {
+  id: string
+  status: string
+  cancelAtPeriodEnd: boolean
+  currentPeriodEnd: string
+  dogName: string
+  dogSize: string
+  productType: string
+  amount: number
+  isPaused: boolean
+}
 
 interface SubscriptionManagementModalProps {
   open: boolean
@@ -20,16 +32,158 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
   const { user, refreshSubscriptionStatus } = useAuth()
   const router = useRouter()
   const [subscriptions, setSubscriptions] = useState([])
+  const [topperSubscriptions, setTopperSubscriptions] = useState<TopperSubscription[]>([])
   const [dogsWithoutSubscriptions, setDogsWithoutSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [subscriptionToCancel, setSubscriptionToCancel] = useState<string | null>(null)
+  const [topperToCancel, setTopperToCancel] = useState<{ id: string; name: string } | null>(null)
+  const [isCancellingTopper, setIsCancellingTopper] = useState(false)
+  const [topperToModify, setTopperToModify] = useState<TopperSubscription | null>(null)
+  const [selectedNewLevel, setSelectedNewLevel] = useState<string>("")
+  const [isModifyingTopper, setIsModifyingTopper] = useState(false)
+  const [isPausingTopper, setIsPausingTopper] = useState<string | null>(null)
 
   useEffect(() => {
     if (open && user) {
       fetchSubscriptions()
+      fetchTopperSubscriptions()
     }
   }, [open, user])
+
+  const fetchTopperSubscriptions = async () => {
+    try {
+      const response = await fetch('/api/topper-orders')
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error("Error fetching topper subscriptions:", data.error)
+        return
+      }
+
+      setTopperSubscriptions(data.subscriptions || [])
+    } catch (error) {
+      console.error("Error fetching topper subscriptions:", error)
+    }
+  }
+
+  const handleCancelTopperSubscription = async () => {
+    if (!topperToCancel) return
+
+    setIsCancellingTopper(true)
+    try {
+      const response = await fetch('/api/topper-orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'subscription', id: topperToCancel.id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel topper subscription')
+      }
+
+      // Refresh the list
+      await fetchTopperSubscriptions()
+      setTopperToCancel(null)
+      alert("Topper subscription will be cancelled at the end of the current billing period.")
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsCancellingTopper(false)
+    }
+  }
+
+  const getTopperProductTypeName = (type: string) => {
+    switch (type) {
+      case '25': return '25% Topper Plan'
+      case '50': return '50% Topper Plan'
+      case '75': return '75% Topper Plan'
+      default: return type
+    }
+  }
+
+  const handlePauseTopperSubscription = async (subscriptionId: string) => {
+    setIsPausingTopper(subscriptionId)
+    try {
+      const response = await fetch('/api/topper-orders/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pause', subscriptionId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to pause subscription')
+      }
+
+      await fetchTopperSubscriptions()
+      alert("Topper subscription paused successfully.")
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsPausingTopper(null)
+    }
+  }
+
+  const handleResumeTopperSubscription = async (subscriptionId: string) => {
+    setIsPausingTopper(subscriptionId)
+    try {
+      const response = await fetch('/api/topper-orders/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resume', subscriptionId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resume subscription')
+      }
+
+      await fetchTopperSubscriptions()
+      alert("Topper subscription resumed successfully.")
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsPausingTopper(null)
+    }
+  }
+
+  const handleModifyTopperSubscription = async () => {
+    if (!topperToModify || !selectedNewLevel) return
+
+    setIsModifyingTopper(true)
+    try {
+      const response = await fetch('/api/topper-orders/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'modify',
+          subscriptionId: topperToModify.id,
+          newLevel: selectedNewLevel,
+          dogSize: topperToModify.dogSize,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to modify subscription')
+      }
+
+      await fetchTopperSubscriptions()
+      setTopperToModify(null)
+      setSelectedNewLevel("")
+      alert(`Subscription updated to ${selectedNewLevel}% topper plan. Any difference will be prorated.`)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsModifyingTopper(false)
+    }
+  }
 
   const fetchSubscriptions = async () => {
     try {
@@ -629,6 +783,110 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
               </Card>
             ))}
 
+            {/* Topper Subscriptions */}
+            {topperSubscriptions.length > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <div className="text-center py-2">
+                    <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                      <Sparkles className="h-5 w-5" />
+                      Topper Subscriptions
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Manage your bi-weekly topper plans</p>
+                  </div>
+                  {topperSubscriptions.map((topper) => (
+                    <Card key={topper.id}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                              <Sparkles className="h-4 w-4 text-primary" />
+                              {getTopperProductTypeName(topper.productType)}
+                              <Badge className={topper.cancelAtPeriodEnd ? "bg-orange-100 text-orange-800" : getStatusColor(topper.status)}>
+                                {topper.cancelAtPeriodEnd ? "Cancelling" : topper.status}
+                              </Badge>
+                            </CardTitle>
+                            <CardDescription>
+                              For {topper.dogName || 'your dog'} • ${(topper.amount / 100).toFixed(2)}/2 weeks
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4 inline mr-1" />
+                          {topper.isPaused ? 'Paused' : `Next billing: ${new Date(topper.currentPeriodEnd).toLocaleDateString()}`}
+                        </div>
+
+                        {topper.cancelAtPeriodEnd ? (
+                          <div className="text-sm text-orange-600">
+                            Subscription ends {new Date(topper.currentPeriodEnd).toLocaleDateString()}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {/* Pause/Resume Button */}
+                            {topper.isPaused ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleResumeTopperSubscription(topper.id)}
+                                disabled={isPausingTopper === topper.id}
+                              >
+                                <Play className="h-4 w-4 mr-1" />
+                                {isPausingTopper === topper.id ? 'Resuming...' : 'Resume'}
+                              </Button>
+                            ) : topper.status === 'active' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePauseTopperSubscription(topper.id)}
+                                disabled={isPausingTopper === topper.id}
+                              >
+                                <Pause className="h-4 w-4 mr-1" />
+                                {isPausingTopper === topper.id ? 'Pausing...' : 'Pause'}
+                              </Button>
+                            )}
+
+                            {/* Modify Button */}
+                            {(topper.status === 'active' || topper.isPaused) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setTopperToModify(topper)
+                                  setSelectedNewLevel("")
+                                }}
+                              >
+                                <Settings className="h-4 w-4 mr-1" />
+                                Change Plan
+                              </Button>
+                            )}
+
+                            {/* Cancel Button */}
+                            {(topper.status === 'active' || topper.isPaused) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setTopperToCancel({
+                                  id: topper.id,
+                                  name: getTopperProductTypeName(topper.productType)
+                                })}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* Show dogs without subscriptions */}
             {dogsWithoutSubscriptions.length > 0 && (
               <>
@@ -702,6 +960,103 @@ export function SubscriptionManagementModal({ open, onOpenChange }: Subscription
             onClick={handleCancelSubscription}
           >
             Yes, Cancel Subscription
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Topper Cancel Confirmation Dialog */}
+    <Dialog open={!!topperToCancel} onOpenChange={(open) => !open && setTopperToCancel(null)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-orange-600">
+            <XCircle className="h-5 w-5" />
+            Cancel Topper Subscription
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to cancel your <strong>{topperToCancel?.name}</strong> subscription? You'll continue to receive toppers until the end of your current billing period.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex justify-end gap-2 mt-4">
+          <Button
+            variant="outline"
+            onClick={() => setTopperToCancel(null)}
+            disabled={isCancellingTopper}
+          >
+            Keep Subscription
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleCancelTopperSubscription}
+            disabled={isCancellingTopper}
+          >
+            {isCancellingTopper ? 'Cancelling...' : 'Yes, Cancel'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Topper Modify Dialog */}
+    <Dialog open={!!topperToModify} onOpenChange={(open) => !open && setTopperToModify(null)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Change Topper Plan
+          </DialogTitle>
+          <DialogDescription>
+            Select a new topper percentage for {topperToModify?.dogName || 'your dog'}.
+            Currently on <strong>{getTopperProductTypeName(topperToModify?.productType || '')}</strong>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-4">
+          {['25', '50', '75'].filter(level => level !== topperToModify?.productType).map((level) => (
+            <div
+              key={level}
+              className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                selectedNewLevel === level
+                  ? 'border-primary bg-primary/5'
+                  : 'hover:border-muted-foreground/50'
+              }`}
+              onClick={() => setSelectedNewLevel(level)}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{level}% Topper Plan</div>
+                  <div className="text-sm text-muted-foreground">
+                    {level === '25' && 'Light supplementation'}
+                    {level === '50' && 'Balanced mix'}
+                    {level === '75' && 'Maximum fresh food'}
+                  </div>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  selectedNewLevel === level
+                    ? 'border-primary bg-primary'
+                    : 'border-muted-foreground/30'
+                }`} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setTopperToModify(null)
+              setSelectedNewLevel("")
+            }}
+            disabled={isModifyingTopper}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleModifyTopperSubscription}
+            disabled={!selectedNewLevel || isModifyingTopper}
+          >
+            {isModifyingTopper ? 'Updating...' : 'Update Plan'}
           </Button>
         </div>
       </DialogContent>

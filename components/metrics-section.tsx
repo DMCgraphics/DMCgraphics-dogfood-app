@@ -28,15 +28,6 @@ const metricsConfig = [
     sourceHref: "/methodology#testing",
     testId: "metric-testing",
   },
-  {
-    id: "rating",
-    label: "Rated 4.9/5",
-    value: "4.9/5",
-    qualifier: "by pet parents",
-    tooltip: "Weighted average of verified reviews over last 12 months; N≥1,200.",
-    sourceHref: "/methodology#rating",
-    testId: "metric-rating",
-  },
 ]
 
 interface TooltipState {

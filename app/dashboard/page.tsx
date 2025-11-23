@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
 import { EditDogModal } from "@/components/modals/edit-dog-modal"
+import { TopperOrdersManager } from "@/components/dashboard/topper-orders-manager"
 
 // SWR fetcher function
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
@@ -1111,6 +1112,8 @@ export default function DashboardPage() {
                   onSkipDelivery={handleSkipDelivery}
                   onManageSubscription={handleManageSubscription}
                 />
+
+                <TopperOrdersManager />
 
                 <Recommendations
                   dogName={selectedDog.name}

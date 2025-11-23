@@ -2,18 +2,18 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Shield, Star, BarChart3, Users, Calendar } from "lucide-react"
+import { CheckCircle, Shield, BarChart3, Users, Calendar } from "lucide-react"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Our Methodology | NouriPet - How We Measure Dog Health Results",
   description:
-    "Detailed methodology behind our 92% digestion improvement rate, every-batch testing protocols, and 4.9/5 customer rating. Complete transparency in our research.",
-  keywords: "dog food testing methodology, AAFCO compliance, pet food safety, dog nutrition research, customer reviews",
+    "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research and safety standards.",
+  keywords: "dog food testing methodology, AAFCO compliance, pet food safety, dog nutrition research, digestion improvement",
   openGraph: {
     title: "Our Methodology | NouriPet - How We Measure Dog Health Results",
     description:
-      "Detailed methodology behind our 92% digestion improvement rate, every-batch testing protocols, and 4.9/5 customer rating.",
+      "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research.",
     type: "article",
     url: "https://nouripet.net/methodology",
     siteName: "NouriPet",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Our Methodology | NouriPet - How We Measure Dog Health Results",
     description:
-      "Detailed methodology behind our 92% digestion improvement rate, every-batch testing protocols, and 4.9/5 customer rating.",
+      "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research.",
     images: ["https://nouripet.net/og-image.png"],
   },
   alternates: {
@@ -44,7 +44,7 @@ export default function MethodologyPage() {
     "@type": "Article",
     headline: "NouriPet Methodology: How We Measure Dog Health Results",
     description:
-      "Detailed methodology behind our 92% digestion improvement rate, every-batch testing protocols, and 4.9/5 customer rating.",
+      "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research and safety standards.",
     author: {
       "@type": "Organization",
       name: "NouriPet",
@@ -245,78 +245,6 @@ export default function MethodologyPage() {
                       <strong>Frequency:</strong> 100% of production batches tested before distribution
                       <br />
                       <strong>Compliance:</strong> AAFCO Adult Maintenance nutritional adequacy standards
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          {/* Rating Methodology */}
-          <section id="rating" className="mb-16 scroll-mt-24">
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-yellow-50 border-b">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-yellow-100">
-                    <Star className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl font-serif">Rated 4.9/5</CardTitle>
-                    <p className="text-muted-foreground">by pet parents</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-semibold">Total Reviews</p>
-                      <p className="text-sm text-muted-foreground">N = 2,847 verified</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-semibold">Time Period</p>
-                      <p className="text-sm text-muted-foreground">Last 12 months</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <BarChart3 className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-semibold">Verification Rate</p>
-                      <p className="text-sm text-muted-foreground">100% purchase verified</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Rating Distribution</h3>
-                  <div className="space-y-2">
-                    {[
-                      { stars: 5, count: 2456, percentage: 86.3 },
-                      { stars: 4, count: 312, percentage: 11.0 },
-                      { stars: 3, count: 58, percentage: 2.0 },
-                      { stars: 2, count: 15, percentage: 0.5 },
-                      { stars: 1, count: 6, percentage: 0.2 },
-                    ].map((rating) => (
-                      <div key={rating.stars} className="flex items-center gap-3">
-                        <span className="text-sm w-8">{rating.stars}★</span>
-                        <div className="flex-1 bg-muted rounded-full h-2">
-                          <div className="bg-primary h-2 rounded-full" style={{ width: `${rating.percentage}%` }} />
-                        </div>
-                        <span className="text-sm text-muted-foreground w-16">{rating.count} reviews</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Calculation:</strong> Weighted average of all verified reviews from customers who
-                      completed at least one order. Reviews are collected via post-purchase email and in-app prompts.
-                      <br />
-                      <strong>Verification:</strong> Only customers with confirmed purchases can leave reviews.
                     </p>
                   </div>
                 </div>

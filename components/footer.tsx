@@ -41,6 +41,9 @@ export function Footer() {
               <Link href="/about" className="block hover:text-primary transition-colors">
                 About Us
               </Link>
+              <Link href="/methodology" className="block hover:text-primary transition-colors">
+                Our Methodology
+              </Link>
               <Link href="/vet-board" className="block hover:text-primary transition-colors">
                 Vet Board
               </Link>

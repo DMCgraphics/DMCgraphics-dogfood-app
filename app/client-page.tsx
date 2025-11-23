@@ -23,14 +23,6 @@ export default function ClientHomePage() {
           url: "https://nouripet.com/logo.png",
         },
         description: "Fresh, personalized dog food with complete nutritional transparency",
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: "4.9",
-          bestRating: "5",
-          worstRating: "1",
-          ratingCount: "2847",
-          reviewCount: "2847",
-        },
       },
       {
         "@type": "Product",
@@ -39,14 +31,6 @@ export default function ClientHomePage() {
         description: "Personalized fresh dog food with complete nutritional transparency and AAFCO compliance",
         brand: {
           "@id": "https://nouripet.com/#organization",
-        },
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: "4.9",
-          bestRating: "5",
-          worstRating: "1",
-          ratingCount: "2847",
-          reviewCount: "2847",
         },
         offers: {
           "@type": "Offer",

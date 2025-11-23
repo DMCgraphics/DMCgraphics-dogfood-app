@@ -45,6 +45,39 @@ interface DogPlanData {
   addOnsCostPerWeek: number
   totalWeeklyCost: number
   subtotal_cents: number
+  planType: "full" | "topper"
+  topperLevel: "25" | "50" | "75" | null
+}
+
+// Topper pricing by dog size (prices are bi-weekly)
+const topperPrices: Record<string, Record<string, { price: number; priceId: string }>> = {
+  small: {
+    "25": { price: 6.50, priceId: "price_1SWJxb0R4BbWwBbfVA5IBfGv" },
+    "50": { price: 13.00, priceId: "price_1SWJxb0R4BbWwBbfAuVzB9gn" },
+    "75": { price: 19.50, priceId: "price_1SWJxb0R4BbWwBbfukkyjoMG" },
+  },
+  medium: {
+    "25": { price: 10.50, priceId: "price_1SWJxc0R4BbWwBbfpXUvIOPp" },
+    "50": { price: 21.00, priceId: "price_1SWJxc0R4BbWwBbfDFVH0o4p" },
+    "75": { price: 31.50, priceId: "price_1SWJxd0R4BbWwBbfSQAsNJHW" },
+  },
+  large: {
+    "25": { price: 15.50, priceId: "price_1SWJxd0R4BbWwBbfeCuwcPy9" },
+    "50": { price: 31.00, priceId: "price_1SWJxd0R4BbWwBbfjhnoOngK" },
+    "75": { price: 46.50, priceId: "price_1SWJxe0R4BbWwBbfhuaK5zGR" },
+  },
+  xl: {
+    "25": { price: 19.50, priceId: "price_1SWJxe0R4BbWwBbfdR559REx" },
+    "50": { price: 39.00, priceId: "price_1SWJxe0R4BbWwBbf1st8bqEP" },
+    "75": { price: 58.50, priceId: "price_1SWJxf0R4BbWwBbfACrG4vhJ" },
+  },
+}
+
+function getDogSizeCategory(weightLbs: number): string {
+  if (weightLbs < 20) return "small"
+  if (weightLbs < 50) return "medium"
+  if (weightLbs < 100) return "large"
+  return "xl"
 }
 
 export default function PlanBuilderPage() {
@@ -58,6 +91,39 @@ export default function PlanBuilderPage() {
   const [currentDogIndex, setCurrentDogIndex] = useState(0)
   const [totalDogs, setTotalDogs] = useState(1)
   const [showDogCountSelector, setShowDogCountSelector] = useState(true)
+
+  // Plan type state (full meal or topper)
+  const [planType, setPlanType] = useState<"full" | "topper">("full")
+  const [topperLevel, setTopperLevel] = useState<"25" | "50" | "75" | null>(null)
+
+  const getDefaultDogData = (): DogPlanData => ({
+    dogProfile: {
+      weightUnit: "lb",
+      ageUnit: "years",
+      bodyCondition: 5,
+      activity: "moderate"
+    },
+    healthGoals: { stoolScore: 4 },
+    selectedAllergens: [],
+    selectedRecipe: null,
+    selectedRecipes: [],
+    allowMultipleSelection: false,
+    mealsPerDay: 2,
+    selectedAddOns: [],
+    medicalNeeds: {
+      hasMedicalNeeds: null,
+      email: "",
+      selectedCondition: null,
+      selectedPrescriptionDiet: null,
+      verificationRequired: false,
+    },
+    foodCostPerWeek: 0,
+    addOnsCostPerWeek: 0,
+    totalWeeklyCost: 0,
+    subtotal_cents: 0,
+    planType: planType,
+    topperLevel: topperLevel,
+  })
 
   const [allDogsData, setAllDogsData] = useState<DogPlanData[]>([
     {
@@ -85,6 +151,8 @@ export default function PlanBuilderPage() {
       addOnsCostPerWeek: 0,
       totalWeeklyCost: 0,
       subtotal_cents: 0,
+      planType: "full",
+      topperLevel: null,
     }
   ])
 
@@ -117,6 +185,21 @@ export default function PlanBuilderPage() {
   const isUpdatingFromAllDogsData = useRef(false)
 
   useEffect(() => {
+    // Check for topper mode from URL params (from /shop page)
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const mode = urlParams.get("mode")
+      const level = urlParams.get("level")
+
+      if (mode === "topper" && level) {
+        console.log("[v0] Topper mode detected from URL:", level)
+        setPlanType("topper")
+        if (level === "25" || level === "50" || level === "75") {
+          setTopperLevel(level)
+        }
+      }
+    }
+
     // Check for dog_id parameter and pre-fill dog data
     const fetchDogDataById = async () => {
       if (typeof window === "undefined") return
@@ -183,6 +266,8 @@ export default function PlanBuilderPage() {
             addOnsCostPerWeek: 0,
             totalWeeklyCost: 0,
             subtotal_cents: 0,
+            planType: planType,
+            topperLevel: topperLevel,
           }])
 
           // Skip to step 1 (Dog Basics) if coming from management modal
@@ -294,6 +379,8 @@ export default function PlanBuilderPage() {
             addOnsCostPerWeek: 0,
             totalWeeklyCost: 0,
             subtotal_cents: planData.subtotal_cents || 0,
+            planType: "full", // Modify mode is for full meal plans
+            topperLevel: null,
           }
 
           isUpdatingFromAllDogsData.current = true
@@ -369,6 +456,8 @@ export default function PlanBuilderPage() {
           addOnsCostPerWeek: 0,
           totalWeeklyCost: 0,
           subtotal_cents: 0,
+          planType: planType,
+          topperLevel: topperLevel,
         }
 
         isUpdatingFromAllDogsData.current = true
@@ -463,9 +552,11 @@ export default function PlanBuilderPage() {
       totalDogs,
       allDogsData,
       currentStep,
+      planType,
+      topperLevel,
     }
     localStorage.setItem("nouripet-plan-builder", JSON.stringify(planData))
-  }, [currentDogIndex, totalDogs, allDogsData, currentStep])
+  }, [currentDogIndex, totalDogs, allDogsData, currentStep, planType, topperLevel])
 
   useEffect(() => {
     const saved = localStorage.getItem("nouripet-plan-builder")
@@ -476,7 +567,11 @@ export default function PlanBuilderPage() {
           setCurrentDogIndex(data.currentDogIndex || 0)
           setTotalDogs(data.totalDogs || 1)
           setAllDogsData(data.allDogsData)
-          setCurrentStep(data.currentStep >= 1 ? data.currentStep : 1)
+          // Allow step 0 so users can select plan type (full vs topper)
+          setCurrentStep(data.currentStep || 0)
+          // Restore plan type and topper level if saved
+          if (data.planType) setPlanType(data.planType)
+          if (data.topperLevel) setTopperLevel(data.topperLevel)
         }
       } catch (error) {
         console.error("Failed to load saved plan data:", error)
@@ -559,7 +654,9 @@ export default function PlanBuilderPage() {
   const canGoNext = () => {
     switch (currentStep) {
       case 0:
-        return totalDogs > 0
+        // For topper plans, must select a topper level
+        if (planType === "topper" && !topperLevel) return false
+        return true // Always allow proceeding for single dog plans
       case 1:
         return !!(
           dogProfile.name &&
@@ -636,6 +733,129 @@ export default function PlanBuilderPage() {
       }
       setCurrentDogIndex(nextDogIndex)
       setCurrentStep(1)
+      return
+    }
+
+    // Handle topper plan checkout
+    if (planType === "topper" && topperLevel) {
+      // For topper plans, use the topper checkout flow
+      if (!user) {
+        setShowAuthModal(true)
+        return
+      }
+
+      // Get dog data
+      const firstDogData = allDogsData[0]
+      const weight = firstDogData.dogProfile.weight || 0
+      const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
+      const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
+      const dogSizeCategory = getDogSizeCategory(weightLbs)
+      const topperPricing = topperPrices[dogSizeCategory]?.[topperLevel]
+
+      if (!topperPricing) {
+        alert("Unable to find pricing for this plan. Please try again.")
+        return
+      }
+
+      try {
+        // First, save the dog to the database
+        console.log("[v0] Saving dog for topper plan...")
+
+        // Check for existing dog with same name
+        const { data: existingDogs } = await supabase
+          .from("dogs")
+          .select("id, name")
+          .eq("user_id", user.id)
+          .eq("name", firstDogData.dogProfile.name)
+          .limit(1)
+
+        let dogId: string
+
+        if (existingDogs && existingDogs.length > 0) {
+          // Update existing dog
+          dogId = existingDogs[0].id
+          console.log("[v0] Updating existing dog:", dogId)
+
+          await supabase
+            .from("dogs")
+            .update({
+              breed: firstDogData.dogProfile.breed,
+              age: firstDogData.dogProfile.age,
+              age_unit: firstDogData.dogProfile.ageUnit || "years",
+              weight: weight,
+              weight_unit: weightUnit,
+              weight_kg: toKg(weight, weightUnit),
+              sex: firstDogData.dogProfile.sex,
+              is_neutered: firstDogData.dogProfile.isNeutered,
+              activity_level: firstDogData.dogProfile.activity,
+              body_condition_score: firstDogData.dogProfile.bodyCondition,
+              allergies: firstDogData.selectedAllergens,
+              conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
+            })
+            .eq("id", dogId)
+        } else {
+          // Create new dog
+          console.log("[v0] Creating new dog for topper plan...")
+          const { data: newDog, error: dogError } = await supabase
+            .from("dogs")
+            .insert({
+              user_id: user.id,
+              name: firstDogData.dogProfile.name,
+              breed: firstDogData.dogProfile.breed,
+              age: firstDogData.dogProfile.age,
+              age_unit: firstDogData.dogProfile.ageUnit || "years",
+              weight: weight,
+              weight_unit: weightUnit,
+              weight_kg: toKg(weight, weightUnit),
+              sex: firstDogData.dogProfile.sex,
+              is_neutered: firstDogData.dogProfile.isNeutered,
+              activity_level: firstDogData.dogProfile.activity,
+              body_condition_score: firstDogData.dogProfile.bodyCondition,
+              allergies: firstDogData.selectedAllergens,
+              conditions: firstDogData.medicalNeeds.selectedCondition ? [firstDogData.medicalNeeds.selectedCondition] : [],
+            })
+            .select("id")
+            .single()
+
+          if (dogError || !newDog) {
+            console.error("[v0] Error creating dog:", dogError)
+            alert("Failed to save dog profile. Please try again.")
+            return
+          }
+
+          dogId = newDog.id
+          console.log("[v0] Dog created with ID:", dogId)
+        }
+
+        // Now proceed to checkout with the dog ID
+        const response = await fetch('/api/topper-checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            priceId: topperPricing.priceId,
+            dogId,
+            dogName: firstDogData.dogProfile.name,
+            dogSize: dogSizeCategory,
+            productType: `topper-${topperLevel}`,
+            isSubscription: true,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create checkout session')
+        }
+
+        if (data.url) {
+          window.location.href = data.url
+        }
+      } catch (error) {
+        console.error("Error starting topper checkout:", error)
+        alert("Failed to start checkout. Please try again.")
+      }
       return
     }
 
@@ -1575,36 +1795,108 @@ export default function PlanBuilderPage() {
     switch (currentStep) {
       case 0:
         return (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto space-y-6">
+            {/* Plan Type Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>How many dogs do you have?</CardTitle>
-                <p className="text-muted-foreground">We'll create personalized plans for each of your dogs.</p>
+                <CardTitle>What type of plan do you want?</CardTitle>
+                <p className="text-muted-foreground">Choose between a full fresh food diet or a fresh food topper.</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[1, 2, 3, 4].map((count) => (
-                    <Button
-                      key={count}
-                      variant={totalDogs === count ? "default" : "outline"}
-                      className={`h-16 text-lg ${
-                        totalDogs === count
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                          : "bg-transparent"
-                      }`}
-                      onClick={() => setTotalDogs(count)}
-                    >
-                      {count} {count === 1 ? "Dog" : "Dogs"}
-                    </Button>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      planType === "full"
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      setPlanType("full")
+                      setTopperLevel(null)
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        planType === "full" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}>
+                        {planType === "full" && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Full Meal Plan</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          100% fresh food - replace your dog's current diet entirely with nutritious, fresh meals.
+                        </p>
+                        <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+                          <li>• Complete & balanced nutrition</li>
+                          <li>• Personalized portions</li>
+                          <li>• Bi-weekly delivery</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      planType === "topper"
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      setPlanType("topper")
+                      if (!topperLevel) setTopperLevel("25")
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        planType === "topper" ? "border-primary bg-primary" : "border-muted-foreground"
+                      }`}>
+                        {planType === "topper" && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Topper Plan</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Add fresh food on top of your dog's kibble - boost nutrition without fully switching.
+                        </p>
+                        <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+                          <li>• Mix with existing kibble</li>
+                          <li>• More affordable option</li>
+                          <li>• Great for picky eaters</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {totalDogs > 4 && (
-                  <div className="text-center text-sm text-muted-foreground">
-                    Need plans for more than 4 dogs? Contact us for custom pricing.
+
+                {/* Topper Level Selection - Only show when topper is selected */}
+                {planType === "topper" && (
+                  <div className="pt-4 border-t">
+                    <p className="font-medium mb-3">How much of your dog's diet should be fresh food?</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { level: "25" as const, label: "25%", desc: "Light topper" },
+                        { level: "50" as const, label: "50%", desc: "Half & half" },
+                        { level: "75" as const, label: "75%", desc: "Mostly fresh" },
+                      ].map((option) => (
+                        <Button
+                          key={option.level}
+                          variant={topperLevel === option.level ? "default" : "outline"}
+                          className={`h-auto py-3 flex flex-col ${
+                            topperLevel === option.level
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                              : "bg-transparent"
+                          }`}
+                          onClick={() => setTopperLevel(option.level)}
+                        >
+                          <span className="text-lg font-bold">{option.label}</span>
+                          <span className="text-xs opacity-70">{option.desc}</span>
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
+
           </div>
         )
       case 1:
@@ -1666,6 +1958,8 @@ export default function PlanBuilderPage() {
             currentDogIndex={currentDogIndex}
             totalDogs={totalDogs}
             isLastDog={currentDogIndex === totalDogs - 1}
+            planType={planType}
+            topperLevel={topperLevel}
           />
         )
       default:
@@ -1678,12 +1972,12 @@ export default function PlanBuilderPage() {
       case 0:
         return {
           title: "Getting Started",
-          description: "Let's start by learning about your dogs.",
+          description: "Choose your plan type to get started.",
         }
       case 1:
         return {
           title: "Dog Basics",
-          description: `Tell us about ${totalDogs > 1 ? `dog ${currentDogIndex + 1} of ${totalDogs}` : "your pup"}.`,
+          description: "Tell us about your pup.",
         }
       case 2:
         return {
@@ -1698,10 +1992,7 @@ export default function PlanBuilderPage() {
       case 4:
         return {
           title: "Plan Preview",
-          description:
-            totalDogs > 1 && currentDogIndex < totalDogs - 1
-              ? `Review ${dogProfile.name}'s plan and continue to next dog.`
-              : "Confirm portions, schedule, add-ons, and save.",
+          description: "Confirm portions, schedule, add-ons, and save.",
         }
       default:
         return { title: "", description: "" }
@@ -1726,40 +2017,6 @@ export default function PlanBuilderPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {totalDogs > 1 && currentStep > 0 && (
-        <div className="border-b bg-muted/30">
-          <div className="container py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h2 className="font-semibold">
-                  {dogProfile.name || `Dog ${currentDogIndex + 1}`}
-                  <span className="text-muted-foreground ml-2">
-                    ({currentDogIndex + 1} of {totalDogs})
-                  </span>
-                </h2>
-                <Button variant="outline" size="sm" onClick={() => setCurrentStep(0)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Change Dog Count
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                {Array.from({ length: totalDogs }, (_, index) => (
-                  <Button
-                    key={index}
-                    variant={index === currentDogIndex ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => switchToDog(index)}
-                    disabled={index === currentDogIndex}
-                  >
-                    {allDogsData[index]?.dogProfile.name || `Dog ${index + 1}`}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <WizardLayout
         currentStep={currentStep}
         totalSteps={TOTAL_STEPS}
@@ -1772,7 +2029,7 @@ export default function PlanBuilderPage() {
         showNextButton={currentStep !== TOTAL_STEPS - 1}
         nextLabel={
           currentStep === 0
-            ? "Start Building Plans"
+            ? "Start Building Plan"
             : "Continue"
         }
       >

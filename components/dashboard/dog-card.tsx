@@ -1,13 +1,24 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Edit, Calendar, Weight, Activity, Check, ShoppingBag, Sparkles } from "lucide-react"
+import { Edit, Calendar, Weight, Activity, Check, ShoppingBag, Trash2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { TopperPurchaseDialog } from "./topper-purchase-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface DogProfile {
   id: string
@@ -26,12 +37,16 @@ interface DogProfile {
 interface DogCardProps {
   dog: DogProfile
   onEdit: (dogId: string) => void
+  onDelete?: (dogId: string) => Promise<void>
   onSelect?: (dogId: string) => void
   isSelected?: boolean
   showSelection?: boolean
 }
 
-export function DogCard({ dog, onEdit, onSelect, isSelected = false, showSelection = false }: DogCardProps) {
+export function DogCard({ dog, onEdit, onDelete, onSelect, isSelected = false, showSelection = false }: DogCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -50,6 +65,17 @@ export function DogCard({ dog, onEdit, onSelect, isSelected = false, showSelecti
   const handleCardClick = () => {
     if (showSelection && onSelect) {
       onSelect(dog.id)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!onDelete) return
+    setIsDeleting(true)
+    try {
+      await onDelete(dog.id)
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
     }
   }
 
@@ -140,39 +166,20 @@ export function DogCard({ dog, onEdit, onSelect, isSelected = false, showSelecti
 
         <div className="bg-muted/50 rounded-lg p-3 space-y-2">
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Purchase
+            Shop
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <TopperPurchaseDialog
-              dogId={dog.id}
-              dogName={dog.name}
-              dogWeight={dog.weight}
-              dogWeightUnit={dog.weightUnit}
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full bg-background"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Topper Plans
-              </Button>
-            </TopperPurchaseDialog>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full bg-background"
-              asChild
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Link href={`/shop/individual-packs?dogId=${dog.id}&dogName=${encodeURIComponent(dog.name)}`}>
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Individual Packs
-              </Link>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full bg-background"
+            asChild
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Link href="/shop">
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Fresh Food Shop
+            </Link>
+          </Button>
         </div>
 
         {showSelection && !isSelected && (

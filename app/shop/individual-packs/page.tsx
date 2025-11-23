@@ -112,30 +112,15 @@ function IndividualPacksContent() {
     }
   }
 
-  if (!dogName) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container py-16">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">Please select a dog from the dashboard.</p>
-              <Button asChild className="w-full mt-4">
-                <Link href="/dashboard">Go to Dashboard</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  // dogName is optional - page works for both standalone and dog-specific access
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-8 max-w-4xl">
         <Button variant="ghost" asChild className="mb-6">
-          <Link href="/dashboard">
+          <Link href={dogName ? "/dashboard" : "/shop"}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {dogName ? "Back to Dashboard" : "Back to Shop"}
           </Link>
         </Button>
 
@@ -143,7 +128,7 @@ function IndividualPacksContent() {
           <div>
             <h1 className="text-3xl font-bold">Buy Individual Packs</h1>
             <p className="text-muted-foreground mt-2">
-              Fresh food for {dogName} - no subscription required
+              {dogName ? `Fresh food for ${dogName} - no subscription required` : "Try our fresh recipes - no subscription required"}
             </p>
           </div>
 

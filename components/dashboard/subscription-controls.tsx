@@ -3,14 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Package, Pause, Play, Settings, Truck } from "lucide-react"
-import { useState } from "react"
+import { Calendar, Package, Pause, Play, Settings, Truck, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 import { getPackPortion } from "@/lib/pack-portioning"
 
 interface Delivery {
   id: string
   date: string
-  status: "upcoming" | "shipped" | "delivered"
+  status: "scheduled" | "preparing" | "out_for_delivery" | "delivered" | "failed" | "cancelled"
   items: string[]
   trackingNumber?: string
 }
@@ -18,7 +18,7 @@ interface Delivery {
 interface SubscriptionControlsProps {
   subscriptionStatus: "active" | "paused" | "cancelled"
   nextDelivery: string
-  deliveries: Delivery[]
+  deliveries?: Delivery[]
   onPauseResume: () => void
   onSkipDelivery: (deliveryId: string) => void
   onManageSubscription: () => void
@@ -28,17 +28,50 @@ interface SubscriptionControlsProps {
 export function SubscriptionControls({
   subscriptionStatus,
   nextDelivery,
-  deliveries,
+  deliveries: propDeliveries,
   onPauseResume,
   onSkipDelivery,
   onManageSubscription,
   dogName,
 }: SubscriptionControlsProps) {
   const [isProcessing, setIsProcessing] = useState(false)
+  const [deliveries, setDeliveries] = useState<Delivery[]>(propDeliveries || [])
+  const [isLoadingDeliveries, setIsLoadingDeliveries] = useState(!propDeliveries)
 
   const sampleDailyGrams = 160
   const packInfo = getPackPortion(sampleDailyGrams)
   const biweeklyPacks = Math.ceil((packInfo.packsPerMonth / 30) * 14)
+
+  // Fetch real deliveries from API
+  useEffect(() => {
+    if (propDeliveries) {
+      setDeliveries(propDeliveries)
+      return
+    }
+
+    async function fetchDeliveries() {
+      try {
+        const response = await fetch('/api/deliveries?limit=5')
+        if (response.ok) {
+          const data = await response.json()
+          const formattedDeliveries = data.deliveries?.map((d: any) => ({
+            id: d.id,
+            date: d.scheduled_date,
+            status: d.status,
+            items: d.items || [],
+            trackingNumber: d.tracking_number,
+          })) || []
+          setDeliveries(formattedDeliveries)
+        }
+      } catch (error) {
+        console.error("Error fetching deliveries:", error)
+      } finally {
+        setIsLoadingDeliveries(false)
+      }
+    }
+
+    fetchDeliveries()
+  }, [propDeliveries])
 
   const handlePauseResume = async () => {
     setIsProcessing(true)
@@ -67,14 +100,39 @@ export function SubscriptionControls({
 
   const getDeliveryStatusColor = (status: string) => {
     switch (status) {
-      case "upcoming":
+      case "scheduled":
         return "bg-blue-500 text-white"
-      case "shipped":
+      case "preparing":
+        return "bg-yellow-500 text-white"
+      case "out_for_delivery":
         return "bg-orange-500 text-white"
       case "delivered":
         return "bg-primary text-primary-foreground"
+      case "failed":
+        return "bg-red-500 text-white"
+      case "cancelled":
+        return "bg-gray-500 text-white"
       default:
         return "bg-muted text-muted-foreground"
+    }
+  }
+
+  const getDeliveryStatusLabel = (status: string) => {
+    switch (status) {
+      case "scheduled":
+        return "upcoming"
+      case "preparing":
+        return "preparing"
+      case "out_for_delivery":
+        return "out for delivery"
+      case "delivered":
+        return "delivered"
+      case "failed":
+        return "failed"
+      case "cancelled":
+        return "cancelled"
+      default:
+        return status
     }
   }
 
@@ -144,31 +202,43 @@ export function SubscriptionControls({
           </div>
 
           <div className="space-y-2">
-            {deliveries.slice(0, 3).map((delivery) => (
-              <div key={delivery.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="text-sm font-medium">{new Date(delivery.date).toLocaleDateString()}</div>
-                    <div className="text-xs text-muted-foreground">{delivery.items.join(", ")}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {biweeklyPacks} × {packInfo.packSize}g packs
+            {isLoadingDeliveries ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading deliveries...</span>
+              </div>
+            ) : deliveries.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No deliveries yet
+              </div>
+            ) : (
+              deliveries.slice(0, 3).map((delivery) => (
+                <div key={delivery.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <div className="text-sm font-medium">{new Date(delivery.date).toLocaleDateString()}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {Array.isArray(delivery.items) && delivery.items.length > 0
+                          ? delivery.items.join(", ")
+                          : `${biweeklyPacks} × ${packInfo.packSize}g packs`}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    {delivery.trackingNumber && delivery.status === "out_for_delivery" && (
+                      <Button variant="ghost" size="sm" className="text-xs">
+                        <Truck className="h-3 w-3 mr-1" />
+                        Track
+                      </Button>
+                    )}
+                    <Badge className={getDeliveryStatusColor(delivery.status)} variant="secondary">
+                      {getDeliveryStatusLabel(delivery.status)}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {delivery.trackingNumber && delivery.status === "shipped" && (
-                    <Button variant="ghost" size="sm" className="text-xs">
-                      <Truck className="h-3 w-3 mr-1" />
-                      Track
-                    </Button>
-                  )}
-                  <Badge className={getDeliveryStatusColor(delivery.status)} variant="secondary">
-                    {delivery.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

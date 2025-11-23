@@ -448,6 +448,92 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true })
     }
 
+    case "invoice.paid": {
+      // Create a delivery record when invoice is paid (subscription renewal)
+      const invoice = event.data.object as Stripe.Invoice
+      console.log("[v0] Processing invoice.paid:", invoice.id)
+
+      // Only process subscription invoices
+      if (!invoice.subscription) {
+        console.log("[v0] Invoice is not for a subscription, skipping delivery creation")
+        return NextResponse.json({ received: true })
+      }
+
+      const subscriptionId = typeof invoice.subscription === 'string'
+        ? invoice.subscription
+        : invoice.subscription.id
+
+      // Get subscription details from our database
+      const { data: subscription, error: subError } = await getSupabaseAdmin()
+        .from("subscriptions")
+        .select("*, plans(id, dog_id, delivery_zipcode, user_id)")
+        .eq("stripe_subscription_id", subscriptionId)
+        .single()
+
+      if (subError || !subscription) {
+        console.log("[v0] Subscription not found for invoice:", subscriptionId)
+        return NextResponse.json({ received: true })
+      }
+
+      // Get the plan items for this subscription
+      const { data: planItems } = await getSupabaseAdmin()
+        .from("plan_items")
+        .select("qty, size_g, recipes(name)")
+        .eq("plan_id", subscription.plan_id)
+
+      // Format items for storage
+      const items = planItems?.map(item => ({
+        name: (item.recipes as any)?.name || "Unknown item",
+        qty: item.qty,
+        size_g: item.size_g,
+      })) || []
+
+      // Calculate scheduled delivery date (typically period_end or a few days before)
+      const periodEnd = invoice.lines.data[0]?.period?.end
+      const scheduledDate = periodEnd
+        ? new Date(periodEnd * 1000)
+        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // Default to 2 weeks
+
+      // Get delivery address from plan or customer
+      const plan = subscription.plans as any
+
+      // Check if delivery already exists for this period
+      const { data: existingDelivery } = await getSupabaseAdmin()
+        .from("deliveries")
+        .select("id")
+        .eq("subscription_id", subscription.id)
+        .eq("scheduled_date", scheduledDate.toISOString().split('T')[0])
+        .single()
+
+      if (existingDelivery) {
+        console.log("[v0] Delivery already exists for this period:", existingDelivery.id)
+        return NextResponse.json({ received: true })
+      }
+
+      // Create delivery record
+      const deliveryData = {
+        user_id: subscription.user_id,
+        subscription_id: subscription.id,
+        plan_id: subscription.plan_id,
+        scheduled_date: scheduledDate.toISOString().split('T')[0],
+        status: "scheduled",
+        items: items,
+        delivery_zipcode: plan?.delivery_zipcode || null,
+      }
+
+      const { error: deliveryError } = await getSupabaseAdmin()
+        .from("deliveries")
+        .insert(deliveryData)
+
+      if (deliveryError) {
+        console.error("[v0] Failed to create delivery:", deliveryError)
+      } else {
+        console.log("[v0] Delivery created for subscription:", subscriptionId, "scheduled for:", scheduledDate.toISOString().split('T')[0])
+      }
+
+      return NextResponse.json({ received: true })
+    }
+
     default:
       console.log("[v0] Unhandled event type:", event.type)
       break

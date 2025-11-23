@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, ArrowLeft, Check } from "lucide-react"
+import { ShoppingCart, ArrowLeft, Check, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-export default function IndividualPacksPage() {
+function IndividualPacksContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const dogId = searchParams.get('dogId')
@@ -313,5 +313,24 @@ export default function IndividualPacksPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function IndividualPacksLoading() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="text-lg">Loading...</span>
+      </div>
+    </div>
+  )
+}
+
+export default function IndividualPacksPage() {
+  return (
+    <Suspense fallback={<IndividualPacksLoading />}>
+      <IndividualPacksContent />
+    </Suspense>
   )
 }

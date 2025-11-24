@@ -13,7 +13,7 @@ import { Header } from "@/components/header"
 import { AuthModal } from "@/components/auth/auth-modal"
 import type { DogProfile, HealthGoals } from "@/lib/nutrition-calculator"
 import { calculateDERFromProfile, calculateDailyGrams, toKg } from "@/lib/nutrition-calculator"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { analytics } from "@/lib/analytics"
 import { supabase } from "@/lib/supabase/client"
 import { waitForSession } from "@/lib/auth/waitForSession"
@@ -82,6 +82,7 @@ function getDogSizeCategory(weightLbs: number): string {
 
 export default function PlanBuilderPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const TOTAL_STEPS = 5
@@ -95,6 +96,21 @@ export default function PlanBuilderPage() {
   // Plan type state (full meal or topper)
   const [planType, setPlanType] = useState<"full" | "topper">("full")
   const [topperLevel, setTopperLevel] = useState<"25" | "50" | "75" | null>(null)
+
+  // Handle query params from shop page (mode=topper&level=25)
+  useEffect(() => {
+    const mode = searchParams.get("mode")
+    const level = searchParams.get("level")
+
+    if (mode === "topper") {
+      setPlanType("topper")
+      if (level === "25" || level === "50" || level === "75") {
+        setTopperLevel(level)
+      } else {
+        setTopperLevel("25") // Default to 25% if no valid level
+      }
+    }
+  }, [searchParams])
 
   const getDefaultDogData = (): DogPlanData => ({
     dogProfile: {

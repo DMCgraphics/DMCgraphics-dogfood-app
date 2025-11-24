@@ -108,8 +108,10 @@ export function CartSummary({ items, subtotal, shipping, tax, total }: CartSumma
             <span>${(subtotal || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span>Shipping</span>
-            <span>{(shipping || 0) === 0 ? "Free" : `$${(shipping || 0).toFixed(2)}`}</span>
+            <span>Delivery</span>
+            <span className={(shipping || 0) === 0 ? "text-green-600" : ""}>
+              {(shipping || 0) === 0 ? "Free" : `$${(shipping || 0).toFixed(2)}`}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Tax</span>

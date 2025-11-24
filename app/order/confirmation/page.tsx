@@ -202,7 +202,7 @@ Monthly Renewal: ${getRenewalDate(orderData.nextDeliveryDate)}
 PRICING:
 Subtotal: $${orderData.pricing.subtotal.toFixed(2)}
 Discount: $${orderData.pricing.discount.toFixed(2)}
-Shipping: ${orderData.pricing.shipping === 0 ? "Free" : `$${orderData.pricing.shipping.toFixed(2)}`}
+Delivery: ${orderData.pricing.shipping === 0 ? "Free" : `$${orderData.pricing.shipping.toFixed(2)}`}
 Tax: $${orderData.pricing.tax.toFixed(2)}
 Total: $${orderData.pricing.total.toFixed(2)}
 
@@ -427,8 +427,8 @@ Thank you for choosing NouriPet!
                     <span>${orderData.pricing.discount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Shipping</span>
-                    <span>
+                    <span>Delivery</span>
+                    <span className={orderData.pricing.shipping === 0 ? "text-green-600" : ""}>
                       {orderData.pricing.shipping === 0 ? "Free" : `$${orderData.pricing.shipping.toFixed(2)}`}
                     </span>
                   </div>

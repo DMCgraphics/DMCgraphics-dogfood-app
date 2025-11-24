@@ -31,8 +31,8 @@ export default function CartPage() {
             <span>$21.00</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span>Shipping:</span>
-            <span>$9.99</span>
+            <span>Delivery:</span>
+            <span className="text-green-600">Free</span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Tax:</span>

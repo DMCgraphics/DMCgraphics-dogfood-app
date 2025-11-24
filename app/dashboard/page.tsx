@@ -666,6 +666,31 @@ export default function DashboardPage() {
     setShowEditDogModal(true)
   }
 
+  const handleDeleteDog = async (dogId: string) => {
+    try {
+      const response = await fetch(`/api/dogs/${dogId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to delete dog")
+      }
+
+      // If the deleted dog was selected, clear selection
+      if (selectedDogId === dogId) {
+        setSelectedDogId(null)
+      }
+
+      // Refresh the dogs list
+      setRefreshTrigger(prev => prev + 1)
+    } catch (error) {
+      console.error("[v0] Error deleting dog:", error)
+      alert(error instanceof Error ? error.message : "Failed to delete dog")
+      throw error
+    }
+  }
+
   const handleDogUpdated = () => {
     // Trigger a refresh by updating the refresh trigger
     // This will cause the useEffect to re-run and fetch updated data
@@ -1051,6 +1076,7 @@ export default function DashboardPage() {
                 key={dog.id}
                 dog={dog}
                 onEdit={handleEditDog}
+                onDelete={handleDeleteDog}
                 onSelect={handleSelectDog}
                 isSelected={dog.id === selectedDogId}
                 showSelection={dogs.length > 1}

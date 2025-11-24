@@ -51,6 +51,7 @@ export async function DELETE(
     await client.from("weight_logs").delete().eq("dog_id", dogId)
     await client.from("stool_logs").delete().eq("dog_id", dogId)
     await client.from("plan_items").delete().eq("dog_id", dogId)
+    await client.from("plan_dogs").delete().eq("dog_id", dogId)
     await client.from("plans").delete().eq("dog_id", dogId)
 
     // Now delete the dog

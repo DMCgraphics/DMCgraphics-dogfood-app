@@ -42,70 +42,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getSession()
 
         if (session?.user) {
-          // First, create user with default subscription status
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
-            avatar_url: undefined, // Will be loaded separately when needed
-            createdAt: session.user.created_at,
-            subscriptionStatus: "none",
-          }
-          setUser(userData)
-          setApiStatus("connected")
-          console.log("[v0] auth_supabase_session_found", { userId: userData.id, email: userData.email })
+          // Fetch all user data including admin status before setting user
+          try {
+            // Fetch profile data (admin status and roles)
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("is_admin, roles, full_name, avatar_url")
+              .eq("id", session.user.id)
+              .single()
 
-          // Mark loading as complete BEFORE fetching subscriptions to unblock the UI
-          setIsLoading(false)
+            // Fetch subscription status
+            const { data: subscriptionsData } = await supabase
+              .from("subscriptions")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "trialing", "past_due"])
 
-          // Then, fetch real subscription status and admin status from database in the background
-          // Use setTimeout to ensure this doesn't block rendering
-          setTimeout(async () => {
-            try {
-              // Check for both subscriptions AND active plans
-              const { data: subscriptionsData } = await supabase
-                .from("subscriptions")
-                .select("id, status")
-                .eq("user_id", session.user.id)
-                .in("status", ["active", "trialing", "past_due"])
+            const { data: plansData } = await supabase
+              .from("plans")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "checkout_in_progress", "purchased"])
 
-              const { data: plansData } = await supabase
-                .from("plans")
-                .select("id, status")
-                .eq("user_id", session.user.id)
-                .in("status", ["active", "checkout_in_progress", "purchased"])
+            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+            const isAdmin = profileData?.is_admin || false
+            const roles = profileData?.roles || []
 
-              // Check admin status and roles from profile
-              const { data: profileData } = await supabase
-                .from("profiles")
-                .select("is_admin, roles")
-                .eq("id", session.user.id)
-                .single()
-
-              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
-              const isAdmin = profileData?.is_admin || false
-              const roles = profileData?.roles || []
-
-              const updatedUser = {
-                ...userData,
-                subscriptionStatus: hasActiveSubscription ? "active" as const : "none" as const,
-                isAdmin,
-                roles
-              }
-              setUser(updatedUser)
-              console.log("[v0] auth_subscription_status_updated", {
-                userId: userData.id,
-                email: userData.email,
-                hasActiveSubscription,
-                isAdmin,
-                subscriptionCount: subscriptionsData?.length || 0,
-                planCount: plansData?.length || 0
-              })
-            } catch (subscriptionError) {
-              console.error("Error fetching subscription status:", subscriptionError)
-              // Keep the default "none" status if there's an error
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email!,
+              name: profileData?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
+              avatar_url: profileData?.avatar_url,
+              createdAt: session.user.created_at,
+              subscriptionStatus: hasActiveSubscription ? "active" : "none",
+              isAdmin,
+              roles
             }
-          }, 0)
+            setUser(userData)
+            setApiStatus("connected")
+            console.log("[v0] auth_supabase_session_found", {
+              userId: userData.id,
+              email: userData.email,
+              isAdmin,
+              roles,
+              hasActiveSubscription
+            })
+          } catch (profileError) {
+            console.error("Error fetching profile data:", profileError)
+            // Fallback: set user with basic data
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email!,
+              name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+              avatar_url: undefined,
+              createdAt: session.user.created_at,
+              subscriptionStatus: "none",
+            }
+            setUser(userData)
+            setApiStatus("connected")
+          }
+
+          setIsLoading(false)
         } else {
           console.log("[v0] auth_no_session")
           setUser(null)
@@ -142,66 +139,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Clear any existing user state first
           setUser(null)
 
-          // First, create user with default subscription status
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
-            avatar_url: undefined, // Will be loaded separately when needed
-            createdAt: session.user.created_at,
-            subscriptionStatus: "none",
-          }
-          setUser(userData)
-          setApiStatus("connected")
-          console.log("[v0] auth_signed_in", { userId: userData.id, email: userData.email })
+          // Fetch all user data including admin status
+          try {
+            // Fetch profile data (admin status and roles)
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("is_admin, roles, full_name, avatar_url")
+              .eq("id", session.user.id)
+              .single()
 
-          // Then, fetch real subscription status and admin status from database in the background
-          setTimeout(async () => {
-            try {
-              // Check for both subscriptions AND active plans
-              const { data: subscriptionsData } = await supabase
-                .from("subscriptions")
-                .select("id, status")
-                .eq("user_id", session.user.id)
-                .in("status", ["active", "trialing", "past_due"])
+            // Fetch subscription status
+            const { data: subscriptionsData } = await supabase
+              .from("subscriptions")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "trialing", "past_due"])
 
-              const { data: plansData } = await supabase
-                .from("plans")
-                .select("id, status")
-                .eq("user_id", session.user.id)
-                .in("status", ["active", "checkout_in_progress", "purchased"])
+            const { data: plansData } = await supabase
+              .from("plans")
+              .select("id, status")
+              .eq("user_id", session.user.id)
+              .in("status", ["active", "checkout_in_progress", "purchased"])
 
-              // Check admin status and roles from profile
-              const { data: profileData } = await supabase
-                .from("profiles")
-                .select("is_admin, roles")
-                .eq("id", session.user.id)
-                .single()
+            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+            const isAdmin = profileData?.is_admin || false
+            const roles = profileData?.roles || []
 
-              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
-              const isAdmin = profileData?.is_admin || false
-              const roles = profileData?.roles || []
-
-              const updatedUser = {
-                ...userData,
-                subscriptionStatus: hasActiveSubscription ? "active" as const : "none" as const,
-                isAdmin,
-                roles
-              }
-              setUser(updatedUser)
-              console.log("[v0] auth_subscription_status_updated_on_signin", {
-                userId: userData.id,
-                email: userData.email,
-                hasActiveSubscription,
-                isAdmin,
-                subscriptionCount: subscriptionsData?.length || 0,
-                planCount: plansData?.length || 0
-              })
-            } catch (subscriptionError) {
-              console.error("Error fetching subscription status on signin:", subscriptionError)
-              // Keep the default "none" status if there's an error
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email!,
+              name: profileData?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
+              avatar_url: profileData?.avatar_url,
+              createdAt: session.user.created_at,
+              subscriptionStatus: hasActiveSubscription ? "active" : "none",
+              isAdmin,
+              roles
             }
-          }, 0)
+            setUser(userData)
+            setApiStatus("connected")
+            console.log("[v0] auth_signed_in", {
+              userId: userData.id,
+              email: userData.email,
+              isAdmin,
+              roles,
+              hasActiveSubscription
+            })
+          } catch (profileError) {
+            console.error("Error fetching profile data on signin:", profileError)
+            // Fallback: set user with basic data
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email!,
+              name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+              avatar_url: undefined,
+              createdAt: session.user.created_at,
+              subscriptionStatus: "none",
+            }
+            setUser(userData)
+            setApiStatus("connected")
+          }
         } else {
           console.log("[v0] auth_signed_in_duplicate_ignored", { userId: session.user.id, email: session.user.email })
         }

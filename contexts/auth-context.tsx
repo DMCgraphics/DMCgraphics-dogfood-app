@@ -136,68 +136,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Only process if we don't already have this user
         // Use userRef.current to avoid stale closure issues
         if (userRef.current?.id !== session.user.id) {
-          // Clear any existing user state first
-          setUser(null)
-
-          // Fetch all user data including admin status
-          try {
-            // Fetch profile data (admin status and roles)
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("is_admin, roles, full_name, avatar_url")
-              .eq("id", session.user.id)
-              .single()
-
-            // Fetch subscription status
-            const { data: subscriptionsData } = await supabase
-              .from("subscriptions")
-              .select("id, status")
-              .eq("user_id", session.user.id)
-              .in("status", ["active", "trialing", "past_due"])
-
-            const { data: plansData } = await supabase
-              .from("plans")
-              .select("id, status")
-              .eq("user_id", session.user.id)
-              .in("status", ["active", "checkout_in_progress", "purchased"])
-
-            const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
-            const isAdmin = profileData?.is_admin || false
-            const roles = profileData?.roles || []
-
-            const userData: User = {
-              id: session.user.id,
-              email: session.user.email!,
-              name: profileData?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
-              avatar_url: profileData?.avatar_url,
-              createdAt: session.user.created_at,
-              subscriptionStatus: hasActiveSubscription ? "active" : "none",
-              isAdmin,
-              roles
-            }
-            setUser(userData)
-            setApiStatus("connected")
-            console.log("[v0] auth_signed_in", {
-              userId: userData.id,
-              email: userData.email,
-              isAdmin,
-              roles,
-              hasActiveSubscription
-            })
-          } catch (profileError) {
-            console.error("Error fetching profile data on signin:", profileError)
-            // Fallback: set user with basic data
-            const userData: User = {
-              id: session.user.id,
-              email: session.user.email!,
-              name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
-              avatar_url: undefined,
-              createdAt: session.user.created_at,
-              subscriptionStatus: "none",
-            }
-            setUser(userData)
-            setApiStatus("connected")
+          // Set user immediately with basic data so UI works right away
+          const basicUserData: User = {
+            id: session.user.id,
+            email: session.user.email!,
+            name: session.user.user_metadata?.name || session.user.email!.split("@")[0],
+            avatar_url: undefined,
+            createdAt: session.user.created_at,
+            subscriptionStatus: "none",
           }
+          setUser(basicUserData)
+          setApiStatus("connected")
+          console.log("[v0] auth_signed_in_basic", { userId: basicUserData.id, email: basicUserData.email })
+
+          // Then fetch full profile data in background (non-blocking)
+          setTimeout(async () => {
+            try {
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("is_admin, roles, full_name, avatar_url")
+                .eq("id", session.user.id)
+                .single()
+
+              const { data: subscriptionsData } = await supabase
+                .from("subscriptions")
+                .select("id, status")
+                .eq("user_id", session.user.id)
+                .in("status", ["active", "trialing", "past_due"])
+
+              const { data: plansData } = await supabase
+                .from("plans")
+                .select("id, status")
+                .eq("user_id", session.user.id)
+                .in("status", ["active", "checkout_in_progress", "purchased"])
+
+              const hasActiveSubscription = (subscriptionsData && subscriptionsData.length > 0) || (plansData && plansData.length > 0)
+              const isAdmin = profileData?.is_admin || false
+              const roles = profileData?.roles || []
+
+              const fullUserData: User = {
+                id: session.user.id,
+                email: session.user.email!,
+                name: profileData?.full_name || session.user.user_metadata?.name || session.user.email!.split("@")[0],
+                avatar_url: profileData?.avatar_url,
+                createdAt: session.user.created_at,
+                subscriptionStatus: hasActiveSubscription ? "active" : "none",
+                isAdmin,
+                roles
+              }
+              setUser(fullUserData)
+              console.log("[v0] auth_signed_in_full", { userId: fullUserData.id, isAdmin, roles, hasActiveSubscription })
+            } catch (profileError) {
+              console.error("Error fetching profile data on signin:", profileError)
+              // Keep basic user data - already set above
+            }
+          }, 0)
         } else {
           console.log("[v0] auth_signed_in_duplicate_ignored", { userId: session.user.id, email: session.user.email })
         }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { WizardLayout } from "@/components/plan-builder/wizard-layout"
 import { Step1DogProfile } from "@/components/plan-builder/step-1-dog-profile"
 import { Step2HealthGoals } from "@/components/plan-builder/step-2-health-goals"
@@ -80,7 +80,7 @@ function getDogSizeCategory(weightLbs: number): string {
   return "xl"
 }
 
-export default function PlanBuilderPage() {
+function PlanBuilderContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoading } = useAuth()
@@ -2059,5 +2059,18 @@ export default function PlanBuilderPage() {
         onSuccess={handleAuthSuccess}
       />
     </div>
+  )
+}
+
+// Wrap in Suspense to handle useSearchParams during static generation
+export default function PlanBuilderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    }>
+      <PlanBuilderContent />
+    </Suspense>
   )
 }

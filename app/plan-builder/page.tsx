@@ -49,8 +49,17 @@ interface DogPlanData {
   topperLevel: "25" | "50" | "75" | null
 }
 
-// Topper pricing by dog size (prices are bi-weekly)
-const topperPrices: Record<string, Record<string, { price: number; priceId: string }>> = {
+// Detect if we're in test mode based on Stripe keys
+function isTestMode(): boolean {
+  if (typeof window !== 'undefined') {
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    return publishableKey?.startsWith('pk_test_') ?? true
+  }
+  return true
+}
+
+// TEST MODE topper pricing by dog size (prices are bi-weekly)
+const topperPricesTest: Record<string, Record<string, { price: number; priceId: string }>> = {
   small: {
     "25": { price: 6.50, priceId: "price_1SWJxb0R4BbWwBbfVA5IBfGv" },
     "50": { price: 13.00, priceId: "price_1SWJxb0R4BbWwBbfAuVzB9gn" },
@@ -71,6 +80,35 @@ const topperPrices: Record<string, Record<string, { price: number; priceId: stri
     "50": { price: 39.00, priceId: "price_1SWJxe0R4BbWwBbf1st8bqEP" },
     "75": { price: 58.50, priceId: "price_1SWJxf0R4BbWwBbfACrG4vhJ" },
   },
+}
+
+// PRODUCTION topper pricing by dog size (prices are bi-weekly)
+const topperPricesProduction: Record<string, Record<string, { price: number; priceId: string }>> = {
+  small: {
+    "25": { price: 6.50, priceId: "price_1SWJzN0WbfuHe9kAx4SXb84S" },
+    "50": { price: 13.00, priceId: "price_1SWJzN0WbfuHe9kAsXdakLI3" },
+    "75": { price: 19.50, priceId: "price_1SWJzN0WbfuHe9kAONAtGz3X" },
+  },
+  medium: {
+    "25": { price: 10.50, priceId: "price_1SWJzO0WbfuHe9kASj0g84Wr" },
+    "50": { price: 21.00, priceId: "price_1SWJzO0WbfuHe9kA5noP4YrR" },
+    "75": { price: 31.50, priceId: "price_1SWJzP0WbfuHe9kAeoHNdmGS" },
+  },
+  large: {
+    "25": { price: 15.50, priceId: "price_1SWJzP0WbfuHe9kAxg6CeyiM" },
+    "50": { price: 31.00, priceId: "price_1SWJzP0WbfuHe9kAjUYsaqBC" },
+    "75": { price: 46.50, priceId: "price_1SWJzQ0WbfuHe9kAQ3sylBEl" },
+  },
+  xl: {
+    "25": { price: 19.50, priceId: "price_1SWJzQ0WbfuHe9kA697GdnPz" },
+    "50": { price: 39.00, priceId: "price_1SWJzQ0WbfuHe9kA38OztrDK" },
+    "75": { price: 58.50, priceId: "price_1SWJzR0WbfuHe9kASGjhdWlu" },
+  },
+}
+
+// Get the appropriate topper pricing based on current Stripe mode
+function getTopperPrices() {
+  return isTestMode() ? topperPricesTest : topperPricesProduction
 }
 
 function getDogSizeCategory(weightLbs: number): string {
@@ -97,6 +135,11 @@ function PlanBuilderContent() {
   const [planType, setPlanType] = useState<"full" | "topper">("full")
   const [topperLevel, setTopperLevel] = useState<"25" | "50" | "75" | null>(null)
 
+  // Existing dogs state
+  const [existingDogs, setExistingDogs] = useState<any[]>([])
+  const [selectedExistingDogId, setSelectedExistingDogId] = useState<string | null>(null)
+  const [isLoadingDogs, setIsLoadingDogs] = useState(false)
+
   // Handle query params from shop page (mode=topper&level=25)
   useEffect(() => {
     const mode = searchParams.get("mode")
@@ -111,6 +154,39 @@ function PlanBuilderContent() {
       }
     }
   }, [searchParams])
+
+  // Fetch existing dogs when user is authenticated
+  useEffect(() => {
+    const fetchExistingDogs = async () => {
+      if (!user) {
+        setExistingDogs([])
+        return
+      }
+
+      setIsLoadingDogs(true)
+      try {
+        const { data: dogs, error } = await supabase
+          .from("dogs")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching dogs:", error)
+          setExistingDogs([])
+        } else {
+          setExistingDogs(dogs || [])
+        }
+      } catch (err) {
+        console.error("Error fetching dogs:", err)
+        setExistingDogs([])
+      } finally {
+        setIsLoadingDogs(false)
+      }
+    }
+
+    fetchExistingDogs()
+  }, [user])
 
   const getDefaultDogData = (): DogPlanData => ({
     dogProfile: {
@@ -604,6 +680,40 @@ function PlanBuilderContent() {
     setDogProfile((prev) => ({ ...prev, ...updates }))
   }
 
+  // Handle selecting an existing dog
+  const handleSelectExistingDog = (dogId: string | null) => {
+    setSelectedExistingDogId(dogId)
+
+    if (dogId === null) {
+      // Reset to empty profile for new dog
+      setDogProfile({
+        weightUnit: "lb",
+        ageUnit: "years",
+        bodyCondition: 5,
+        activity: "moderate"
+      })
+      return
+    }
+
+    const dog = existingDogs.find(d => d.id === dogId)
+    if (dog) {
+      // Populate dog profile from existing dog
+      setDogProfile({
+        id: dog.id,
+        name: dog.name,
+        breed: dog.breed,
+        weight: dog.weight,
+        weightUnit: dog.weight_unit || "lb",
+        age: dog.age,
+        ageUnit: dog.age_unit || "years",
+        bodyCondition: dog.body_condition || 5,
+        activity: dog.activity_level || "moderate",
+        isSpayed: dog.is_spayed,
+        sex: dog.sex,
+      })
+    }
+  }
+
   const updateHealthGoals = (updates: Partial<HealthGoals>) => {
     setHealthGoals((prev) => ({ ...prev, ...updates }))
   }
@@ -672,6 +782,9 @@ function PlanBuilderContent() {
       case 0:
         // For topper plans, must select a topper level
         if (planType === "topper" && !topperLevel) return false
+        // If user has existing dogs, they must select one or explicitly choose "add new dog"
+        // Since "add new dog" is selectedExistingDogId === null which is the default,
+        // and existing dog selection sets it to the dog's ID, this always passes
         return true // Always allow proceeding for single dog plans
       case 1:
         return !!(
@@ -766,7 +879,7 @@ function PlanBuilderContent() {
       const weightUnit = firstDogData.dogProfile.weightUnit || "lb"
       const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
       const dogSizeCategory = getDogSizeCategory(weightLbs)
-      const topperPricing = topperPrices[dogSizeCategory]?.[topperLevel]
+      const topperPricing = getTopperPrices()[dogSizeCategory]?.[topperLevel]
 
       if (!topperPricing) {
         alert("Unable to find pricing for this plan. Please try again.")
@@ -1913,6 +2026,72 @@ function PlanBuilderContent() {
               </CardContent>
             </Card>
 
+            {/* Existing Dog Selection - Only show if user has dogs */}
+            {user && existingDogs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Which dog is this plan for?</CardTitle>
+                  <p className="text-muted-foreground">Select one of your dogs or create a new profile.</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoadingDogs ? (
+                    <div className="text-center py-4 text-muted-foreground">Loading your dogs...</div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {existingDogs.map((dog) => (
+                        <div
+                          key={dog.id}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedExistingDogId === dog.id
+                              ? "border-primary bg-primary/5"
+                              : "border-muted hover:border-primary/50"
+                          }`}
+                          onClick={() => handleSelectExistingDog(dog.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              selectedExistingDogId === dog.id ? "border-primary bg-primary" : "border-muted-foreground"
+                            }`}>
+                              {selectedExistingDogId === dog.id && <div className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{dog.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {dog.breed} • {dog.weight} {dog.weight_unit || "lb"} • {dog.age} {dog.age_unit || "years"} old
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedExistingDogId === null
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                        onClick={() => handleSelectExistingDog(null)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            selectedExistingDogId === null ? "border-primary bg-primary" : "border-muted-foreground"
+                          }`}>
+                            {selectedExistingDogId === null && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold flex items-center gap-2">
+                              <Plus className="h-4 w-4" />
+                              Add a new dog
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Create a new dog profile</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
           </div>
         )
       case 1:
@@ -2019,13 +2198,23 @@ function PlanBuilderContent() {
 
   const handleNext = () => {
     if (canGoNext()) {
-      setCurrentStep(currentStep + 1)
+      // Skip step 1 (dog profile) if an existing dog is selected
+      if (currentStep === 0 && selectedExistingDogId !== null) {
+        setCurrentStep(2) // Jump directly to health goals/allergies
+      } else {
+        setCurrentStep(currentStep + 1)
+      }
     }
   }
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+      // Skip back over step 1 if an existing dog is selected
+      if (currentStep === 2 && selectedExistingDogId !== null) {
+        setCurrentStep(0) // Jump back to step 0
+      } else {
+        setCurrentStep(currentStep - 1)
+      }
     }
   }
 

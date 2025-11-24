@@ -16,27 +16,28 @@ import {
 import { prescriptionDiets } from "@/lib/prescription-diets"
 import { PlanPricingProvider, usePlanPricing } from "@/lib/plan-pricing-context"
 
-// Topper pricing by dog size (prices are bi-weekly)
-const topperPrices: Record<string, Record<string, { price: number; priceId: string }>> = {
+// Topper pricing by dog size (prices are bi-weekly) - for display only
+// The actual price IDs are handled in plan-builder/page.tsx based on test/production mode
+const topperPrices: Record<string, Record<string, { price: number }>> = {
   small: {
-    "25": { price: 6.50, priceId: "price_1SWJxb0R4BbWwBbfVA5IBfGv" },
-    "50": { price: 13.00, priceId: "price_1SWJxb0R4BbWwBbfAuVzB9gn" },
-    "75": { price: 19.50, priceId: "price_1SWJxb0R4BbWwBbfukkyjoMG" },
+    "25": { price: 6.50 },
+    "50": { price: 13.00 },
+    "75": { price: 19.50 },
   },
   medium: {
-    "25": { price: 10.50, priceId: "price_1SWJxc0R4BbWwBbfpXUvIOPp" },
-    "50": { price: 21.00, priceId: "price_1SWJxc0R4BbWwBbfDFVH0o4p" },
-    "75": { price: 31.50, priceId: "price_1SWJxd0R4BbWwBbfSQAsNJHW" },
+    "25": { price: 10.50 },
+    "50": { price: 21.00 },
+    "75": { price: 31.50 },
   },
   large: {
-    "25": { price: 15.50, priceId: "price_1SWJxd0R4BbWwBbfeCuwcPy9" },
-    "50": { price: 31.00, priceId: "price_1SWJxd0R4BbWwBbfjhnoOngK" },
-    "75": { price: 46.50, priceId: "price_1SWJxe0R4BbWwBbfhuaK5zGR" },
+    "25": { price: 15.50 },
+    "50": { price: 31.00 },
+    "75": { price: 46.50 },
   },
   xl: {
-    "25": { price: 19.50, priceId: "price_1SWJxe0R4BbWwBbfdR559REx" },
-    "50": { price: 39.00, priceId: "price_1SWJxe0R4BbWwBbf1st8bqEP" },
-    "75": { price: 58.50, priceId: "price_1SWJxf0R4BbWwBbfACrG4vhJ" },
+    "25": { price: 19.50 },
+    "50": { price: 39.00 },
+    "75": { price: 58.50 },
   },
 }
 

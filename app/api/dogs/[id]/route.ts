@@ -15,7 +15,7 @@ export async function DELETE(
 
     const dogId = params.id
 
-    // Check if user owns this dog or is admin
+    // Check if user owns this dog
     const { data: dog, error: fetchError } = await supabase
       .from("dogs")
       .select("id, user_id, name")
@@ -26,32 +26,35 @@ export async function DELETE(
       return NextResponse.json({ error: "Dog not found" }, { status: 404 })
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single()
+    const isOwner = dog.user_id === user.id
 
-    const isAdmin = profile?.is_admin || false
+    // Check if user is admin (only needed if not the owner)
+    let isAdmin = false
+    if (!isOwner) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single()
+      isAdmin = profile?.is_admin || false
+    }
 
     // Only allow deletion if user owns the dog or is admin
-    if (dog.user_id !== user.id && !isAdmin) {
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Use admin client to delete dog and cascade delete related data
-    // The database should have CASCADE DELETE set up, but we'll delete manually to be safe
-    const admin = supabaseAdmin()
+    // Use user's own client if they own the dog, admin client only for admins deleting others' dogs
+    const client = isOwner ? supabase : supabaseAdmin
 
     // Delete related data first (in case CASCADE isn't set up)
-    await admin.from("weight_logs").delete().eq("dog_id", dogId)
-    await admin.from("stool_logs").delete().eq("dog_id", dogId)
-    await admin.from("plan_items").delete().eq("dog_id", dogId)
-    await admin.from("plans").delete().eq("dog_id", dogId)
+    await client.from("weight_logs").delete().eq("dog_id", dogId)
+    await client.from("stool_logs").delete().eq("dog_id", dogId)
+    await client.from("plan_items").delete().eq("dog_id", dogId)
+    await client.from("plans").delete().eq("dog_id", dogId)
 
     // Now delete the dog
-    const { error: deleteError } = await admin
+    const { error: deleteError } = await client
       .from("dogs")
       .delete()
       .eq("id", dogId)
@@ -64,7 +67,7 @@ export async function DELETE(
       )
     }
 
-    console.log(`[v0] Dog deleted: ${dog.name} (${dogId}) by user ${user.id}${isAdmin ? " (admin)" : ""}`)
+    console.log(`Dog deleted: ${dog.name} (${dogId}) by user ${user.id}${isAdmin ? " (admin)" : ""}`)
 
     return NextResponse.json({ success: true, message: `${dog.name} has been deleted` })
   } catch (error) {

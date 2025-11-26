@@ -18,34 +18,30 @@ function IndividualPacksContent() {
   const [selectedQuantity, setSelectedQuantity] = useState<1 | 3 | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Universal Stripe price IDs (same for all recipes)
+  const SINGLE_PACK_PRICE_ID = "price_1SL20Q0WbfuHe9kA8HUhNY1T"
+  const THREE_PACK_PRICE_ID = "price_1SL24L0WbfuHe9kAWCDXHoc9"
+
   const recipes = [
     {
       id: "beef",
       name: "Beef & Quinoa Harvest",
       description: "Rich in protein with wholesome quinoa",
-      singlePackPriceId: "price_1STtdA0R4BbWwBbf9G5uIXl3",
-      threePackPriceId: "price_1STteJ0R4BbWwBbfCeqiKDkO",
     },
     {
       id: "chicken",
       name: "Chicken & Garden Veggie",
       description: "Lean protein with fresh vegetables",
-      singlePackPriceId: "price_1STtbI0R4BbWwBbf71C6jMmd",
-      threePackPriceId: "price_1STtfh0R4BbWwBbfGZC78YSL",
     },
     {
       id: "lamb",
       name: "Lamb & Pumpkin Feast",
       description: "Tender lamb with digestive-friendly pumpkin",
-      singlePackPriceId: "price_1STtaL0R4BbWwBbfXDr9f5mZ",
-      threePackPriceId: "price_1STtgF0R4BbWwBbf322yK4Nj",
     },
     {
       id: "turkey",
       name: "Turkey & Brown Rice Comfort",
       description: "Gentle on stomachs with brown rice",
-      singlePackPriceId: "price_1STtYg0R4BbWwBbf56M9CSBF",
-      threePackPriceId: "price_1STtgs0R4BbWwBbfpaXHPagF",
     },
   ]
 
@@ -75,7 +71,7 @@ function IndividualPacksContent() {
     const recipe = recipes.find(r => r.id === selectedRecipe)
     if (!recipe) return
 
-    const priceId = selectedQuantity === 1 ? recipe.singlePackPriceId : recipe.threePackPriceId
+    const priceId = selectedQuantity === 1 ? SINGLE_PACK_PRICE_ID : THREE_PACK_PRICE_ID
 
     setIsLoading(true)
 

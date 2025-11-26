@@ -100,14 +100,57 @@ export default function ShopPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [selectedDogSize, setSelectedDogSize] = useState<DogSize>("medium")
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingItem, setLoadingItem] = useState<string | null>(null)
 
-  const handleBuyIndividualPack = (recipeId: string, quantity: 1 | 3) => {
+  // Stripe price IDs for individual packs (same for all recipes)
+  const SINGLE_PACK_PRICE_ID = "price_1SL20Q0WbfuHe9kA8HUhNY1T"
+  const THREE_PACK_PRICE_ID = "price_1SL24L0WbfuHe9kAWCDXHoc9"
+
+  const handleBuyIndividualPack = async (recipeId: string, quantity: 1 | 3) => {
     if (!user) {
       router.push(`/auth/login?redirect=/shop`)
       return
     }
-    // Redirect to individual packs page with recipe pre-selected
-    router.push(`/shop/individual-packs?recipe=${recipeId}&quantity=${quantity}`)
+
+    const recipe = recipes.find(r => r.id === recipeId)
+    if (!recipe) return
+
+    const priceId = quantity === 1 ? SINGLE_PACK_PRICE_ID : THREE_PACK_PRICE_ID
+    const loadingKey = `${recipeId}-${quantity}`
+
+    setIsLoading(true)
+    setLoadingItem(loadingKey)
+
+    try {
+      const response = await fetch('/api/topper-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId,
+          productType: quantity === 1 ? "individual" : "3-packs",
+          recipeName: recipe.name,
+          isSubscription: false,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error("Error starting checkout:", error)
+      alert("Failed to start checkout. Please try again.")
+      setIsLoading(false)
+      setLoadingItem(null)
+    }
   }
 
   const handleStartTopperPlan = (topperLevel: string) => {
@@ -169,9 +212,10 @@ export default function ShopPage() {
                           size="sm"
                           className="mt-3 w-full"
                           onClick={() => handleBuyIndividualPack(recipe.id, 1)}
+                          disabled={isLoading}
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
-                          Buy Now
+                          {loadingItem === `${recipe.id}-1` ? "Loading..." : "Buy Now"}
                         </Button>
                       </div>
                       <div className="p-4 border rounded-lg text-center relative">
@@ -185,9 +229,10 @@ export default function ShopPage() {
                           size="sm"
                           className="mt-3 w-full"
                           onClick={() => handleBuyIndividualPack(recipe.id, 3)}
+                          disabled={isLoading}
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
-                          Buy Now
+                          {loadingItem === `${recipe.id}-3` ? "Loading..." : "Buy Now"}
                         </Button>
                       </div>
                     </div>

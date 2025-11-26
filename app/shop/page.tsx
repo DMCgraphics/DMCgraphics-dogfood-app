@@ -108,11 +108,6 @@ export default function ShopPage() {
   const THREE_PACK_PRICE_ID = "price_1SL24L0WbfuHe9kAWCDXHoc9"
 
   const handleBuyIndividualPack = async (recipeId: string, quantity: 1 | 3) => {
-    if (!user) {
-      router.push(`/auth/login?redirect=/shop`)
-      return
-    }
-
     const recipe = recipes.find(r => r.id === recipeId)
     if (!recipe) return
 
@@ -123,7 +118,8 @@ export default function ShopPage() {
     setLoadingItem(loadingKey)
 
     try {
-      const response = await fetch('/api/topper-checkout', {
+      // Use guest checkout API for individual packs (no login required)
+      const response = await fetch('/api/guest-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +128,7 @@ export default function ShopPage() {
           priceId,
           productType: quantity === 1 ? "individual" : "3-packs",
           recipeName: recipe.name,
-          isSubscription: false,
+          quantity,
         }),
       })
 

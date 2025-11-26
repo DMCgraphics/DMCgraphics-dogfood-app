@@ -1943,6 +1943,14 @@ function PlanBuilderContent() {
                     onClick={() => {
                       setPlanType("full")
                       setTopperLevel(null)
+                      // Update all dogs' plan type
+                      setAllDogsData(prevData =>
+                        prevData.map(dog => ({
+                          ...dog,
+                          planType: "full",
+                          topperLevel: null
+                        }))
+                      )
                     }}
                   >
                     <div className="flex items-start gap-3">
@@ -1973,7 +1981,16 @@ function PlanBuilderContent() {
                     }`}
                     onClick={() => {
                       setPlanType("topper")
+                      const level = topperLevel || "25"
                       if (!topperLevel) setTopperLevel("25")
+                      // Update all dogs' plan type
+                      setAllDogsData(prevData =>
+                        prevData.map(dog => ({
+                          ...dog,
+                          planType: "topper",
+                          topperLevel: level
+                        }))
+                      )
                     }}
                   >
                     <div className="flex items-start gap-3">
@@ -2015,7 +2032,16 @@ function PlanBuilderContent() {
                               ? "bg-primary text-primary-foreground hover:bg-primary/90"
                               : "bg-transparent"
                           }`}
-                          onClick={() => setTopperLevel(option.level)}
+                          onClick={() => {
+                            setTopperLevel(option.level)
+                            // Update all dogs' topper level
+                            setAllDogsData(prevData =>
+                              prevData.map(dog => ({
+                                ...dog,
+                                topperLevel: option.level
+                              }))
+                            )
+                          }}
                         >
                           <span className="text-lg font-bold">{option.label}</span>
                           <span className="text-xs opacity-70">{option.desc}</span>

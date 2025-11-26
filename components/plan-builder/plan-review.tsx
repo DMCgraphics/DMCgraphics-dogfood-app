@@ -20,24 +20,24 @@ import { PlanPricingProvider, usePlanPricing } from "@/lib/plan-pricing-context"
 // The actual price IDs are handled in plan-builder/page.tsx based on test/production mode
 const topperPrices: Record<string, Record<string, { price: number }>> = {
   small: {
-    "25": { price: 6.50 },
-    "50": { price: 13.00 },
-    "75": { price: 19.50 },
+    "25": { price: 15.00 },
+    "50": { price: 29.00 },
+    "75": { price: 44.00 },
   },
   medium: {
-    "25": { price: 10.50 },
-    "50": { price: 21.00 },
-    "75": { price: 31.50 },
+    "25": { price: 24.00 },
+    "50": { price: 47.00 },
+    "75": { price: 71.00 },
   },
   large: {
-    "25": { price: 15.50 },
-    "50": { price: 31.00 },
-    "75": { price: 46.50 },
+    "25": { price: 35.00 },
+    "50": { price: 69.00 },
+    "75": { price: 104.00 },
   },
   xl: {
-    "25": { price: 19.50 },
-    "50": { price: 39.00 },
-    "75": { price: 58.50 },
+    "25": { price: 44.00 },
+    "50": { price: 87.00 },
+    "75": { price: 131.00 },
   },
 }
 

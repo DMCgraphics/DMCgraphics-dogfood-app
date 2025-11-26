@@ -20,6 +20,7 @@ type DogSize = "small" | "medium" | "large" | "xl"
 
 // Price IDs by environment and size
 // Test/Sandbox Price IDs (sk_test_...)
+// NOTE: Test price IDs need to be updated in Stripe test mode if using test environment
 const testPriceIds: Record<DogSize, Record<TopperOption, string>> = {
   small: {
     "25": "price_1SWJxb0R4BbWwBbfVA5IBfGv",
@@ -46,13 +47,13 @@ const testPriceIds: Record<DogSize, Record<TopperOption, string>> = {
 // Live/Production Price IDs (sk_live_...)
 const livePriceIds: Record<DogSize, Record<TopperOption, string>> = {
   small: {
-    "25": "price_1SWJzN0WbfuHe9kAx4SXb84S",
-    "50": "price_1SWJzN0WbfuHe9kAsXdakLI3",
+    "25": "price_1SXjwS0WbfuHe9kA2iuWo1eZ",
+    "50": "price_1SXjx50WbfuHe9kAr2JlBEjX",
     "75": "price_1SWJzN0WbfuHe9kAONAtGz3X",
   },
   medium: {
-    "25": "price_1SWJzO0WbfuHe9kASj0g84Wr",
-    "50": "price_1SWJzO0WbfuHe9kA5noP4YrR",
+    "25": "price_1SXjyG0WbfuHe9kAiU4BTyhw",
+    "50": "price_1SXjz30WbfuHe9kAINB2sGgI",
     "75": "price_1SWJzP0WbfuHe9kAeoHNdmGS",
   },
   large: {
@@ -69,10 +70,10 @@ const livePriceIds: Record<DogSize, Record<TopperOption, string>> = {
 
 // Prices by size (bi-weekly)
 const pricesBySize: Record<DogSize, Record<TopperOption, number>> = {
-  small: { "25": 6.50, "50": 13.00, "75": 19.50 },
-  medium: { "25": 10.50, "50": 21.00, "75": 31.50 },
-  large: { "25": 15.50, "50": 31.00, "75": 46.50 },
-  xl: { "25": 19.50, "50": 39.00, "75": 58.50 },
+  small: { "25": 15.00, "50": 29.00, "75": 44.00 },
+  medium: { "25": 24.00, "50": 47.00, "75": 71.00 },
+  large: { "25": 35.00, "50": 69.00, "75": 104.00 },
+  xl: { "25": 44.00, "50": 87.00, "75": 131.00 },
 }
 
 // Determine dog size from weight

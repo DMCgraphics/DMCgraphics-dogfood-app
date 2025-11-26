@@ -59,50 +59,51 @@ function isTestMode(): boolean {
 }
 
 // TEST MODE topper pricing by dog size (prices are bi-weekly)
+// NOTE: Test price IDs need to be updated if using test mode
 const topperPricesTest: Record<string, Record<string, { price: number; priceId: string }>> = {
   small: {
-    "25": { price: 6.50, priceId: "price_1SWJxb0R4BbWwBbfVA5IBfGv" },
-    "50": { price: 13.00, priceId: "price_1SWJxb0R4BbWwBbfAuVzB9gn" },
-    "75": { price: 19.50, priceId: "price_1SWJxb0R4BbWwBbfukkyjoMG" },
+    "25": { price: 15.00, priceId: "price_1SWJxb0R4BbWwBbfVA5IBfGv" },
+    "50": { price: 29.00, priceId: "price_1SWJxb0R4BbWwBbfAuVzB9gn" },
+    "75": { price: 44.00, priceId: "price_1SWJxb0R4BbWwBbfukkyjoMG" },
   },
   medium: {
-    "25": { price: 10.50, priceId: "price_1SWJxc0R4BbWwBbfpXUvIOPp" },
-    "50": { price: 21.00, priceId: "price_1SWJxc0R4BbWwBbfDFVH0o4p" },
-    "75": { price: 31.50, priceId: "price_1SWJxd0R4BbWwBbfSQAsNJHW" },
+    "25": { price: 24.00, priceId: "price_1SWJxc0R4BbWwBbfpXUvIOPp" },
+    "50": { price: 47.00, priceId: "price_1SWJxc0R4BbWwBbfDFVH0o4p" },
+    "75": { price: 71.00, priceId: "price_1SWJxd0R4BbWwBbfSQAsNJHW" },
   },
   large: {
-    "25": { price: 15.50, priceId: "price_1SWJxd0R4BbWwBbfeCuwcPy9" },
-    "50": { price: 31.00, priceId: "price_1SWJxd0R4BbWwBbfjhnoOngK" },
-    "75": { price: 46.50, priceId: "price_1SWJxe0R4BbWwBbfhuaK5zGR" },
+    "25": { price: 35.00, priceId: "price_1SWJxd0R4BbWwBbfeCuwcPy9" },
+    "50": { price: 69.00, priceId: "price_1SWJxd0R4BbWwBbfjhnoOngK" },
+    "75": { price: 104.00, priceId: "price_1SWJxe0R4BbWwBbfhuaK5zGR" },
   },
   xl: {
-    "25": { price: 19.50, priceId: "price_1SWJxe0R4BbWwBbfdR559REx" },
-    "50": { price: 39.00, priceId: "price_1SWJxe0R4BbWwBbf1st8bqEP" },
-    "75": { price: 58.50, priceId: "price_1SWJxf0R4BbWwBbfACrG4vhJ" },
+    "25": { price: 44.00, priceId: "price_1SWJxe0R4BbWwBbfdR559REx" },
+    "50": { price: 87.00, priceId: "price_1SWJxe0R4BbWwBbf1st8bqEP" },
+    "75": { price: 131.00, priceId: "price_1SWJxf0R4BbWwBbfACrG4vhJ" },
   },
 }
 
 // PRODUCTION topper pricing by dog size (prices are bi-weekly)
 const topperPricesProduction: Record<string, Record<string, { price: number; priceId: string }>> = {
   small: {
-    "25": { price: 6.50, priceId: "price_1SWJzN0WbfuHe9kAx4SXb84S" },
-    "50": { price: 13.00, priceId: "price_1SWJzN0WbfuHe9kAsXdakLI3" },
-    "75": { price: 19.50, priceId: "price_1SWJzN0WbfuHe9kAONAtGz3X" },
+    "25": { price: 15.00, priceId: "price_1SXjwS0WbfuHe9kA2iuWo1eZ" },
+    "50": { price: 29.00, priceId: "price_1SXjx50WbfuHe9kAr2JlBEjX" },
+    "75": { price: 44.00, priceId: "price_1SWJzN0WbfuHe9kAONAtGz3X" },
   },
   medium: {
-    "25": { price: 10.50, priceId: "price_1SWJzO0WbfuHe9kASj0g84Wr" },
-    "50": { price: 21.00, priceId: "price_1SWJzO0WbfuHe9kA5noP4YrR" },
-    "75": { price: 31.50, priceId: "price_1SWJzP0WbfuHe9kAeoHNdmGS" },
+    "25": { price: 24.00, priceId: "price_1SXjyG0WbfuHe9kAiU4BTyhw" },
+    "50": { price: 47.00, priceId: "price_1SXjz30WbfuHe9kAINB2sGgI" },
+    "75": { price: 71.00, priceId: "price_1SWJzP0WbfuHe9kAeoHNdmGS" },
   },
   large: {
-    "25": { price: 15.50, priceId: "price_1SWJzP0WbfuHe9kAxg6CeyiM" },
-    "50": { price: 31.00, priceId: "price_1SWJzP0WbfuHe9kAjUYsaqBC" },
-    "75": { price: 46.50, priceId: "price_1SWJzQ0WbfuHe9kAQ3sylBEl" },
+    "25": { price: 35.00, priceId: "price_1SWJzP0WbfuHe9kAxg6CeyiM" },
+    "50": { price: 69.00, priceId: "price_1SWJzP0WbfuHe9kAjUYsaqBC" },
+    "75": { price: 104.00, priceId: "price_1SWJzQ0WbfuHe9kAQ3sylBEl" },
   },
   xl: {
-    "25": { price: 19.50, priceId: "price_1SWJzQ0WbfuHe9kA697GdnPz" },
-    "50": { price: 39.00, priceId: "price_1SWJzQ0WbfuHe9kA38OztrDK" },
-    "75": { price: 58.50, priceId: "price_1SWJzR0WbfuHe9kASGjhdWlu" },
+    "25": { price: 44.00, priceId: "price_1SWJzQ0WbfuHe9kA697GdnPz" },
+    "50": { price: 87.00, priceId: "price_1SWJzQ0WbfuHe9kA38OztrDK" },
+    "75": { price: 131.00, priceId: "price_1SWJzR0WbfuHe9kASGjhdWlu" },
   },
 }
 

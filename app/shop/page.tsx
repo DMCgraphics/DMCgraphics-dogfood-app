@@ -88,10 +88,10 @@ const topperPlans = [
 
 // Price table by dog size
 const topperPrices: Record<string, Record<string, number>> = {
-  small: { "25": 6.50, "50": 13.00, "75": 19.50 },
-  medium: { "25": 10.50, "50": 21.00, "75": 31.50 },
-  large: { "25": 15.50, "50": 31.00, "75": 46.50 },
-  xl: { "25": 19.50, "50": 39.00, "75": 58.50 },
+  small: { "25": 15.00, "50": 29.00, "75": 44.00 },
+  medium: { "25": 24.00, "50": 47.00, "75": 71.00 },
+  large: { "25": 35.00, "50": 69.00, "75": 104.00 },
+  xl: { "25": 44.00, "50": 87.00, "75": 131.00 },
 }
 
 type DogSize = "small" | "medium" | "large" | "xl"

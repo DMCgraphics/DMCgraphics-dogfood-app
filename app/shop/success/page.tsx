@@ -1,14 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Package, ArrowRight, Home } from "lucide-react"
+import { CheckCircle, Package, ArrowRight, Home, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 
-export default function ShopSuccessPage() {
+function ShopSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
   const [isLoading, setIsLoading] = useState(true)
@@ -137,5 +137,27 @@ export default function ShopSuccessPage() {
         )}
       </div>
     </div>
+  )
+}
+
+function ShopSuccessLoading() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="container py-16 flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="text-lg">Loading...</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function ShopSuccessPage() {
+  return (
+    <Suspense fallback={<ShopSuccessLoading />}>
+      <ShopSuccessContent />
+    </Suspense>
   )
 }

@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { SignupForm } from "@/components/auth/signup-form"
-import { ApiStatus } from "@/components/auth/api-status"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -18,7 +17,6 @@ export default function SignupPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-16">
-        <ApiStatus />
         <SignupForm onSuccess={handleSuccess} onSwitchToLogin={() => router.push("/login")} />
       </main>
       <Footer />

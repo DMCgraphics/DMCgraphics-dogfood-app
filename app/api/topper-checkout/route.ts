@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase()
+    const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -17,7 +17,19 @@ export async function POST(req: Request) {
       )
     }
 
-    const { priceId, dogId, dogName, dogSize, productType, recipeName, isSubscription } = await req.json()
+    const { priceId, dogId, dogName, dogSize, productType, recipes, isSubscription, deliveryZipcode } = await req.json()
+
+    // Debug logging
+    console.log("[TOPPER CHECKOUT] Creating checkout session for:", {
+      priceId,
+      dogId,
+      dogName,
+      dogSize,
+      productType,
+      recipes,
+      isSubscription,
+      userEmail: user.email
+    })
 
     if (!priceId) {
       return NextResponse.json(
@@ -42,7 +54,7 @@ export async function POST(req: Request) {
       },
       // Also collect billing address
       billing_address_collection: 'required',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?checkout=success`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/order/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?checkout=cancelled`,
       metadata: {
         user_id: user.id,
@@ -50,8 +62,20 @@ export async function POST(req: Request) {
         dog_name: dogName || '',
         dog_size: dogSize || '',
         product_type: productType,
-        recipe_name: recipeName || '',
+        recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
       },
+      // For one-time payments, we need to pass metadata to the payment intent
+      payment_intent_data: !isSubscription ? {
+        metadata: {
+          user_id: user.id,
+          dog_id: dogId || '',
+          dog_name: dogName || '',
+          dog_size: dogSize || '',
+          product_type: productType,
+          recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
+          delivery_zipcode: deliveryZipcode || '',
+        },
+      } : undefined,
       subscription_data: isSubscription ? {
         metadata: {
           user_id: user.id,
@@ -59,8 +83,16 @@ export async function POST(req: Request) {
           dog_name: dogName || '',
           dog_size: dogSize || '',
           product_type: productType,
+          recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
         },
       } : undefined,
+    })
+
+    console.log("[TOPPER CHECKOUT] Checkout session created:", {
+      sessionId: session.id,
+      url: session.url,
+      mode: session.mode,
+      amount_total: session.amount_total
     })
 
     return NextResponse.json({

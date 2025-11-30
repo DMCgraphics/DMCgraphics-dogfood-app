@@ -4,44 +4,33 @@ import { createServerSupabase } from "@/lib/supabase/server"
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  const next = requestUrl.searchParams.get("next") ?? "/"
+  const next = requestUrl.searchParams.get("next") ?? "/dashboard"
   const type = requestUrl.searchParams.get("type")
 
   console.log("Auth callback received:", { code: code?.substring(0, 8) + "...", type, next })
 
   if (code) {
-    const supabase = createServerSupabase()
-    let data, error, isRecovery = false
+    const supabase = await createServerSupabase()
 
-    // Try password recovery first (verifyOtp doesn't require PKCE code_verifier)
-    const recoveryResult = await supabase.auth.verifyOtp({
-      type: "recovery",
-      token_hash: code,
-    })
+    // Exchange code for session (works for signup, login, and recovery)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!recoveryResult.error) {
-      console.log("Password recovery verified successfully")
-      data = recoveryResult.data
-      isRecovery = true
-    } else if (recoveryResult.error.message?.includes("otp_expired") ||
-               recoveryResult.error.message?.includes("invalid")) {
-      // If recovery fails, try regular code exchange (for signup/login)
-      console.log("Not a recovery code, trying regular code exchange")
-      const codeResult = await supabase.auth.exchangeCodeForSession(code)
-      data = codeResult.data
-      error = codeResult.error
-    } else {
-      // Some other error occurred
-      error = recoveryResult.error
-    }
+    if (!error && data?.session) {
+      console.log("Auth successful, user confirmed:", data.user?.email)
 
-    if (!error && data) {
-      console.log("Auth successful, redirecting. IsRecovery:", isRecovery)
-
-      if (isRecovery || type === "recovery" || next.includes("reset-password")) {
+      // Check if this is a password recovery
+      if (type === "recovery" || next.includes("reset-password")) {
         return NextResponse.redirect(`${requestUrl.origin}/auth/reset-password`)
       }
-      return NextResponse.redirect(`${requestUrl.origin}${next}`)
+
+      // For email confirmations after signup, go to dashboard with success message
+      if (type === "signup" || type === "email") {
+        return NextResponse.redirect(`${requestUrl.origin}/dashboard?verified=true`)
+      }
+
+      // Default: go to next or dashboard
+      const nextUrl = next === "/dashboard" ? `${requestUrl.origin}/dashboard?verified=true` : `${requestUrl.origin}${next}`
+      return NextResponse.redirect(nextUrl)
     }
 
     console.error("Auth failed:", error)

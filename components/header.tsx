@@ -13,6 +13,7 @@ import { UserMenu } from "@/components/nav/user-menu"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { useRouter } from "next/navigation"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
+import { CartDrawer } from "@/components/cart/cart-drawer"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -154,6 +155,7 @@ export function Header() {
           </nav>
 
           <div className="flex items-center space-x-4">
+            <CartDrawer />
             <ThemeToggle />
 
             {isAuthenticated ? (

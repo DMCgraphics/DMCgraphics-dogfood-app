@@ -104,14 +104,23 @@ export default function ShopPage() {
   const [loadingItem, setLoadingItem] = useState<string | null>(null)
 
   // Stripe price IDs for individual packs (same for all recipes)
-  const SINGLE_PACK_PRICE_ID = "price_1SL20Q0WbfuHe9kA8HUhNY1T"
-  const THREE_PACK_PRICE_ID = "price_1SL24L0WbfuHe9kAWCDXHoc9"
+  // Test mode: price_1STtdA0R4BbWwBbf9G5uIXl3 (single), price_1STteJ0R4BbWwBbfCeqiKDkO (3-pack)
+  // Prod mode: price_1SL20Q0WbfuHe9kA8HUhNY1T (single), price_1SL24L0WbfuHe9kAWCDXHoc9 (3-pack)
+  const SINGLE_PACK_PRICE_ID = "price_1STtdA0R4BbWwBbf9G5uIXl3"
+  const THREE_PACK_PRICE_ID = "price_1STteJ0R4BbWwBbfCeqiKDkO"
 
   const handleBuyIndividualPack = async (recipeId: string, quantity: 1 | 3) => {
     const recipe = recipes.find(r => r.id === recipeId)
     if (!recipe) return
 
-    const priceId = quantity === 1 ? SINGLE_PACK_PRICE_ID : THREE_PACK_PRICE_ID
+    // For 3-packs, redirect to individual-packs page to select 3 recipes
+    if (quantity === 3) {
+      router.push('/shop/individual-packs')
+      return
+    }
+
+    // For single packs, proceed with direct checkout
+    const priceId = SINGLE_PACK_PRICE_ID
     const loadingKey = `${recipeId}-${quantity}`
 
     setIsLoading(true)
@@ -126,7 +135,7 @@ export default function ShopPage() {
         },
         body: JSON.stringify({
           priceId,
-          productType: quantity === 1 ? "individual" : "3-packs",
+          productType: "individual",
           recipeName: recipe.name,
           quantity,
         }),
@@ -191,53 +200,76 @@ export default function ShopPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {recipes.map((recipe) => (
-                <Card key={recipe.id} className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle>{recipe.name}</CardTitle>
-                    <CardDescription>{recipe.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-4 border rounded-lg text-center">
-                        <div className="text-2xl font-bold">${recipe.singlePrice.toFixed(2)}</div>
-                        <div className="text-sm text-muted-foreground">Single Pack</div>
-                        <div className="text-xs text-muted-foreground">8 oz</div>
-                        <Button
-                          size="sm"
-                          className="mt-3 w-full"
-                          onClick={() => handleBuyIndividualPack(recipe.id, 1)}
-                          disabled={isLoading}
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          {loadingItem === `${recipe.id}-1` ? "Loading..." : "Buy Now"}
-                        </Button>
-                      </div>
-                      <div className="p-4 border rounded-lg text-center relative">
-                        <Badge className="absolute -top-2 -right-2 bg-green-100 text-green-800">
-                          Save $1
-                        </Badge>
-                        <div className="text-2xl font-bold">${recipe.threePackPrice.toFixed(2)}</div>
-                        <div className="text-sm text-muted-foreground">3 Pack Bundle</div>
-                        <div className="text-xs text-muted-foreground">$6.67 each</div>
-                        <Button
-                          size="sm"
-                          className="mt-3 w-full"
-                          onClick={() => handleBuyIndividualPack(recipe.id, 3)}
-                          disabled={isLoading}
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          {loadingItem === `${recipe.id}-3` ? "Loading..." : "Buy Now"}
-                        </Button>
-                      </div>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Single Pack Card */}
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/shop/individual-packs')}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-2xl">Single Pack</CardTitle>
+                    <Badge className="bg-blue-100 text-blue-800">Try It</Badge>
+                  </div>
+                  <CardDescription>Try one pack to see if your dog loves it</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="text-4xl font-bold">$7.00</div>
+                    <div className="text-sm text-muted-foreground">per pack</div>
+                  </div>
+
+                  <div className="text-sm space-y-2">
+                    <p className="font-medium">What's included:</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>✓ 1 fresh food pack (8 oz)</li>
+                      <li>✓ Choice of 4 premium recipes</li>
+                      <li>✓ No subscription required</li>
+                      <li>✓ Free local delivery</li>
+                    </ul>
+                  </div>
+
+                  <Button className="w-full" size="lg">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Choose Your Recipe
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* 3 Pack Bundle Card */}
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-primary/50" onClick={() => router.push('/shop/individual-packs')}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-2xl">3 Pack Bundle</CardTitle>
+                    <div className="flex gap-2">
+                      <Badge className="bg-green-100 text-green-800">Best Value</Badge>
+                      <Badge variant="outline" className="text-green-700 border-green-300">Save $1</Badge>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                  <CardDescription>Perfect sample size - mix and match 3 recipes</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="text-4xl font-bold">$20.00</div>
+                    <div className="text-sm text-muted-foreground">$6.67 per pack</div>
+                  </div>
+
+                  <div className="text-sm space-y-2">
+                    <p className="font-medium">What's included:</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>✓ 3 fresh food packs (8 oz each)</li>
+                      <li>✓ Choose 3 different recipes</li>
+                      <li>✓ No subscription required</li>
+                      <li>✓ Free local delivery</li>
+                    </ul>
+                  </div>
+
+                  <Button className="w-full" size="lg">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Choose Your 3 Recipes
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
-            <Card className="bg-muted/50">
+            <Card className="bg-muted/50 max-w-4xl mx-auto">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <Package className="h-5 w-5 text-primary mt-0.5" />

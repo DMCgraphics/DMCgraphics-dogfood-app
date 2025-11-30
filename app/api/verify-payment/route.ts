@@ -58,12 +58,15 @@ export async function POST(req: Request) {
       
       // Get plan ID from session metadata
       const planId = session.metadata?.plan_id || session.client_reference_id
-      
+      const isTopperSubscription = !planId && session.metadata?.dog_id && session.metadata?.product_type
+
       console.log("[v0] Session metadata:", session.metadata)
       console.log("[v0] Session client_reference_id:", session.client_reference_id)
       console.log("[v0] Resolved plan ID:", planId)
-      
+      console.log("[v0] Is topper subscription:", isTopperSubscription)
+
       if (planId) {
+        // Handle plan-based subscription
         console.log("[v0] Plan ID from session:", planId)
 
         // First, check if the plan exists and belongs to the current user
@@ -116,7 +119,7 @@ export async function POST(req: Request) {
 
         if (!existingSubscription) {
           console.log("[v0] Subscription not found in database, creating it...")
-          
+
           // Create subscription record
           const subscriptionData = {
             user_id: userId,
@@ -134,8 +137,8 @@ export async function POST(req: Request) {
             canceled_at: stripeSubscription.canceled_at
               ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
               : null,
-            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string' 
-              ? stripeSubscription.default_payment_method 
+            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string'
+              ? stripeSubscription.default_payment_method
               : stripeSubscription.default_payment_method?.id || null,
             metadata: {
               checkout_session_id: session.id,
@@ -160,7 +163,7 @@ export async function POST(req: Request) {
           }
         } else {
           console.log("[v0] Subscription already exists in database, updating with latest Stripe data...")
-          
+
           // Update existing subscription with latest Stripe data
           const updateData = {
             status: stripeSubscription.status,
@@ -173,8 +176,8 @@ export async function POST(req: Request) {
             canceled_at: stripeSubscription.canceled_at
               ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
               : null,
-            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string' 
-              ? stripeSubscription.default_payment_method 
+            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string'
+              ? stripeSubscription.default_payment_method
               : stripeSubscription.default_payment_method?.id || null,
             updated_at: new Date().toISOString(),
           }
@@ -212,8 +215,99 @@ export async function POST(req: Request) {
         } else {
           console.log("[v0] Plan status updated to active")
         }
+      } else if (isTopperSubscription) {
+        // Handle topper subscription (no plan_id, just dog_id in metadata)
+        console.log("[v0] Topper subscription detected")
+        console.log("[v0] Topper metadata:", {
+          dog_id: session.metadata?.dog_id,
+          dog_name: session.metadata?.dogName,
+          dog_size: session.metadata?.dogSize,
+          product_type: session.metadata?.product_type
+        })
+
+        // Check if subscription already exists
+        const { data: existingSubscription } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("stripe_subscription_id", subscriptionId)
+          .single()
+
+        // Build metadata for topper subscription
+        const topperMetadata: any = {
+          checkout_session_id: session.id,
+          stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+        }
+
+        // Add topper-specific metadata
+        if (session.metadata?.dog_id) topperMetadata.dog_id = session.metadata.dog_id
+        if (session.metadata?.dogName) topperMetadata.dog_name = session.metadata.dogName
+        if (session.metadata?.dogSize) topperMetadata.dog_size = session.metadata.dogSize
+        if (session.metadata?.product_type) topperMetadata.product_type = session.metadata.product_type
+        if (session.metadata?.recipes) topperMetadata.recipes = session.metadata.recipes
+
+        if (!existingSubscription) {
+          console.log("[v0] Topper subscription not found in database, creating it...")
+
+          // Create topper subscription record (plan_id = NULL)
+          const subscriptionData = {
+            user_id: userId,
+            plan_id: null, // NULL for topper subscriptions
+            stripe_subscription_id: subscriptionId,
+            stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+            stripe_price_id: stripeSubscription.items.data[0]?.price.id || null,
+            status: stripeSubscription.status,
+            current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+            currency: stripeSubscription.currency,
+            interval: stripeSubscription.items.data[0]?.price.recurring?.interval || "week",
+            interval_count: stripeSubscription.items.data[0]?.price.recurring?.interval_count || 2,
+            cancel_at_period_end: stripeSubscription.cancel_at_period_end || false,
+            canceled_at: stripeSubscription.canceled_at
+              ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
+              : null,
+            default_payment_method_id: typeof stripeSubscription.default_payment_method === 'string'
+              ? stripeSubscription.default_payment_method
+              : stripeSubscription.default_payment_method?.id || null,
+            metadata: topperMetadata,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+
+          console.log("[v0] Creating topper subscription with data:", JSON.stringify(subscriptionData, null, 2))
+
+          const { error: subError } = await supabase
+            .from("subscriptions")
+            .insert(subscriptionData)
+
+          if (subError) {
+            console.error("[v0] Failed to create topper subscription:", subError)
+            console.error("[v0] Topper subscription data that failed:", JSON.stringify(subscriptionData, null, 2))
+          } else {
+            console.log("[v0] Topper subscription created successfully in verify-payment endpoint")
+          }
+        } else {
+          console.log("[v0] Topper subscription already exists in database, updating...")
+
+          const updateData = {
+            status: stripeSubscription.status,
+            current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+
+          const { error: updateError } = await supabase
+            .from("subscriptions")
+            .update(updateData)
+            .eq("stripe_subscription_id", subscriptionId)
+
+          if (updateError) {
+            console.error("[v0] Failed to update topper subscription:", updateError)
+          } else {
+            console.log("[v0] Topper subscription updated successfully")
+          }
+        }
       } else {
-        console.warn("[v0] No plan ID found in session metadata")
+        console.warn("[v0] No plan ID or topper metadata found in session")
       }
     }
 

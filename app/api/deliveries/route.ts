@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 // GET - Fetch deliveries for the current user
 export async function GET(req: Request) {
   try {
-    const supabase = createServerSupabase()
+    const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
 // POST - Create a new delivery (admin/system use)
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase()
+    const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

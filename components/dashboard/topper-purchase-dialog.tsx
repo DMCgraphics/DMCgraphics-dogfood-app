@@ -154,7 +154,7 @@ export function TopperPurchaseDialog({ dogId, dogName, dogWeight, dogWeightUnit,
           priceId: selectedProduct.stripePriceId,
           dogId,
           dogName,
-          dogSize: getDogSize(dogWeight),
+          dogSize: dogSize, // Use the already calculated dogSize (line 100)
           productType: selectedOption,
           isSubscription: true, // All topper plans are subscriptions
         }),

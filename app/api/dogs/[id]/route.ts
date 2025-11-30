@@ -48,7 +48,7 @@ export async function DELETE(
     // Use user's own client if they own the dog, admin client only for admins deleting others' dogs
     const client = isOwner ? supabase : supabaseAdmin
 
-    // Get all plan IDs for this dog first (needed to delete orders/subscriptions)
+    // Get all plan IDs for this dog first (needed to find subscriptions)
     const { data: dogPlans } = await client
       .from("plans")
       .select("id")
@@ -56,14 +56,9 @@ export async function DELETE(
 
     const planIds = dogPlans?.map(p => p.id) || []
 
-    // Delete related data in correct order (respecting foreign key constraints)
-    // 1. Delete logs (no foreign key dependencies)
-    await client.from("weight_logs").delete().eq("dog_id", dogId)
-    await client.from("stool_logs").delete().eq("dog_id", dogId)
+    // 1. Cancel Stripe subscriptions BEFORE deleting dog (subscriptions will cascade-delete)
 
-    // 2. Cancel Stripe subscriptions and delete orders/subscriptions from database
-
-    // First, find plan-based subscriptions
+    // Find plan-based subscriptions
     let planSubscriptions: { id: string; stripe_subscription_id: string | null; status: string | null }[] = []
     if (planIds.length > 0) {
       const { data } = await client
@@ -102,27 +97,22 @@ export async function DELETE(
       }
     }
 
-    // Delete subscriptions from database
-    if (planIds.length > 0) {
-      await client.from("orders").delete().in("plan_id", planIds)
-      await client.from("subscriptions").delete().in("plan_id", planIds)
-    }
+    // 2. Delete the dog
+    // This will CASCADE delete:
+    //   - plans (via plans.dog_id FK CASCADE)
+    //   - plan_items (via plan_items.plan_id FK CASCADE from plans)
+    //   - orders (via orders.plan_id FK CASCADE from plans)
+    //   - subscriptions (via subscriptions.plan_id FK CASCADE from plans)
+    //   - weight_logs (via weight_logs.dog_id FK CASCADE)
+    //   - stool_logs (via stool_logs.dog_id FK CASCADE)
+    //   - plan_dogs (via plan_dogs.dog_id FK CASCADE)
 
-    // Delete topper subscriptions (by their IDs)
+    // Also manually delete topper subscriptions (they reference dog_id in metadata, not FK)
     if (topperSubscriptions && topperSubscriptions.length > 0) {
       const topperSubIds = topperSubscriptions.map(s => s.id)
       await client.from("subscriptions").delete().in("id", topperSubIds)
       console.log(`Deleted ${topperSubIds.length} topper subscription(s) from database`)
     }
-
-    // 3. Delete plan-related data
-    await client.from("plan_items").delete().eq("dog_id", dogId)
-    await client.from("plan_dogs").delete().eq("dog_id", dogId)
-
-    // 4. Now delete plans
-    await client.from("plans").delete().eq("dog_id", dogId)
-
-    // Now delete the dog
     const { error: deleteError } = await client
       .from("dogs")
       .delete()

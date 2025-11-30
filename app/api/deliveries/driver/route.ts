@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 // GET - Fetch all deliveries for drivers
 export async function GET(req: Request) {
   try {
-    const supabase = createServerSupabase()
+    const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -50,11 +50,6 @@ export async function GET(req: Request) {
             size_g,
             recipes (name, slug)
           )
-        ),
-        profiles!deliveries_user_id_fkey (
-          full_name,
-          email,
-          phone
         )
       `)
       .order("scheduled_date", { ascending: true })

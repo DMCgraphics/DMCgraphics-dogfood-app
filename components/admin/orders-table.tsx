@@ -20,6 +20,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     breed: "all",
     subscriptionStatus: "all",
     recipe: "all",
+    orderType: "all",
     dateFrom: "",
     dateTo: ""
   })
@@ -47,8 +48,21 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   // Filter orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
-      // Zipcode filter
-      if (filters.zipcode && !order.delivery_zipcode?.includes(filters.zipcode)) {
+      // Order type filter
+      if (filters.orderType !== "all") {
+        if (filters.orderType === "plan" && order.order_type !== "plan") {
+          return false
+        }
+        if (filters.orderType === "topper" && order.order_type !== "topper") {
+          return false
+        }
+        if (filters.orderType === "individual-pack" && order.order_type !== "individual-pack") {
+          return false
+        }
+      }
+
+      // Zipcode filter (only applies to plans with delivery_zipcode)
+      if (filters.zipcode && order.delivery_zipcode && !order.delivery_zipcode.includes(filters.zipcode)) {
         return false
       }
 
@@ -68,7 +82,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         }
       }
 
-      // Recipe filter
+      // Recipe filter (only applies to plans)
       if (filters.recipe !== "all") {
         const hasRecipe = order.plan_items?.some((item: any) =>
           item.recipes?.name === filters.recipe
@@ -114,6 +128,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       breed: "all",
       subscriptionStatus: "all",
       recipe: "all",
+      orderType: "all",
       dateFrom: "",
       dateTo: ""
     })
@@ -167,6 +182,21 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                   <SelectItem value="paused">Paused</SelectItem>
                   <SelectItem value="canceled">Canceled</SelectItem>
                   <SelectItem value="none">No subscription</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="orderType">Order Type</Label>
+              <Select value={filters.orderType} onValueChange={(value) => handleFilterChange("orderType", value)}>
+                <SelectTrigger id="orderType">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All types</SelectItem>
+                  <SelectItem value="plan">Full Meal Plans</SelectItem>
+                  <SelectItem value="topper">Topper Subscriptions</SelectItem>
+                  <SelectItem value="individual-pack">Individual/3-Pack Purchases</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -255,6 +285,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           const dog = order.dogs
           const profile = order.profiles
           const planItems = order.plan_items || []
+          const isTopper = order.order_type === "topper"
+          const isIndividualPack = order.order_type === "individual-pack"
 
           return (
             <Card key={order.id}>
@@ -262,27 +294,67 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      Order for {dog?.name || "Unknown Dog"}
+                      {isIndividualPack
+                        ? dog?.name
+                          ? `${order.product_type === '3-packs' ? '3-Pack' : 'Individual Pack'} Purchase for ${dog.name}`
+                          : `${order.product_type === '3-packs' ? '3-Pack' : 'Individual Pack'} Purchase`
+                        : isTopper
+                          ? `Topper Subscription for ${dog?.name || "Unknown Dog"}`
+                          : `Full Meal Plan for ${dog?.name || "Unknown Dog"}`}
                       <Badge
                         className={
                           order.status === "active"
                             ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
+                            : order.status === "paused"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : order.status === "paid"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
                         }
                       >
                         {order.status}
                       </Badge>
+                      {isTopper && (
+                        <Badge className="bg-purple-100 text-purple-800">
+                          {order.topper_level}% Topper
+                        </Badge>
+                      )}
+                      {isIndividualPack && (
+                        <Badge className="bg-blue-100 text-blue-800">
+                          One-Time Purchase
+                        </Badge>
+                      )}
                     </CardTitle>
                     <CardDescription>
-                      Customer: {profile?.full_name || "Unknown"} • Created{" "}
+                      Customer: {profile?.full_name || "Unknown"}
+                      {profile?.email && ` (${profile.email})`}
+                      {!profile?.email && order.user_email && ` (${order.user_email})`}
+                      {" • Created "}
                       {new Date(order.created_at).toLocaleDateString()}
                     </CardDescription>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">
-                      ${((order.total_cents || 0) / 100).toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-600">per week</div>
+                    {!isTopper && !isIndividualPack && (
+                      <>
+                        <div className="text-2xl font-bold">
+                          ${((order.total_cents || 0) / 100).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600">per week</div>
+                      </>
+                    )}
+                    {isTopper && (
+                      <Badge className="bg-purple-50 text-purple-700 text-sm">
+                        Bi-weekly Subscription
+                      </Badge>
+                    )}
+                    {isIndividualPack && (
+                      <>
+                        <div className="text-2xl font-bold">
+                          ${((order.total_cents || 0) / 100).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600">one-time</div>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -290,26 +362,45 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 <div className="space-y-4">
                   {/* Order Details */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
-                        <Package className="h-3 w-3" />
-                        Plan Items
+                    {!isTopper && (
+                      <div>
+                        <div className="text-sm text-gray-600 flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          Plan Items
+                        </div>
+                        <div className="text-lg font-bold">{planItems.length}</div>
                       </div>
-                      <div className="text-lg font-bold">{planItems.length}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Delivery ZIP
+                    )}
+                    {isTopper && (
+                      <div>
+                        <div className="text-sm text-gray-600 flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          Product Type
+                        </div>
+                        <div className="text-lg font-bold">{order.topper_level}% Topper</div>
                       </div>
-                      <div className="text-lg font-bold">
-                        {order.delivery_zipcode || "Not set"}
+                    )}
+                    {!isTopper && (
+                      <div>
+                        <div className="text-sm text-gray-600 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Delivery ZIP
+                        </div>
+                        <div className="text-lg font-bold">
+                          {order.delivery_zipcode || "Not set"}
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    {isTopper && (
+                      <div>
+                        <div className="text-sm text-gray-600">Frequency</div>
+                        <div className="text-lg font-bold">Every 2 weeks</div>
+                      </div>
+                    )}
                     <div>
                       <div className="text-sm text-gray-600">Dog</div>
                       <div className="text-sm font-medium">
-                        {dog?.breed} • {dog?.weight} lbs
+                        {dog?.breed} • {dog?.weight} {dog?.weight_unit || "lbs"}
                       </div>
                     </div>
                     <div>
@@ -334,24 +425,104 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                     </div>
                   </div>
 
-                  {/* Recipe Details */}
-                  {planItems.length > 0 && (
+                  {/* Recipe Details - only for plans */}
+                  {!isTopper && planItems.length > 0 && (
                     <div className="border-t pt-4">
                       <div className="text-sm font-medium mb-2">Recipes:</div>
                       <div className="space-y-1">
-                        {planItems.map((item: any) => (
-                          <div key={item.id} className="text-sm text-gray-600 flex justify-between">
-                            <span>• {item.recipes?.name || "Unknown recipe"}</span>
-                            <span className="font-medium">
-                              ${((item.unit_price_cents || 0) / 100).toFixed(2)} × {item.qty}
-                            </span>
-                          </div>
-                        ))}
+                        {planItems.map((item: any) => {
+                          // Check if this plan item has multiple recipes in metadata
+                          const recipeVariety = item.meta?.recipe_variety
+                          const hasVariety = recipeVariety && recipeVariety.length > 1
+
+                          return (
+                            <div key={item.id} className="text-sm text-gray-600">
+                              {hasVariety ? (
+                                // Multiple recipes - show all from metadata
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-medium">Recipe Variety:</span>
+                                    <span className="font-medium">
+                                      ${((item.unit_price_cents || 0) / 100).toFixed(2)} × {item.qty}
+                                    </span>
+                                  </div>
+                                  {recipeVariety.map((recipe: any, idx: number) => (
+                                    <div key={idx} className="ml-4">
+                                      • {recipe.name}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                // Single recipe - show normally
+                                <div className="flex justify-between">
+                                  <span>• {item.recipes?.name || "Unknown recipe"}</span>
+                                  <span className="font-medium">
+                                    ${((item.unit_price_cents || 0) / 100).toFixed(2)} × {item.qty}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
 
-                  {/* Stripe Info */}
+                  {/* Recipe Details - for topper subscriptions */}
+                  {isTopper && subscription?.metadata?.recipes && (
+                    <div className="border-t pt-4">
+                      <div className="text-sm font-medium mb-2">Recipes:</div>
+                      <div className="space-y-1">
+                        {(() => {
+                          try {
+                            const recipes = JSON.parse(subscription.metadata.recipes)
+                            if (Array.isArray(recipes) && recipes.length > 0) {
+                              return recipes.map((recipe: any, idx: number) => (
+                                <div key={idx} className="text-sm text-gray-600">
+                                  • {recipe.name || recipe}
+                                </div>
+                              ))
+                            }
+                          } catch (e) {
+                            console.error("Error parsing topper recipes:", e)
+                          }
+                          return <div className="text-sm text-gray-600">No recipes specified</div>
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recipe Details - for individual/3-pack purchases */}
+                  {isIndividualPack && (
+                    <div className="border-t pt-4">
+                      <div className="text-sm font-medium mb-2">
+                        {order.product_type === '3-packs' ? 'Recipes (3-Pack):' : 'Recipe:'}
+                      </div>
+                      <div className="space-y-1">
+                        {(() => {
+                          // First try to get recipes from the recipes array
+                          if (order.recipes && Array.isArray(order.recipes) && order.recipes.length > 0) {
+                            return order.recipes.map((recipe: any, idx: number) => (
+                              <div key={idx} className="text-sm text-gray-600">
+                                • {recipe.name || recipe}
+                              </div>
+                            ))
+                          }
+                          // Fall back to recipe_name if available
+                          if (order.recipe_name) {
+                            return (
+                              <div className="text-sm text-gray-600">
+                                • {order.recipe_name}
+                              </div>
+                            )
+                          }
+                          return <div className="text-sm text-gray-600">No recipe specified</div>
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stripe Info - for subscriptions */}
                   {subscription?.stripe_subscription_id && (
                     <div className="border-t pt-4">
                       <div className="text-xs text-gray-500 font-mono">
@@ -363,6 +534,18 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                           {new Date(subscription.current_period_end).toLocaleDateString()}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Stripe Info - for individual/3-pack purchases */}
+                  {isIndividualPack && order.payment_intent_id && (
+                    <div className="border-t pt-4">
+                      <div className="text-xs text-gray-500 font-mono">
+                        Payment Intent: {order.payment_intent_id}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Purchased: {new Date(order.created_at).toLocaleDateString()}
+                      </div>
                     </div>
                   )}
                 </div>

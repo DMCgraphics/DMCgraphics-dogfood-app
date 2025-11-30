@@ -139,7 +139,28 @@ function PlanBuilderContent() {
   // Existing dogs state
   const [existingDogs, setExistingDogs] = useState<any[]>([])
   const [selectedExistingDogId, setSelectedExistingDogId] = useState<string | null>(null)
-  const [isLoadingDogs, setIsLoadingDogs] = useState(false)
+  const [isLoadingDogs, setIsLoadingDogs] = useState(true) // Start as true to prevent flash
+
+  // Add dog mode state (for hydration safety)
+  const [isAddDogMode, setIsAddDogMode] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  // Check if we're on the client and in add-dog mode
+  useEffect(() => {
+    setIsClient(true)
+    const addDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
+    setIsAddDogMode(addDogMode)
+
+    // If in add-dog mode, set the total dogs count but don't auto-advance
+    if (addDogMode) {
+      const totalDogsStr = localStorage.getItem("nouripet-total-dogs")
+      if (totalDogsStr) {
+        const total = parseInt(totalDogsStr)
+        setTotalDogs(total)
+        setShowDogCountSelector(false)
+      }
+    }
+  }, [])
 
   // Handle query params from shop page (mode=topper&level=25)
   useEffect(() => {
@@ -161,6 +182,7 @@ function PlanBuilderContent() {
     const fetchExistingDogs = async () => {
       if (!user) {
         setExistingDogs([])
+        setIsLoadingDogs(false) // No user, no loading needed
         return
       }
 
@@ -363,8 +385,12 @@ function PlanBuilderContent() {
             topperLevel: topperLevel,
           }])
 
-          // Skip to step 1 (Dog Basics) if coming from management modal
-          setCurrentStep(1)
+          // Check if this is a fresh start via URL parameter - if so, stay on step 0 to allow plan type selection
+          const freshStart = urlParams.get("fresh_start")
+          if (freshStart !== "true") {
+            // Only skip to step 1 if NOT a fresh start
+            setCurrentStep(1)
+          }
           setShowDogCountSelector(false)
 
           console.log("[v0] Dog data pre-filled successfully")
@@ -652,6 +678,16 @@ function PlanBuilderContent() {
   }, [currentDogIndex, totalDogs, allDogsData, currentStep, planType, topperLevel])
 
   useEffect(() => {
+    // Check if this is a fresh start via URL parameter (coming from "Create Subscription Plan" button)
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search)
+      const freshStart = urlParams.get("fresh_start")
+      if (freshStart === "true") {
+        // Don't load saved state for fresh starts
+        return
+      }
+    }
+
     const saved = localStorage.getItem("nouripet-plan-builder")
     if (saved) {
       try {
@@ -852,19 +888,8 @@ function PlanBuilderContent() {
   }
 
   const handleProceedToCheckout = async () => {
-    if (currentDogIndex < totalDogs - 1) {
-      const nextDogIndex = currentDogIndex + 1
-      if (!allDogsData[nextDogIndex] || !allDogsData[nextDogIndex].dogProfile.name) {
-        setAllDogsData((prev) => {
-          const newData = [...prev]
-          newData[nextDogIndex] = getDefaultDogData()
-          return newData
-        })
-      }
-      setCurrentDogIndex(nextDogIndex)
-      setCurrentStep(1)
-      return
-    }
+    // Always proceed directly to checkout, regardless of multi-dog state
+    // Users can create plans for additional dogs separately
 
     // Handle topper plan checkout
     if (planType === "topper" && topperLevel) {
@@ -881,6 +906,14 @@ function PlanBuilderContent() {
       const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
       const dogSizeCategory = getDogSizeCategory(weightLbs)
       const topperPricing = getTopperPrices()[dogSizeCategory]?.[topperLevel]
+
+      // Debug logging for topper pricing
+      console.log("[TOPPER DEBUG] Weight:", weight, weightUnit)
+      console.log("[TOPPER DEBUG] Weight in lbs:", weightLbs)
+      console.log("[TOPPER DEBUG] Size category:", dogSizeCategory)
+      console.log("[TOPPER DEBUG] Topper level:", topperLevel)
+      console.log("[TOPPER DEBUG] Selected pricing:", topperPricing)
+      console.log("[TOPPER DEBUG] Is test mode:", isTestMode())
 
       if (!topperPricing) {
         alert("Unable to find pricing for this plan. Please try again.")
@@ -957,6 +990,12 @@ function PlanBuilderContent() {
           console.log("[v0] Dog created with ID:", dogId)
         }
 
+        // Get selected recipes for the topper
+        const recipes =
+          firstDogData.selectedRecipes.length > 0 ? firstDogData.selectedRecipes : [firstDogData.selectedRecipe].filter(Boolean)
+
+        console.log("[TOPPER DEBUG] Selected recipes:", recipes)
+
         // Now proceed to checkout with the dog ID
         const response = await fetch('/api/topper-checkout', {
           method: 'POST',
@@ -969,6 +1008,7 @@ function PlanBuilderContent() {
             dogName: firstDogData.dogProfile.name,
             dogSize: dogSizeCategory,
             productType: `topper-${topperLevel}`,
+            recipes: recipes, // Send all selected recipes
             isSubscription: true,
           }),
         })
@@ -1914,14 +1954,6 @@ function PlanBuilderContent() {
   }
 
   const getStepContent = () => {
-    // Check if we're in add-dog-mode and skip step 0 (only on client side)
-    if (typeof window !== "undefined") {
-      const isAddDogMode = localStorage.getItem("nouripet-add-dog-mode") === "true"
-      if (currentStep === 0 && isAddDogMode) {
-        return null // Skip the dog count selector
-      }
-    }
-
     switch (currentStep) {
       case 0:
         return (
@@ -2053,8 +2085,8 @@ function PlanBuilderContent() {
               </CardContent>
             </Card>
 
-            {/* Existing Dog Selection - Only show if user has dogs */}
-            {user && existingDogs.length > 0 && (
+            {/* Existing Dog Selection - Show if user is authenticated and (loading or has dogs) */}
+            {user && (isLoadingDogs || existingDogs.length > 0) && (
               <Card>
                 <CardHeader>
                   <CardTitle>Which dog is this plan for?</CardTitle>

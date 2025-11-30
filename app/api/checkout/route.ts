@@ -65,6 +65,7 @@ export async function POST(req: Request) {
           amount_cents,
           billing_interval,
           stripe_price_id,
+          meta,
           recipes (name, slug)
         )
       `)
@@ -101,6 +102,25 @@ export async function POST(req: Request) {
 
     console.log("[v0] Processing", lines.length, "line items")
     console.log("[v0] Line items data:", JSON.stringify(lines, null, 2))
+
+    // Build recipe names for metadata
+    let allRecipeNames: string[] = []
+    lines.forEach((li) => {
+      const recipeVariety = li.meta?.recipe_variety
+      if (recipeVariety && Array.isArray(recipeVariety) && recipeVariety.length > 1) {
+        // Multiple recipes
+        recipeVariety.forEach((r: any) => {
+          if (r.name && !allRecipeNames.includes(r.name)) {
+            allRecipeNames.push(r.name)
+          }
+        })
+      } else if (li.recipes?.name && !allRecipeNames.includes(li.recipes.name)) {
+        // Single recipe
+        allRecipeNames.push(li.recipes.name)
+      }
+    })
+
+    console.log("[v0] All recipe names for this order:", allRecipeNames)
 
     // All plan_items must have a Stripe price id
     const raw_line_items = lines.map((li, index) => {
@@ -143,10 +163,18 @@ export async function POST(req: Request) {
         metadata: {
           plan_id: planId,
           user_id: user.id,
+          recipes: allRecipeNames.join(", "),
         },
+        description: allRecipeNames.length > 1
+          ? `Recipe Variety: ${allRecipeNames.join(", ")}`
+          : allRecipeNames[0] || "Custom Recipe",
       },
       client_reference_id: planId,
-      metadata: { plan_id: planId, user_id: user.id },
+      metadata: {
+        plan_id: planId,
+        user_id: user.id,
+        recipes: allRecipeNames.join(", "),
+      },
       customer_email: user.email ?? undefined,
       success_url: successUrl,
       cancel_url: cancelUrl,

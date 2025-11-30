@@ -101,10 +101,24 @@ export default async function CheckoutPage() {
     const intervalCount = li.meta?.billing_interval_count || 1
     const isBiweekly = li.billing_interval === "week" && intervalCount === 2
 
+    // Check if this plan item has multiple recipes in metadata
+    const recipeVariety = li.meta?.recipe_variety
+    const hasVariety = recipeVariety && Array.isArray(recipeVariety) && recipeVariety.length > 1
+
+    // Build recipes array
+    let recipes: string[] = []
+    if (hasVariety) {
+      // Multiple recipes - get all names from metadata
+      recipes = recipeVariety.map((r: any) => r.name).filter(Boolean)
+    } else if (li.recipes?.name) {
+      // Single recipe - get from recipes relation
+      recipes = [li.recipes.name]
+    }
+
     return {
       id: li.id,
       name: `${li.dogs?.name || 'Dog'}'s Plan`,
-      description: li.recipes?.name || "Custom Recipe",
+      description: hasVariety ? "Recipe Variety" : (li.recipes?.name || "Custom Recipe"),
       price: (li.unit_price_cents || 0) / 100,
       quantity: li.qty || 1,
       frequency: isBiweekly ? "Every 2 weeks" : (li.billing_interval === "week" ? "Weekly delivery" : li.billing_interval || "Weekly delivery"),
@@ -113,7 +127,7 @@ export default async function CheckoutPage() {
       foodCostPerWeek: (li.unit_price_cents || 0) / 100,
       addOnsCostPerWeek: 0,
       totalWeeklyCost: (li.unit_price_cents || 0) / 100,
-      recipes: li.recipes?.name ? [li.recipes.name] : [],
+      recipes,
       addOns: [],
     }
   })

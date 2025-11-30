@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
 interface ProtectedRouteProps {
@@ -15,16 +15,21 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requireAuth = true, redirectTo = "/auth/login" }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    if (!isLoading && requireAuth && !isAuthenticated) {
-      const currentPath = window.location.pathname
-      const returnUrl = encodeURIComponent(currentPath)
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted && !isLoading && requireAuth && !isAuthenticated) {
+      const returnUrl = encodeURIComponent(pathname)
       router.push(`${redirectTo}?returnUrl=${returnUrl}`)
     }
-  }, [isAuthenticated, isLoading, requireAuth, redirectTo, router])
+  }, [isMounted, isAuthenticated, isLoading, requireAuth, redirectTo, router, pathname])
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

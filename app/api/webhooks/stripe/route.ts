@@ -60,7 +60,7 @@ async function upsertSubscriptionFromIds({
   try {
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
 
-    const planId = session.metadata?.plan_id || session.client_reference_id
+    const planId = session.metadata?.plan_id || session.client_reference_id || null
 
     // Get user_id from the plan if not available in session metadata
     let userId = session.metadata?.user_id
@@ -86,9 +86,41 @@ async function upsertSubscriptionFromIds({
       subscriptionStatus = 'paused'
     }
 
+    // Build metadata - for topper subscriptions, include dog info from session metadata
+    const metadata: any = {
+      checkout_session_id: session.id,
+      stripe_customer_id: session.customer as string,
+    }
+
+    // Add plan_id if it exists (will be null for topper subscriptions)
+    if (planId) {
+      metadata.plan_id = planId
+    }
+
+    // For topper subscriptions, include dog and product info from session metadata
+    if (session.metadata?.dog_id) {
+      metadata.dog_id = session.metadata.dog_id
+    }
+    if (session.metadata?.dog_name) {
+      metadata.dog_name = session.metadata.dog_name
+    }
+    if (session.metadata?.dog_size) {
+      metadata.dog_size = session.metadata.dog_size
+    }
+    if (session.metadata?.product_type) {
+      metadata.product_type = session.metadata.product_type
+    }
+
+    // Capture delivery zipcode from shipping address
+    const shippingZip = session.shipping_details?.address?.postal_code ||
+                       session.customer_details?.address?.postal_code
+    if (shippingZip) {
+      metadata.delivery_zipcode = shippingZip
+    }
+
     const subscriptionData = {
       user_id: userId,
-      plan_id: planId,
+      plan_id: planId, // Will be NULL for topper subscriptions
       stripe_subscription_id: subscriptionId,
       status: subscriptionStatus,
       current_period_start: stripeSubscription.current_period_start ? new Date(stripeSubscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
@@ -103,17 +135,13 @@ async function upsertSubscriptionFromIds({
         ? new Date(stripeSubscription.canceled_at * 1000).toISOString()
         : null,
       default_payment_method_id: (stripeSubscription.default_payment_method as string) || null,
-      metadata: {
-        checkout_session_id: session.id,
-        stripe_customer_id: session.customer as string,
-        plan_id: planId,
-      },
+      metadata: metadata,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
 
     console.log("[v0] Attempting to upsert subscription with data:", JSON.stringify(subscriptionData, null, 2))
-    
+
     const { error: subError } = await getSupabaseAdmin().from("subscriptions").upsert(subscriptionData, {
       onConflict: "stripe_subscription_id",
       ignoreDuplicates: false,
@@ -262,83 +290,103 @@ export async function POST(req: Request) {
         }
       }
 
-      if (!planId) {
-        console.error("[v0] Could not resolve plan ID for checkout session:", s.id)
+      // Check if this is a topper subscription (has dog_id but no plan_id)
+      const isTopperSubscription = !planId && s.metadata?.dog_id
+
+      if (!planId && !isTopperSubscription) {
+        console.error("[v0] Could not resolve plan ID for checkout session and not a topper:", s.id)
         return NextResponse.json({ received: true, error: "Plan not found" })
       }
 
       if (s.payment_status === "paid") {
         console.log("[v0] Payment is paid, processing subscription creation")
-        
-        // First, check if the plan exists and get its current state
-        const { data: existingPlan, error: planFetchError } = await getSupabaseAdmin()
-          .from("plans")
-          .select("*")
-          .eq("id", planId)
-          .single()
 
-        if (planFetchError) {
-          console.error("[v0] Failed to fetch plan:", planFetchError)
-          return NextResponse.json({ error: "Plan not found" }, { status: 400 })
-        }
+        if (isTopperSubscription) {
+          // Handle topper subscription (no plan_id, just dog_id in metadata)
+          console.log("[v0] Processing topper subscription:", subscriptionId)
+          console.log("[v0] Topper metadata:", s.metadata)
 
-        if (!existingPlan) {
-          console.error("[v0] Plan not found:", planId)
-          return NextResponse.json({ error: "Plan not found" }, { status: 400 })
-        }
-
-        console.log("[v0] Found plan:", existingPlan.id, "user_id:", existingPlan.user_id, "status:", existingPlan.status)
-
-        // Update plan to active and set user_id
-        const { error: updateError } = await getSupabaseAdmin()
-          .from("plans")
-          .update({
-            status: "active",
-            stripe_subscription_id: subscriptionId,
-            user_id: s.metadata?.user_id || existingPlan.user_id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", planId)
-
-        if (updateError) {
-          console.error("[v0] Failed to update plan status:", updateError)
-          console.error("[v0] Plan update error details:", JSON.stringify(updateError, null, 2))
-        } else {
-          console.log("[v0] Plan status updated to active successfully")
-        }
-
-        // Upsert subscription with the subscription id we now have
-        console.log("[v0] Creating subscription for plan:", planId)
-        await upsertSubscriptionFromIds({ subscriptionId, session: s })
-
-        // Create order (existing order creation logic)
-        const { data: plan } = await getSupabaseAdmin()
-          .from("plans")
-          .select("user_id, dog_id, total_cents, subtotal_cents, discount_cents")
-          .eq("id", planId)
-          .single()
-
-        if (plan) {
-          const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-          const orderData = {
-            user_id: plan.user_id,
-            plan_id: planId,
-            order_number: orderNumber,
-            status: "confirmed",
-            total: (plan.total_cents || 0) / 100,
-            delivery_method: "shipping",
-            stripe_subscription_id: subscriptionId,
-            period_start: new Date().toISOString(),
-            period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+          if (!s.metadata?.user_id) {
+            console.error("[v0] Missing user_id for topper subscription:", subscriptionId)
+            return NextResponse.json({ error: "Missing user_id" }, { status: 400 })
           }
 
-          const { error: orderError } = await getSupabaseAdmin().from("orders").insert(orderData)
-          if (orderError) {
-            console.error("[v0] Failed to create order:", orderError)
+          // Create subscription record for topper (plan_id = NULL)
+          await upsertSubscriptionFromIds({ subscriptionId, session: s })
+
+          console.log("[v0] Topper subscription created successfully")
+        } else {
+          // Handle plan-based subscription
+          // First, check if the plan exists and get its current state
+          const { data: existingPlan, error: planFetchError } = await getSupabaseAdmin()
+            .from("plans")
+            .select("*")
+            .eq("id", planId)
+            .single()
+
+          if (planFetchError) {
+            console.error("[v0] Failed to fetch plan:", planFetchError)
+            return NextResponse.json({ error: "Plan not found" }, { status: 400 })
+          }
+
+          if (!existingPlan) {
+            console.error("[v0] Plan not found:", planId)
+            return NextResponse.json({ error: "Plan not found" }, { status: 400 })
+          }
+
+          console.log("[v0] Found plan:", existingPlan.id, "user_id:", existingPlan.user_id, "status:", existingPlan.status)
+
+          // Update plan to active and set user_id
+          const { error: updateError } = await getSupabaseAdmin()
+            .from("plans")
+            .update({
+              status: "active",
+              stripe_subscription_id: subscriptionId,
+              user_id: s.metadata?.user_id || existingPlan.user_id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", planId)
+
+          if (updateError) {
+            console.error("[v0] Failed to update plan status:", updateError)
+            console.error("[v0] Plan update error details:", JSON.stringify(updateError, null, 2))
           } else {
-            console.log("[v0] Order created successfully:", orderNumber)
+            console.log("[v0] Plan status updated to active successfully")
+          }
+
+          // Upsert subscription with the subscription id we now have
+          console.log("[v0] Creating subscription for plan:", planId)
+          await upsertSubscriptionFromIds({ subscriptionId, session: s })
+
+          // Create order (existing order creation logic)
+          const { data: plan } = await getSupabaseAdmin()
+            .from("plans")
+            .select("user_id, dog_id, total_cents, subtotal_cents, discount_cents")
+            .eq("id", planId)
+            .single()
+
+          if (plan) {
+            const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+            const orderData = {
+              user_id: plan.user_id,
+              plan_id: planId,
+              order_number: orderNumber,
+              status: "confirmed",
+              total: (plan.total_cents || 0) / 100,
+              delivery_method: "shipping",
+              stripe_subscription_id: subscriptionId,
+              period_start: new Date().toISOString(),
+              period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+
+            const { error: orderError } = await getSupabaseAdmin().from("orders").insert(orderData)
+            if (orderError) {
+              console.error("[v0] Failed to create order:", orderError)
+            } else {
+              console.log("[v0] Order created successfully:", orderNumber)
+            }
           }
         }
       }

@@ -4,6 +4,8 @@ import "./globals.css"
 import { Inter, Manrope } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
+import { CartProvider } from "@/contexts/cart-context"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -81,7 +83,12 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${manrope.variable} antialiased`}>
       <body>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <CartProvider>
+              {children}
+              <Toaster />
+            </CartProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -71,6 +71,7 @@ export default function DashboardPage() {
   const [dogs, setDogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false)
+  const [showVerifiedSuccess, setShowVerifiedSuccess] = useState(false)
   const [weightEntries, setWeightEntries] = useState([])
   const [stoolEntries, setStoolEntries] = useState([])
   const [isStoolLoading, setIsStoolLoading] = useState(false)
@@ -90,6 +91,18 @@ export default function DashboardPage() {
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
 
   const selectedDog = dogs.find((dog) => dog.id === selectedDogId) || dogs[0]
+
+  // Check for email verification success message in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("verified") === "true") {
+      setShowVerifiedSuccess(true)
+      // Remove the parameter from URL
+      window.history.replaceState({}, "", window.location.pathname)
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowVerifiedSuccess(false), 5000)
+    }
+  }, [])
 
   // Check for update success message in URL
   useEffect(() => {
@@ -203,7 +216,7 @@ export default function DashboardPage() {
           .from("plans")
           .select("*")
           .eq("user_id", user.id)
-          .in("status", ["active", "purchased", "checkout_in_progress"])
+          .in("status", ["active", "purchased", "checkout_in_progress", "draft"])
 
         console.log("[v0] Active plans data:", activePlansData)
 
@@ -320,9 +333,35 @@ export default function DashboardPage() {
               }
             }
 
+            // Find subscription for this dog - check both plan-based subscriptions and topper subscriptions
             const dogSubscription = subscriptionsData?.find((sub) => {
-              return dogPlan && dogPlan.id === sub.plan_id
+              // Check for plan-based subscription
+              if (dogPlan && dogPlan.id === sub.plan_id) {
+                return true
+              }
+              // Check for topper subscription (has metadata.dog_id but no plan_id)
+              if (!sub.plan_id && sub.metadata?.dog_id === dog.id) {
+                return true
+              }
+              return false
             })
+
+            // If this is a topper subscription without a plan, get recipes from subscription metadata
+            if (dogSubscription && !dogPlan && dogSubscription.metadata?.recipes) {
+              try {
+                const recipes = JSON.parse(dogSubscription.metadata.recipes)
+                if (Array.isArray(recipes) && recipes.length > 0) {
+                  // Recipes might be objects with {name: "..."} or just strings (slugs)
+                  const recipeNames = recipes.map(r => typeof r === 'string' ? r : r.name).filter(Boolean)
+                  if (recipeNames.length > 0) {
+                    currentRecipe = recipeNames.join(", ")
+                    console.log("[v0] Found recipes from topper subscription:", currentRecipe, "for", dog.name)
+                  }
+                }
+              } catch (e) {
+                console.error("[v0] Error parsing topper recipes for", dog.name, ":", e)
+              }
+            }
 
             const isActivePlan = dogPlan && dogPlan.status === "active"
 
@@ -1030,6 +1069,32 @@ export default function DashboardPage() {
         <Header />
 
         <main className="container py-8">
+          {showVerifiedSuccess && (
+            <Card className="mb-6 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-100">Email Verified!</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Your email has been successfully verified. Welcome to NouriPet!
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowVerifiedSuccess(false)}
+                    className="ml-auto"
+                  >
+                    ×
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {showUpdateSuccess && (
             <Card className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
               <CardContent className="pt-6">

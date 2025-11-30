@@ -69,7 +69,9 @@ async function getOrders() {
     individualPurchases = paymentIntents.data.filter(pi => {
       const metadata = pi.metadata || {}
       const isOneTime = !pi.invoice
-      const isIndividualProduct = metadata.product_type === 'individual' || metadata.product_type === '3-packs'
+      const isIndividualProduct = metadata.product_type === 'individual'
+        || metadata.product_type === '3-packs'
+        || metadata.product_type === 'cart' // Cart purchases with multiple items
       const isSuccessful = pi.status === 'succeeded'
 
       if (isIndividualProduct) {
@@ -159,56 +161,89 @@ async function getOrders() {
   })
 
   // Combine individual/3-pack purchase orders
-  const individualPackOrders = individualPurchases.map(pi => {
+  const individualPackOrders = individualPurchases.flatMap(pi => {
     const metadata = pi.metadata || {}
-    const dogId = metadata.dog_id
-    const dog = dogs?.find(d => d.id === dogId) || null
     const profile = profiles?.find(p => p.id === metadata.user_id) || null
-
-    // Parse recipes from metadata if available
-    let recipes: any[] = []
-    try {
-      if (metadata.recipes) {
-        recipes = JSON.parse(metadata.recipes)
-      }
-    } catch (e) {
-      console.error('[ADMIN ORDERS] Error parsing recipes from payment intent:', pi.id, e)
-    }
 
     // Get shipping address from the latest charge
     let deliveryZipcode = null
-    if (pi.latest_charge && typeof pi.latest_charge === 'string') {
-      // If latest_charge is just an ID, we'd need to fetch it separately
-      // For now, check if we can get the data from the payment intent's receipt_email or customer
-      // Since we can't easily expand latest_charge here, let's use a simpler approach
-      console.log("[ADMIN ORDERS] Payment intent has latest_charge ID:", pi.latest_charge)
-    }
-
-    // For now, we'll need to store the zipcode in metadata during checkout
-    // Let's check if it's in the metadata
     if (metadata.delivery_zipcode) {
       deliveryZipcode = metadata.delivery_zipcode
-      console.log("[ADMIN ORDERS] Got zipcode from metadata:", deliveryZipcode)
     }
 
-    return {
-      id: pi.id,
-      order_type: "individual-pack" as const,
-      created_at: new Date(pi.created * 1000).toISOString(),
-      status: 'paid',
-      user_id: metadata.user_id,
-      dog_id: dogId,
-      product_type: metadata.product_type || 'individual',
-      recipe_name: metadata.recipe_name || '',
-      recipes: recipes,
-      amount: pi.amount || 0,
-      delivery_zipcode: deliveryZipcode,
-      total_cents: pi.amount || 0,
-      plan_items: [],
-      dogs: dog,
-      subscriptions: [],
-      profiles: profile,
-      payment_intent_id: pi.id,
+    // Check if this is a cart purchase (multiple items) or single purchase
+    const isCartPurchase = metadata.product_type === 'cart'
+
+    if (isCartPurchase && metadata.items_json) {
+      // Parse cart items from metadata
+      let cartItems: any[] = []
+      try {
+        cartItems = JSON.parse(metadata.items_json)
+        console.log("[ADMIN ORDERS] Parsed cart items for payment intent:", pi.id, cartItems)
+      } catch (e) {
+        console.error('[ADMIN ORDERS] Error parsing items_json from payment intent:', pi.id, e)
+      }
+
+      // Create a separate order entry for each cart item
+      return cartItems.map((item: any, index: number) => {
+        const dogId = metadata.dog_id
+        const dog = dogs?.find(d => d.id === dogId) || null
+
+        return {
+          id: `${pi.id}-item-${index}`,
+          order_type: "individual-pack" as const,
+          created_at: new Date(pi.created * 1000).toISOString(),
+          status: 'paid',
+          user_id: metadata.user_id,
+          dog_id: dogId,
+          product_type: item.type === 'single-pack' ? 'individual' : '3-pack',
+          recipe_name: item.recipes?.map((r: any) => r.name).join(', ') || '',
+          recipes: item.recipes || [],
+          amount: (item.price * 100) || 0, // Convert to cents
+          delivery_zipcode: deliveryZipcode,
+          total_cents: (item.price * 100) || 0,
+          plan_items: [],
+          dogs: dog,
+          subscriptions: [],
+          profiles: profile,
+          payment_intent_id: pi.id,
+          cart_item_index: index,
+        }
+      })
+    } else {
+      // Single item purchase (old format or direct checkout)
+      const dogId = metadata.dog_id
+      const dog = dogs?.find(d => d.id === dogId) || null
+
+      // Parse recipes from metadata if available
+      let recipes: any[] = []
+      try {
+        if (metadata.recipes) {
+          recipes = JSON.parse(metadata.recipes)
+        }
+      } catch (e) {
+        console.error('[ADMIN ORDERS] Error parsing recipes from payment intent:', pi.id, e)
+      }
+
+      return [{
+        id: pi.id,
+        order_type: "individual-pack" as const,
+        created_at: new Date(pi.created * 1000).toISOString(),
+        status: 'paid',
+        user_id: metadata.user_id,
+        dog_id: dogId,
+        product_type: metadata.product_type || 'individual',
+        recipe_name: metadata.recipe_name || '',
+        recipes: recipes,
+        amount: pi.amount || 0,
+        delivery_zipcode: deliveryZipcode,
+        total_cents: pi.amount || 0,
+        plan_items: [],
+        dogs: dog,
+        subscriptions: [],
+        profiles: profile,
+        payment_intent_id: pi.id,
+      }]
     }
   })
 

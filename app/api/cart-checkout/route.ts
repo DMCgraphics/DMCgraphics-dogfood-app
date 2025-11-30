@@ -34,11 +34,34 @@ export async function POST(req: Request) {
     }
 
     // Map cart items to Stripe price IDs
-    // We need to get the Stripe price IDs for single-pack and 3-pack products
+    // Detect environment based on URL or Stripe key
+    const isProduction = process.env.NEXT_PUBLIC_APP_URL?.includes('nouripet.net') ||
+                        process.env.STRIPE_SECRET_KEY?.startsWith('sk_live')
+
     // Test mode: price_1STtdA0R4BbWwBbf9G5uIXl3 (single), price_1SZGBZ0R4BbWwBbf1Vgv8Cd3 (3-pack)
     // Prod mode: price_1SL20Q0WbfuHe9kA8HUhNY1T (single), price_1SZGBy0WbfuHe9kAZen2JI5A (3-pack)
-    const SINGLE_PACK_PRICE_ID = process.env.STRIPE_SINGLE_PACK_PRICE_ID || 'price_1STtdA0R4BbWwBbf9G5uIXl3'
-    const THREE_PACK_PRICE_ID = process.env.STRIPE_3_PACK_PRICE_ID || 'price_1SZGBZ0R4BbWwBbf1Vgv8Cd3'
+    const SINGLE_PACK_PRICE_ID = isProduction
+      ? 'price_1SL20Q0WbfuHe9kA8HUhNY1T'
+      : 'price_1STtdA0R4BbWwBbf9G5uIXl3'
+    const THREE_PACK_PRICE_ID = isProduction
+      ? 'price_1SZGBy0WbfuHe9kAZen2JI5A'
+      : 'price_1SZGBZ0R4BbWwBbf1Vgv8Cd3'
+
+    // Create a separate payment intent for EACH cart item so we can track recipes properly
+    // This approach creates individual checkout sessions for each item
+    // But since we want one checkout, we'll store all items as JSON in metadata
+
+    // Build a compact representation of cart items with recipe names
+    const cartItemsForMetadata = items.map((item: any, index: number) => ({
+      index,
+      type: item.type,
+      recipes: item.recipes.map((r: any) => ({
+        id: r.id,
+        name: r.name
+      })),
+      qty: item.quantity,
+      price: item.price
+    }))
 
     // Create line items for Stripe
     const lineItems = items.map((item: any) => {
@@ -49,17 +72,17 @@ export async function POST(req: Request) {
       }
     })
 
-    // Create metadata with all items' recipe information
-    // Compress the data by only storing recipe IDs (not full names) to stay under 500 char limit
+    // Create metadata - store cart items as JSON
     const cartMetadata = {
       user_id: user.id,
-      product_type: 'individual', // This indicates it's a one-time individual pack purchase
-      cart_items: JSON.stringify(items.map((item: any) => ({
-        type: item.type,
-        recipes: item.recipes.map((r: any) => r.id), // Only store IDs to reduce size
-        quantity: item.quantity,
-      }))),
+      product_type: 'cart', // Indicates this is a cart purchase (multiple items)
+      item_count: items.length.toString(),
+      // Store cart items as separate metadata fields to avoid 500 char limit
+      items_json: JSON.stringify(cartItemsForMetadata),
     }
+
+    console.log("[CART CHECKOUT] Cart metadata:", cartMetadata)
+    console.log("[CART CHECKOUT] Items JSON length:", cartMetadata.items_json.length)
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({

@@ -24,10 +24,17 @@ function IndividualPacksContent() {
   const [isLoading, setIsLoading] = useState(false)
 
   // Universal Stripe price IDs (same for all recipes)
+  // Detect environment based on URL
+  const isProduction = typeof window !== 'undefined' && window.location.hostname === 'www.nouripet.net'
+
   // Test mode: price_1STtdA0R4BbWwBbf9G5uIXl3 (single), price_1SZGBZ0R4BbWwBbf1Vgv8Cd3 (3-pack)
   // Prod mode: price_1SL20Q0WbfuHe9kA8HUhNY1T (single), price_1SZGBy0WbfuHe9kAZen2JI5A (3-pack)
-  const SINGLE_PACK_PRICE_ID = "price_1STtdA0R4BbWwBbf9G5uIXl3"
-  const THREE_PACK_PRICE_ID = "price_1SZGBZ0R4BbWwBbf1Vgv8Cd3"
+  const SINGLE_PACK_PRICE_ID = isProduction
+    ? "price_1SL20Q0WbfuHe9kA8HUhNY1T"
+    : "price_1STtdA0R4BbWwBbf9G5uIXl3"
+  const THREE_PACK_PRICE_ID = isProduction
+    ? "price_1SZGBy0WbfuHe9kAZen2JI5A"
+    : "price_1SZGBZ0R4BbWwBbf1Vgv8Cd3"
 
   const recipes = [
     {

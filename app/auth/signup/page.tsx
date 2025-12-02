@@ -1,11 +1,12 @@
 "use client"
 
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { SignupForm } from "@/components/auth/signup-form"
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteToken = searchParams.get("invite")
@@ -21,14 +22,22 @@ export default function SignupPage() {
   }
 
   return (
+    <SignupForm
+      onSuccess={handleSuccess}
+      onSwitchToLogin={() => router.push("/login")}
+      inviteToken={inviteToken || undefined}
+    />
+  )
+}
+
+export default function SignupPage() {
+  return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-16">
-        <SignupForm
-          onSuccess={handleSuccess}
-          onSwitchToLogin={() => router.push("/login")}
-          inviteToken={inviteToken || undefined}
-        />
+        <Suspense fallback={<div className="text-center">Loading...</div>}>
+          <SignupContent />
+        </Suspense>
       </main>
       <Footer />
     </div>

@@ -18,9 +18,9 @@ const ingredientData: Record<string, Ingredient[]> = {
   "beef-quinoa-harvest": [
     { name: "Lean ground beef", percentage: 50, source: "Mosner Family Brands", benefits: ["High-quality protein", "Iron", "B vitamins"] },
     { name: "Quinoa", percentage: 20, source: "Organic Supplier", benefits: ["Complete amino acids", "Digestive fiber"] },
-    { name: "Carrots", percentage: 10, source: "Local Farms", benefits: ["Beta-carotene", "Eye health"] },
-    { name: "Zucchini", percentage: 8, source: "Local Farms", benefits: ["Hydration", "Low-calorie fiber"] },
-    { name: "Spinach", percentage: 8, source: "Local Farms", benefits: ["Iron", "Folate"] },
+    { name: "Carrots", percentage: 10, source: "Local & Regional Farms", benefits: ["Beta-carotene", "Eye health"] },
+    { name: "Zucchini", percentage: 8, source: "Local & Regional Farms", benefits: ["Hydration", "Low-calorie fiber"] },
+    { name: "Spinach", percentage: 8, source: "Local & Regional Farms", benefits: ["Iron", "Folate"] },
     { name: "Custom Premix", percentage: 2, source: "NouriPet", benefits: ["Complete micronutrients"] },
     { name: "Fish oil", percentage: 2, source: "IFOS-certified", benefits: ["EPA/DHA for skin & coat"] },
   ],
@@ -28,25 +28,25 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Ground lamb", percentage: 50, source: "Mosner Family Brands", benefits: ["Highly bioavailable protein"] },
     { name: "Pumpkin purée", percentage: 15, source: "Organic", benefits: ["Digestive support", "Beta-carotene"] },
     { name: "Quinoa", percentage: 15, source: "Organic Supplier", benefits: ["Complete amino acids"] },
-    { name: "Carrots", percentage: 8, source: "Local Farms", benefits: ["Antioxidants"] },
-    { name: "Kale or spinach", percentage: 8, source: "Local Farms", benefits: ["Minerals & vitamins"] },
+    { name: "Carrots", percentage: 8, source: "Local & Regional Farms", benefits: ["Antioxidants"] },
+    { name: "Kale or spinach", percentage: 8, source: "Local & Regional Farms", benefits: ["Minerals & vitamins"] },
     { name: "Custom Premix", percentage: 2, source: "NouriPet", benefits: ["Complete micronutrients"] },
     { name: "Fish oil", percentage: 2, source: "IFOS-certified", benefits: ["EPA/DHA for skin & coat"] },
   ],
   "low-fat-chicken-garden-veggie": [
-    { name: "Skinless chicken breast", percentage: 55, source: "Sunrise Poultry", benefits: ["Ultra-lean protein for sensitive digestion"] },
+    { name: "Skinless chicken breast", percentage: 55, source: "Mosner Family Brands", benefits: ["Ultra-lean protein for sensitive digestion"] },
     { name: "Egg whites", percentage: 10, source: "Certified", benefits: ["High-quality, fat-free protein"] },
     { name: "Quinoa", percentage: 15, source: "Organic Supplier", benefits: ["Digestible carb, complete amino acids"] },
-    { name: "Carrots (lightened with zucchini)", percentage: 8, source: "Local Farms", benefits: ["Fiber, beta-carotene"] },
-    { name: "Spinach", percentage: 8, source: "Local Farms", benefits: ["Iron, folate"] },
+    { name: "Carrots (lightened with zucchini)", percentage: 8, source: "Local & Regional Farms", benefits: ["Fiber, beta-carotene"] },
+    { name: "Spinach", percentage: 8, source: "Local & Regional Farms", benefits: ["Iron, folate"] },
     { name: "Custom Premix (Low Fat)", percentage: 3, source: "NouriPet", benefits: ["Essential vitamins/minerals for low-fat diets"] },
   ],
   "turkey-brown-rice-comfort": [
     { name: "Lean ground turkey", percentage: 50, source: "Mosner Family Brands", benefits: ["Lean protein"] },
     { name: "Brown rice", percentage: 18, source: "Organic", benefits: ["Complex carbs", "Steady energy"] },
-    { name: "Carrots", percentage: 10, source: "Local Farms", benefits: ["Beta-carotene"] },
-    { name: "Zucchini", percentage: 10, source: "Local Farms", benefits: ["Hydration", "Fiber"] },
-    { name: "Spinach", percentage: 10, source: "Local Farms", benefits: ["Iron", "Vitamins"] },
+    { name: "Carrots", percentage: 10, source: "Local & Regional Farms", benefits: ["Beta-carotene"] },
+    { name: "Zucchini", percentage: 10, source: "Local & Regional Farms", benefits: ["Hydration", "Fiber"] },
+    { name: "Spinach", percentage: 10, source: "Local & Regional Farms", benefits: ["Iron", "Vitamins"] },
     { name: "Custom Premix", percentage: 1, source: "NouriPet", benefits: ["Complete micronutrients"] },
     { name: "Fish oil", percentage: 1, source: "IFOS-certified", benefits: ["EPA/DHA"] },
   ],
@@ -92,7 +92,7 @@ export function IngredientBreakdown({ recipeId }: IngredientBreakdownProps) {
         <div className="pt-4 border-t">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Award className="h-4 w-4" />
-            <span>All ingredients are USDA inspected and third-party tested for quality and safety</span>
+            <span>AAFCO approved recipes lab tested for proper ingredient ratios. Nutrient premix tested for salmonella.</span>
           </div>
         </div>
       </CardContent>

@@ -84,7 +84,7 @@ export function SourcingSustainability({ recipe }: SourcingSustainabilityProps) 
               <ExternalLink className="h-3 w-3 ml-2" />
             </Button>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Every batch is tested for safety, nutritional accuracy, and quality
+              AAFCO approved recipes lab tested for proper ingredient ratios. Nutrient premix tested for salmonella.
             </p>
           </div>
         </CardContent>

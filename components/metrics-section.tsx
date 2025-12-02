@@ -21,10 +21,10 @@ const metricsConfig = [
   {
     id: "testing",
     label: "Safety & Testing",
-    value: "Every batch",
-    qualifier: "independently tested & AAFCO balanced",
+    value: "Lab tested",
+    qualifier: "AAFCO approved recipes & salmonella tested",
     tooltip:
-      "3rd-party pathogen testing (Salmonella, E. coli, Listeria) + nutrient profile meets AAFCO Adult Maintenance.",
+      "Our AAFCO approved recipes are lab tested to ensure proper ingredient ratios. Nutrient premix tested for salmonella.",
     sourceHref: "/methodology#testing",
     testId: "metric-testing",
   },

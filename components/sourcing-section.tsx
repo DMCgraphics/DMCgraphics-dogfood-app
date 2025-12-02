@@ -7,31 +7,13 @@ import { useEffect, useRef, useState } from "react"
 
 const farmLocations = [
   {
-    name: "Sunrise Poultry Farm",
-    location: "Litchfield, CT",
-    product: "Free-Range Chicken",
-    lat: 41.7473,
-    lng: -73.189,
+    name: "Mosner Family Brands",
+    location: "Regional",
+    product: "Premium Meats",
+    lat: 41.8,
+    lng: -73.2,
     color: "bg-primary",
-    description: "Family-owned farm specializing in pasture-raised poultry since 1952",
-  },
-  {
-    name: "Hudson Valley Beef Co",
-    location: "Rhinebeck, NY",
-    product: "Grass-Fed Beef",
-    lat: 41.927,
-    lng: -73.9123,
-    color: "bg-secondary",
-    description: "Sustainable grass-fed cattle ranch in the heart of Hudson Valley",
-  },
-  {
-    name: "Connecticut Turkey Ranch",
-    location: "Woodstock, CT",
-    product: "Heritage Turkey",
-    lat: 41.9501,
-    lng: -71.9673,
-    color: "bg-primary",
-    description: "Heritage breed turkeys raised on open pastures with traditional methods",
+    description: "Regional meat purveyor providing quality proteins for our recipes",
   },
 ]
 
@@ -178,11 +160,10 @@ export function SourcingSection() {
           <div className="space-y-6 md:space-y-8">
             <div className="space-y-3 md:space-y-4">
               <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
-                Local farms. <span className="text-primary block sm:inline">Connecticut & Hudson Valley sourced.</span>
+                Premium sourcing. <span className="text-primary block sm:inline">Local & regional partners.</span>
               </h2>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                We partner with family farms across Connecticut and the Hudson Valley that share our commitment to
-                quality and transparency. Supporting local agriculture while providing the freshest ingredients.
+                We source premium meats from Mosner Family Brands, a trusted regional purveyor, and fresh vegetables from local and regional farms that share our commitment to quality and transparency.
               </p>
             </div>
 
@@ -192,8 +173,8 @@ export function SourcingSection() {
                   <MapPin className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-sm md:text-base">Local Farm Network</div>
-                  <div className="text-xs md:text-sm text-muted-foreground">Within 150 miles of our kitchen</div>
+                  <div className="font-semibold text-sm md:text-base">Regional Sourcing Network</div>
+                  <div className="text-xs md:text-sm text-muted-foreground">Mosner Family Brands for meats</div>
                 </div>
               </div>
 
@@ -202,9 +183,9 @@ export function SourcingSection() {
                   <Award className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-sm md:text-base">Regional Quality Standards</div>
+                  <div className="font-semibold text-sm md:text-base">Local & Regional Produce</div>
                   <div className="text-xs md:text-sm text-muted-foreground">
-                    Connecticut Department of Agriculture certified
+                    Fresh vegetables from trusted farms
                   </div>
                 </div>
               </div>
@@ -232,8 +213,8 @@ export function SourcingSection() {
                     <div className="w-full h-full bg-gradient-to-br from-green-50 to-amber-50 p-6 flex flex-col justify-center">
                       <div className="space-y-4">
                         <div className="text-center mb-6">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2">Our Farm Partners</h3>
-                          <p className="text-sm text-gray-600">Connecticut & Hudson Valley Region</p>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-2">Our Sourcing Partners</h3>
+                          <p className="text-sm text-gray-600">Regional Network</p>
                         </div>
 
                         <div className="space-y-3">
@@ -267,10 +248,10 @@ export function SourcingSection() {
             </Card>
 
             <div className="absolute -bottom-2 -left-2 md:-bottom-4 md:-left-4 bg-card border rounded-lg md:rounded-xl p-3 md:p-4 shadow-lg max-w-[180px] md:max-w-none">
-              <div className="text-xs md:text-sm font-medium">Batch #CT-2024-001</div>
-              <div className="text-xs text-muted-foreground">Connecticut sourced</div>
+              <div className="text-xs md:text-sm font-medium">Batch #NP-2024-001</div>
+              <div className="text-xs text-muted-foreground">Regional sourcing</div>
               <Badge variant="outline" className="mt-1 md:mt-2 text-xs">
-                View Local COA
+                View COA
               </Badge>
             </div>
           </div>

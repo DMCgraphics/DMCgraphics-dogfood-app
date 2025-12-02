@@ -1,5 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
+import Script from "next/script"
 import "./globals.css"
 import { Inter, Manrope } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -82,6 +83,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${manrope.variable} antialiased`}>
       <body>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SN1ZK2MEE5" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SN1ZK2MEE5');
+          `}
+        </Script>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <CartProvider>

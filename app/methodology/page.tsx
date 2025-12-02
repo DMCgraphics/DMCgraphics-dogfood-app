@@ -8,12 +8,12 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "Our Methodology | NouriPet - How We Measure Dog Health Results",
   description:
-    "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research and safety standards.",
+    "Detailed methodology behind our 92% digestion improvement rate and lab testing protocols. AAFCO approved recipes tested at Midwest Labs for ingredient accuracy and safety.",
   keywords: "dog food testing methodology, AAFCO compliance, pet food safety, dog nutrition research, digestion improvement",
   openGraph: {
     title: "Our Methodology | NouriPet - How We Measure Dog Health Results",
     description:
-      "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research.",
+      "Detailed methodology behind our 92% digestion improvement rate and lab testing protocols. AAFCO approved recipes tested at Midwest Labs.",
     type: "article",
     url: "https://nouripet.net/methodology",
     siteName: "NouriPet",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Our Methodology | NouriPet - How We Measure Dog Health Results",
     description:
-      "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research.",
+      "Detailed methodology behind our 92% digestion improvement rate and lab testing protocols. AAFCO approved recipes tested at Midwest Labs.",
     images: ["https://nouripet.net/og-image.png"],
   },
   alternates: {
@@ -44,7 +44,7 @@ export default function MethodologyPage() {
     "@type": "Article",
     headline: "NouriPet Methodology: How We Measure Dog Health Results",
     description:
-      "Detailed methodology behind our 92% digestion improvement rate and every-batch testing protocols. Complete transparency in our research and safety standards.",
+      "Detailed methodology behind our 92% digestion improvement rate and lab testing protocols. AAFCO approved recipes tested at Midwest Labs for ingredient accuracy and safety.",
     author: {
       "@type": "Organization",
       name: "NouriPet",
@@ -176,8 +176,8 @@ export default function MethodologyPage() {
                     <Shield className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-2xl font-serif">Safety & Testing: Every Batch</CardTitle>
-                    <p className="text-muted-foreground">independently tested & AAFCO balanced</p>
+                    <CardTitle className="text-2xl font-serif">Safety & Testing: Lab Tested</CardTitle>
+                    <p className="text-muted-foreground">AAFCO approved recipes & salmonella tested</p>
                   </div>
                 </div>
               </CardHeader>
@@ -187,44 +187,26 @@ export default function MethodologyPage() {
                     <h3 className="text-lg font-semibold mb-3">Pathogen Testing</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm">Salmonella</span>
+                        <span className="text-sm">Salmonella (Nutrient Premix)</span>
                         <Badge variant="secondary" className="text-xs">
-                          Every batch
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">E. coli</span>
-                        <Badge variant="secondary" className="text-xs">
-                          Every batch
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Listeria</span>
-                        <Badge variant="secondary" className="text-xs">
-                          Every batch
+                          Lab Tested
                         </Badge>
                       </div>
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Nutritional Analysis</h3>
+                    <h3 className="text-lg font-semibold mb-3">Recipe Analysis</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm">Protein content</span>
+                        <span className="text-sm">Ingredient ratios</span>
                         <Badge variant="secondary" className="text-xs">
-                          Verified
+                          Lab Tested
                         </Badge>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">Fat content</span>
+                        <span className="text-sm">Nutritional profile</span>
                         <Badge variant="secondary" className="text-xs">
-                          Verified
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Mineral profile</span>
-                        <Badge variant="secondary" className="text-xs">
-                          AAFCO compliant
+                          AAFCO Approved
                         </Badge>
                       </div>
                     </div>
@@ -234,15 +216,17 @@ export default function MethodologyPage() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Testing Protocol</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    All recipes undergo third-party laboratory testing through certified facilities before release.
-                    Nutritional profiles are formulated to meet or exceed AAFCO Adult Maintenance standards.
+                    Our AAFCO approved recipes undergo third-party laboratory testing at Midwest Labs to ensure proper ingredient ratios.
+                    Nutrient premix is tested for salmonella. Nutritional profiles are formulated to meet or exceed AAFCO Adult Maintenance standards.
                   </p>
 
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      <strong>Testing Partner:</strong> Eurofins Scientific (ISO 17025 accredited laboratory)
+                      <strong>Testing Partner:</strong> Midwest Labs (ISO 17025 accredited laboratory)
                       <br />
-                      <strong>Frequency:</strong> 100% of production batches tested before distribution
+                      <strong>Recipe Testing:</strong> AAFCO approved recipes lab tested for proper ingredient ratios
+                      <br />
+                      <strong>Pathogen Testing:</strong> Nutrient premix tested for salmonella
                       <br />
                       <strong>Compliance:</strong> AAFCO Adult Maintenance nutritional adequacy standards
                     </p>

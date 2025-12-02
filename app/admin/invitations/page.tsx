@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Upload, Mail, CheckCircle2, XCircle, Clock, Copy, RefreshCw, Send } from "lucide-react"
+import { Upload, Mail, CheckCircle2, XCircle, Clock, Copy, RefreshCw, Send, UserPlus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 type Invitation = {
@@ -65,6 +65,14 @@ export default function AdminInvitationsPage() {
   const [previewData, setPreviewData] = useState<ParsedSubscription[]>([])
   const [showPreview, setShowPreview] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [showManualForm, setShowManualForm] = useState(false)
+  const [manualForm, setManualForm] = useState({
+    email: "",
+    customerName: "",
+    stripeCustomerId: "",
+    stripeSubscriptionId: "",
+    stripePriceId: "",
+  })
 
   useEffect(() => {
     fetchInvitations()
@@ -292,6 +300,52 @@ export default function AdminInvitationsPage() {
     }
   }
 
+  const handleCreateManualInvitation = async () => {
+    if (!manualForm.email || !manualForm.stripeCustomerId || !manualForm.stripeSubscriptionId) {
+      setError("Email, Stripe Customer ID, and Stripe Subscription ID are required")
+      return
+    }
+
+    setIsUploading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const response = await fetch("/api/admin/invitations/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: manualForm.email,
+          customerName: manualForm.customerName,
+          stripeCustomerId: manualForm.stripeCustomerId,
+          stripeSubscriptionId: manualForm.stripeSubscriptionId,
+          stripePriceId: manualForm.stripePriceId,
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSuccess(`Invitation created for ${manualForm.email}`)
+        setManualForm({
+          email: "",
+          customerName: "",
+          stripeCustomerId: "",
+          stripeSubscriptionId: "",
+          stripePriceId: "",
+        })
+        setShowManualForm(false)
+        fetchInvitations()
+      } else {
+        setError(data.error || "Failed to create invitation")
+      }
+    } catch (err: any) {
+      setError(`Failed to create invitation: ${err.message}`)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; icon: any }> = {
       pending: { variant: "secondary", icon: Clock },
@@ -333,6 +387,108 @@ export default function AdminInvitationsPage() {
           <AlertDescription className="text-green-900">{success}</AlertDescription>
         </Alert>
       )}
+
+      {/* Manual Invitation */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Create Manual Invitation</CardTitle>
+          <CardDescription>
+            Invite individual users for testing without uploading a CSV
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!showManualForm ? (
+            <Button onClick={() => setShowManualForm(true)} variant="outline">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite User Manually
+            </Button>
+          ) : (
+            <div className="space-y-4 border rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="manual-email">Email *</Label>
+                  <Input
+                    id="manual-email"
+                    type="email"
+                    placeholder="customer@example.com"
+                    value={manualForm.email}
+                    onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="manual-name">Customer Name</Label>
+                  <Input
+                    id="manual-name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={manualForm.customerName}
+                    onChange={(e) => setManualForm({ ...manualForm, customerName: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="manual-customer-id">Stripe Customer ID *</Label>
+                  <Input
+                    id="manual-customer-id"
+                    type="text"
+                    placeholder="cus_xxxxx"
+                    value={manualForm.stripeCustomerId}
+                    onChange={(e) => setManualForm({ ...manualForm, stripeCustomerId: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="manual-subscription-id">Stripe Subscription ID *</Label>
+                  <Input
+                    id="manual-subscription-id"
+                    type="text"
+                    placeholder="sub_xxxxx"
+                    value={manualForm.stripeSubscriptionId}
+                    onChange={(e) => setManualForm({ ...manualForm, stripeSubscriptionId: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="manual-price-id">Stripe Price ID (Optional)</Label>
+                <Input
+                  id="manual-price-id"
+                  type="text"
+                  placeholder="price_xxxxx"
+                  value={manualForm.stripePriceId}
+                  onChange={(e) => setManualForm({ ...manualForm, stripePriceId: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCreateManualInvitation}
+                  disabled={isUploading || !manualForm.email || !manualForm.stripeCustomerId || !manualForm.stripeSubscriptionId}
+                >
+                  {isUploading ? "Creating..." : "Create Invitation"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowManualForm(false)
+                    setManualForm({
+                      email: "",
+                      customerName: "",
+                      stripeCustomerId: "",
+                      stripeSubscriptionId: "",
+                      stripePriceId: "",
+                    })
+                  }}
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Upload CSV */}
       <Card>

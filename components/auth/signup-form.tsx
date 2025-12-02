@@ -2,14 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase/client"
 
@@ -17,9 +17,10 @@ interface SignupFormProps {
   onSuccess?: () => void
   onSwitchToLogin?: () => void
   onUserInteraction?: () => void
+  inviteToken?: string
 }
 
-export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: SignupFormProps) {
+export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, inviteToken }: SignupFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -31,6 +32,43 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [invitation, setInvitation] = useState<any>(null)
+  const [isVerifyingInvite, setIsVerifyingInvite] = useState(false)
+  const [inviteError, setInviteError] = useState("")
+
+  // Verify invitation token on mount
+  useEffect(() => {
+    if (inviteToken) {
+      verifyInvitation()
+    }
+  }, [inviteToken])
+
+  const verifyInvitation = async () => {
+    setIsVerifyingInvite(true)
+    setInviteError("")
+
+    try {
+      const response = await fetch(`/api/invitations/verify?token=${inviteToken}`)
+      const data = await response.json()
+
+      if (data.valid && data.invitation) {
+        setInvitation(data.invitation)
+        // Pre-fill email from invitation
+        setFormData(prev => ({
+          ...prev,
+          email: data.invitation.email,
+          name: data.invitation.customerName || ""
+        }))
+      } else {
+        setInviteError(data.error || "Invalid invitation link")
+      }
+    } catch (err: any) {
+      console.error("Failed to verify invitation:", err)
+      setInviteError("Failed to verify invitation. Please try again.")
+    } finally {
+      setIsVerifyingInvite(false)
+    }
+  }
 
   // Auth context will automatically handle signup via auth state changes
 
@@ -83,22 +121,56 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
       }
 
       if (data.user) {
-        console.log("[v0] user_signup_success", { 
-          email: formData.email, 
+        console.log("[v0] user_signup_success", {
+          email: formData.email,
           name: formData.name,
-          userId: data.user.id 
+          userId: data.user.id,
+          hasInvitation: !!inviteToken
         })
-        
+
+        // If there's an invitation, claim it
+        if (inviteToken) {
+          try {
+            const claimResponse = await fetch("/api/invitations/claim", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                token: inviteToken,
+                userId: data.user.id
+              })
+            })
+
+            const claimData = await claimResponse.json()
+
+            if (!claimData.success) {
+              console.error("[v0] invitation_claim_failed", claimData.error)
+              setError(`Account created but failed to link subscription: ${claimData.error}`)
+              setIsLoading(false)
+              return
+            }
+
+            console.log("[v0] invitation_claimed_success", {
+              userId: data.user.id,
+              subscriptionId: claimData.subscription?.id
+            })
+          } catch (claimError: any) {
+            console.error("[v0] invitation_claim_error", claimError)
+            setError("Account created but failed to link subscription. Please contact support.")
+            setIsLoading(false)
+            return
+          }
+        }
+
         // The auth context will automatically handle the session change
         // Call onSuccess immediately - the parent component will handle modal closing
         setIsLoading(false)
-        
+
         // Add a fallback timeout to ensure modal closes even if auth state doesn't update
         setTimeout(() => {
           console.log("[v0] signup_form_fallback_close")
           onSuccess?.()
         }, 1000) // Reduced to 1 second fallback
-        
+
         // Call onSuccess immediately as primary mechanism
         onSuccess?.()
       } else {
@@ -123,11 +195,38 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-        <p className="text-muted-foreground">Join NouriPet to track your dog's health</p>
+        <CardTitle className="text-2xl font-bold">
+          {invitation ? "Claim Your Subscription" : "Create Account"}
+        </CardTitle>
+        <p className="text-muted-foreground">
+          {invitation
+            ? "Set up your account to access your active subscription"
+            : "Join NouriPet to track your dog's health"}
+        </p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isVerifyingInvite && (
+            <Alert>
+              <AlertDescription>Verifying invitation...</AlertDescription>
+            </Alert>
+          )}
+
+          {inviteError && (
+            <Alert variant="destructive">
+              <AlertDescription>{inviteError}</AlertDescription>
+            </Alert>
+          )}
+
+          {invitation && !inviteError && (
+            <Alert className="border-green-200 bg-green-50 text-green-900">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-900">
+                Welcome back! Creating an account for your existing subscription.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -162,7 +261,14 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction }: Si
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 className="pl-10"
                 required
+                disabled={!!invitation}
+                readOnly={!!invitation}
               />
+              {invitation && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Email locked from invitation
+                </p>
+              )}
             </div>
           </div>
 

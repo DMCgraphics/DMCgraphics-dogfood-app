@@ -8,12 +8,12 @@ import { useEffect, useRef, useState } from "react"
 const farmLocations = [
   {
     name: "Mosner Family Brands",
-    location: "Regional",
+    location: "Bronx, NY",
     product: "Premium Meats",
-    lat: 41.8,
-    lng: -73.2,
+    lat: 40.8100,
+    lng: -73.8800,
     color: "bg-primary",
-    description: "Regional meat purveyor providing quality proteins for our recipes",
+    description: "Regional meat purveyor sourcing quality proteins. We pick up directly 1-2 days before batching",
   },
 ]
 
@@ -81,10 +81,10 @@ export function SourcingSection() {
 
       try {
         console.log("[v0] Initializing Google Map...")
-        // Center map on Connecticut/Hudson Valley region
+        // Center map on NY/CT regional sourcing area
         const map = new window.google.maps.Map(mapRef.current, {
-          center: { lat: 41.8, lng: -73.2 },
-          zoom: 8,
+          center: { lat: 41.2, lng: -73.5 },
+          zoom: 9,
           styles: [
             {
               featureType: "all",

@@ -224,7 +224,38 @@ export default function DashboardPage() {
         console.log("[v0] Active plans data:", activePlansData)
 
         // Check if user has subscriptions but no dogs - this happens when they paid via Stripe payment link
-        if (subscriptionsData && subscriptionsData.length > 0 && (!dogsData || dogsData.length === 0)) {
+        // First check Supabase, then check Stripe directly as a fallback
+        let hasActiveSubscription = subscriptionsData && subscriptionsData.length > 0
+
+        if (!hasActiveSubscription) {
+          // No subscriptions in Supabase - check Stripe directly for payment link customers
+          console.log("[v0] No subscriptions in Supabase, checking Stripe directly...")
+          try {
+            const stripeCheckResponse = await fetch("/api/subscriptions/check-stripe", {
+              credentials: "include"
+            })
+            if (stripeCheckResponse.ok) {
+              const stripeCheckData = await stripeCheckResponse.json()
+              console.log("[v0] Stripe check result:", stripeCheckData)
+              hasActiveSubscription = stripeCheckData.hasSubscription
+
+              // If we found subscriptions in Stripe, refresh the subscriptions data
+              if (hasActiveSubscription) {
+                const { data: refreshedSubs } = await supabase
+                  .from("subscriptions")
+                  .select("*")
+                  .eq("user_id", user.id)
+                  .in("status", ["active", "trialing", "past_due", "canceled", "paused"])
+                subscriptionsData = refreshedSubs
+                console.log("[v0] Refreshed subscriptions from Supabase:", subscriptionsData?.length)
+              }
+            }
+          } catch (error) {
+            console.error("[v0] Error checking Stripe subscriptions:", error)
+          }
+        }
+
+        if (hasActiveSubscription && (!dogsData || dogsData.length === 0)) {
           console.log("[v0] User has subscriptions but no dogs - showing add dog profile modal")
           setHasSubscriptionWithoutDog(true)
           setShowAddDogProfileModal(true)

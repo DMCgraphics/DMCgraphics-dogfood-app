@@ -474,6 +474,7 @@ export async function POST(req: Request) {
       }
 
       // Update the subscription status in our database
+      // IMPORTANT: Also sync metadata and price_id to keep Supabase in sync with Stripe
       const { error: updateError } = await getSupabaseAdmin()
         .from("subscriptions")
         .update({
@@ -484,6 +485,8 @@ export async function POST(req: Request) {
           canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
           updated_at: new Date().toISOString(),
           pause_json: sub.pause_collection || null,
+          metadata: sub.metadata || {},
+          stripe_price_id: sub.items.data[0]?.price?.id || null,
         })
         .eq("stripe_subscription_id", sub.id)
 

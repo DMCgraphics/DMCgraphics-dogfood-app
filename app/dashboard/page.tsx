@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
 import { EditDogModal } from "@/components/modals/edit-dog-modal"
+import { AddDogProfileModal } from "@/components/modals/add-dog-profile-modal"
 import { TopperOrdersManager } from "@/components/dashboard/topper-orders-manager"
 
 // SWR fetcher function
@@ -86,6 +87,8 @@ export default function DashboardPage() {
   const [showEditDogModal, setShowEditDogModal] = useState(false)
   const [editingDogId, setEditingDogId] = useState<string | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [showAddDogProfileModal, setShowAddDogProfileModal] = useState(false)
+  const [hasSubscriptionWithoutDog, setHasSubscriptionWithoutDog] = useState(false)
 
   const [medicalConditions] = useState(mockMedicalConditions)
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
@@ -219,6 +222,13 @@ export default function DashboardPage() {
           .in("status", ["active", "purchased", "checkout_in_progress", "draft"])
 
         console.log("[v0] Active plans data:", activePlansData)
+
+        // Check if user has subscriptions but no dogs - this happens when they paid via Stripe payment link
+        if (subscriptionsData && subscriptionsData.length > 0 && (!dogsData || dogsData.length === 0)) {
+          console.log("[v0] User has subscriptions but no dogs - showing add dog profile modal")
+          setHasSubscriptionWithoutDog(true)
+          setShowAddDogProfileModal(true)
+        }
 
         // Refresh auth context subscription status to ensure consistency
         // Don't await this to prevent dashboard timeout - it will update in background
@@ -736,6 +746,12 @@ export default function DashboardPage() {
     setRefreshTrigger(prev => prev + 1)
   }
 
+  const handleDogProfileCreated = () => {
+    // Refresh the page to reload all data with the new dog
+    setShowAddDogProfileModal(false)
+    setRefreshTrigger(prev => prev + 1)
+  }
+
   const handleSelectDog = (dogId: string) => {
     setSelectedDogId(dogId)
     console.log("[v0] Selected dog:", dogId)
@@ -1224,11 +1240,16 @@ export default function DashboardPage() {
           incompletePlans={incompletePlans}
         />
         <SubscriptionManagementModal open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal} />
-        <EditDogModal 
-          open={showEditDogModal} 
-          onOpenChange={setShowEditDogModal} 
+        <EditDogModal
+          open={showEditDogModal}
+          onOpenChange={setShowEditDogModal}
           dogId={editingDogId}
           onDogUpdated={handleDogUpdated}
+        />
+        <AddDogProfileModal
+          open={showAddDogProfileModal}
+          onOpenChange={setShowAddDogProfileModal}
+          onDogCreated={handleDogProfileCreated}
         />
         <Footer />
       </div>

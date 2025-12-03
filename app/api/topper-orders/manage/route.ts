@@ -153,6 +153,24 @@ export async function POST(req: Request) {
           proration_behavior: 'create_prorations', // Prorate the change
         })
 
+        // IMPORTANT: Also update Supabase to keep metadata in sync
+        const supabase = createServerSupabase()
+        const { error: supabaseError } = await supabase
+          .from("subscriptions")
+          .update({
+            metadata: subscription.metadata || {},
+            stripe_price_id: newPriceId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("stripe_subscription_id", subscriptionId)
+
+        if (supabaseError) {
+          console.error("[TOPPER-MANAGE] Failed to update Supabase subscription:", supabaseError)
+          // Don't fail the request - Stripe was updated successfully
+        } else {
+          console.log("[TOPPER-MANAGE] Successfully synced subscription to Supabase")
+        }
+
         return NextResponse.json({
           success: true,
           message: `Subscription updated to ${newLevel}% topper plan`,

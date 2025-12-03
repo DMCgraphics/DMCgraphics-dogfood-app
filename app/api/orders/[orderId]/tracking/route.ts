@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic"
 /**
  * GET /api/orders/[orderId]/tracking
  * Fetch order details and tracking events
- * Supports both authenticated users and guest access via session_id
+ * Supports:
+ * - Authenticated users (via auth)
+ * - Guest access via session_id
+ * - Public access via tracking_token (for shareable links)
  */
 export async function GET(
   req: Request,
@@ -17,13 +20,14 @@ export async function GET(
     const { orderId } = params
     const { searchParams } = new URL(req.url)
     const sessionId = searchParams.get("session_id")
+    const token = searchParams.get("token")
 
     const supabase = await createServerSupabase()
     const {
       data: { user },
     } = await supabase.auth.getUser()
 
-    console.log("[TRACKING API] Fetching order:", orderId, "sessionId:", sessionId, "user:", user?.email)
+    console.log("[TRACKING API] Fetching order:", orderId, "sessionId:", sessionId, "token:", !!token, "user:", user?.email)
 
     // Fetch order (without profile join to avoid RLS issues)
     const { data: order, error: orderError } = await supabase
@@ -67,7 +71,11 @@ export async function GET(
       console.log("[TRACKING API] Guest claim found:", !!claim)
     }
 
-    if (!isOwner && !isGuestWithValidSession) {
+    // 3. If valid tracking token provided (for shareable links)
+    const hasValidToken = token && order.tracking_token === token
+    console.log("[TRACKING API] Valid token:", hasValidToken)
+
+    if (!isOwner && !isGuestWithValidSession && !hasValidToken) {
       console.log("[TRACKING API] Unauthorized access attempt")
       return NextResponse.json(
         { error: "Unauthorized. You do not have access to this order." },

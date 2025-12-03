@@ -5,26 +5,27 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { OrderTrackingTimeline } from "@/components/order-tracking-timeline"
 import { DriverInfoCard } from "@/components/driver-info-card"
-import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Loader2, Phone, Mail, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useOrderTracking } from "@/hooks/use-order-tracking"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function TrackOrderPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const orderId = params.orderId as string
   const sessionId = searchParams.get("session_id")
+  const token = searchParams.get("token")
+  const { isAuthenticated } = useAuth()
 
   const { order, events, isConnected, isLoading, error } = useOrderTracking(orderId, sessionId)
 
   return (
-    <ProtectedRoute requireAuth={true}>
-      <div className="min-h-screen bg-background">
-        <Header />
+    <div className="min-h-screen bg-background">
+      <Header />
 
         <main className="container py-8 max-w-4xl">
           <div className="space-y-6">
@@ -175,6 +176,5 @@ export default function TrackOrderPage() {
 
         <Footer />
       </div>
-    </ProtectedRoute>
   )
 }

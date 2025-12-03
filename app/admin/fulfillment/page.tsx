@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Package, Truck, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { Package, Truck, CheckCircle, Clock, AlertCircle, Copy, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
 
@@ -34,6 +34,7 @@ type Order = {
   user_id: string
   guest_email: string
   is_subscription_order: boolean
+  tracking_token: string
 }
 
 export default function FulfillmentPage() {
@@ -138,6 +139,27 @@ export default function FulfillmentPage() {
     }
   }
 
+  const copyTrackingLink = async (orderId: string, trackingToken: string) => {
+    try {
+      const baseUrl = window.location.origin
+      const trackingUrl = `${baseUrl}/orders/${orderId}/track?token=${trackingToken}`
+
+      await navigator.clipboard.writeText(trackingUrl)
+
+      toast({
+        title: "Link copied!",
+        description: "Tracking link has been copied to clipboard"
+      })
+    } catch (error) {
+      console.error('Error copying link:', error)
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive"
+      })
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string, icon: any }> = {
       pending: { color: 'bg-gray-100 text-gray-800', icon: Clock },
@@ -213,6 +235,15 @@ export default function FulfillmentPage() {
                             </p>
                           </div>
                           <div className="flex flex-col gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyTrackingLink(order.id, order.tracking_token)}
+                              className="w-full"
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Tracking Link
+                            </Button>
                             {order.fulfillment_status === 'looking_for_driver' && (
                               <Button size="sm" onClick={() => updateOrderStatus(order.id, 'driver_assigned')}>
                                 Assign Driver
@@ -280,6 +311,15 @@ export default function FulfillmentPage() {
                             </p>
                           </div>
                           <div className="flex flex-col gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyTrackingLink(order.id, order.tracking_token)}
+                              className="w-full"
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Tracking Link
+                            </Button>
                             {order.fulfillment_status === 'preparing' && (
                               <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')}>
                                 Out for Delivery

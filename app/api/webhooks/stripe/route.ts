@@ -417,19 +417,40 @@ export async function POST(req: Request) {
           const deliveryZipcode = s.shipping_details?.address?.postal_code ||
                                  s.customer_details?.address?.postal_code
 
+          // Generate order number
+          const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+          // Calculate estimated delivery (2-4 hours for local delivery)
+          const now = new Date()
+          const estimatedDeliveryDate = new Date(now.getTime() + 3 * 60 * 60 * 1000) // 3 hours from now
+          const startHour = estimatedDeliveryDate.getHours()
+          const endHour = startHour + 2
+          const estimatedDeliveryWindow = `${startHour % 12 || 12}:00 ${startHour >= 12 ? 'PM' : 'AM'} - ${endHour % 12 || 12}:00 ${endHour >= 12 ? 'PM' : 'AM'}`
+
+          // Format recipe name from recipes array
+          const recipeName = recipes.length > 0
+            ? recipes.map((r: any) => r.name).join(', ')
+            : 'Fresh Food Pack'
+
           const orderData = {
             user_id: userId,
             guest_email: guestEmail,
+            order_number: orderNumber,
             order_type: 'individual-pack',
             status: 'paid',
             fulfillment_status: 'looking_for_driver',
             delivery_method: 'local_delivery',
             delivery_zipcode: deliveryZipcode,
-            stripe_checkout_session_id: s.id,
+            estimated_delivery_date: estimatedDeliveryDate.toISOString().split('T')[0],
+            estimated_delivery_window: estimatedDeliveryWindow,
+            stripe_session_id: s.id,
             stripe_payment_intent_id: s.payment_intent as string,
+            total: (s.amount_total || 0) / 100,
             total_cents: s.amount_total || 0,
             recipes: recipes,
-            product_type: productType,
+            recipe_name: recipeName,
+            quantity: recipes.reduce((sum: number, r: any) => sum + (r.quantity || 1), 0),
+            is_subscription_order: false,
             created_at: new Date().toISOString(),
           }
 
@@ -451,8 +472,12 @@ export async function POST(req: Request) {
             try {
               await getSupabaseAdmin().from('delivery_tracking_events').insert({
                 order_id: order.id,
-                event_type: 'order_placed',
-                description: 'Order confirmed and payment received',
+                event_type: 'looking_for_driver',
+                description: 'Order received. Looking for an available driver in your area.',
+                metadata: {
+                  payment_intent: s.payment_intent as string,
+                  checkout_session: s.id,
+                },
                 created_at: new Date().toISOString(),
               })
               console.log('[WEBHOOK] Initial tracking event created for order:', order.id)

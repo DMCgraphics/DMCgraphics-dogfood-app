@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,42 +24,40 @@ interface Order {
   estimatedDelivery?: string
 }
 
-const mockOrders: Order[] = [
-  {
-    id: "ORD-2024-001",
-    date: "2024-12-01",
-    status: "delivered",
-    total: 89.99,
-    items: [
-      { name: "Low-Fat Chicken & Garden Veggie (2 weeks)", quantity: 1, price: 79.99 },
-      { name: "Probiotic Supplement", quantity: 1, price: 10.0 },
-    ],
-    trackingNumber: "1Z999AA1234567890",
-  },
-  {
-    id: "ORD-2024-002",
-    date: "2024-11-15",
-    status: "shipped",
-    total: 79.99,
-    items: [{ name: "Beef & Quinoa Harvest (2 weeks)", quantity: 1, price: 79.99 }],
-    trackingNumber: "1Z999AA1234567891",
-    estimatedDelivery: "2024-12-20",
-  },
-  {
-    id: "ORD-2024-003",
-    date: "2024-11-01",
-    status: "delivered",
-    total: 89.99,
-    items: [
-      { name: "Turkey & Brown Rice Comfort (2 weeks)", quantity: 1, price: 79.99 },
-      { name: "Joint Support Supplement", quantity: 1, price: 10.0 },
-    ],
-  },
-]
-
 export default function OrdersPage() {
   const { user } = useAuth()
-  const [orders] = useState(mockOrders)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchOrders() {
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        console.log("[ORDERS] Fetching orders for user:", user.email)
+        const response = await fetch("/api/orders")
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch orders: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        console.log("[ORDERS] Received orders:", data)
+        setOrders(data.orders || [])
+      } catch (error) {
+        console.error("[ORDERS] Error fetching orders:", error)
+        setError(error instanceof Error ? error.message : "Failed to load orders")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [user])
 
   const getStatusIcon = (status: Order["status"]) => {
     switch (status) {
@@ -109,7 +107,23 @@ export default function OrdersPage() {
               <p className="text-muted-foreground">Track your orders and manage deliveries</p>
             </div>
 
-            {orders.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+                  <p className="text-muted-foreground">Loading your orders...</p>
+                </CardContent>
+              </Card>
+            ) : error ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold mb-2 text-red-600">Error Loading Orders</h3>
+                  <p className="text-muted-foreground mb-4">{error}</p>
+                  <Button onClick={() => window.location.reload()}>Try Again</Button>
+                </CardContent>
+              </Card>
+            ) : orders.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

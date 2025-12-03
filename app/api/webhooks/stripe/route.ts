@@ -391,6 +391,97 @@ export async function POST(req: Request) {
         }
       }
 
+      // CRITICAL: Create order record for individual pack purchases (one-time payments)
+      // This ensures all individual pack orders are tracked in the database
+      if (s.mode === 'payment' && s.metadata?.product_type) {
+        const productType = s.metadata.product_type
+
+        if (productType === 'individual' || productType === '3-packs' || productType === 'cart') {
+          console.log('[WEBHOOK] Creating individual pack order for session:', s.id, 'product_type:', productType)
+
+          // Determine user_id or guest_email
+          const userId = s.metadata.user_id || null
+          const guestEmail = !userId ? s.customer_details?.email : null
+
+          // Parse recipes from metadata
+          let recipes: any[] = []
+          try {
+            if (s.metadata.recipes) {
+              recipes = JSON.parse(s.metadata.recipes)
+            }
+          } catch (e) {
+            console.error('[WEBHOOK] Error parsing recipes:', e)
+          }
+
+          // Get shipping address zipcode
+          const deliveryZipcode = s.shipping_details?.address?.postal_code ||
+                                 s.customer_details?.address?.postal_code
+
+          const orderData = {
+            user_id: userId,
+            guest_email: guestEmail,
+            order_type: 'individual-pack',
+            status: 'paid',
+            fulfillment_status: 'looking_for_driver',
+            delivery_method: 'local_delivery',
+            delivery_zipcode: deliveryZipcode,
+            stripe_checkout_session_id: s.id,
+            stripe_payment_intent_id: s.payment_intent as string,
+            total_cents: s.amount_total || 0,
+            recipes: recipes,
+            product_type: productType,
+            created_at: new Date().toISOString(),
+          }
+
+          console.log('[WEBHOOK] Order data:', JSON.stringify(orderData, null, 2))
+
+          const { data: order, error: orderError } = await getSupabaseAdmin()
+            .from('orders')
+            .insert(orderData)
+            .select()
+            .single()
+
+          if (orderError) {
+            console.error('[WEBHOOK] Failed to create order:', orderError)
+            console.error('[WEBHOOK] Order data that failed:', JSON.stringify(orderData, null, 2))
+          } else {
+            console.log('[WEBHOOK] Order created successfully:', order.id)
+
+            // Create initial tracking event
+            try {
+              await getSupabaseAdmin().from('delivery_tracking_events').insert({
+                order_id: order.id,
+                event_type: 'order_placed',
+                description: 'Order confirmed and payment received',
+                created_at: new Date().toISOString(),
+              })
+              console.log('[WEBHOOK] Initial tracking event created for order:', order.id)
+            } catch (trackingError) {
+              console.error('[WEBHOOK] Failed to create tracking event:', trackingError)
+            }
+
+            // If guest order, create claim record
+            if (guestEmail && !userId) {
+              try {
+                // Generate a simple claim token
+                const claimToken = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+                await getSupabaseAdmin().from('guest_order_claims').insert({
+                  guest_email: guestEmail,
+                  stripe_session_id: s.id,
+                  order_id: order.id,
+                  claim_token: claimToken,
+                  created_at: new Date().toISOString(),
+                })
+                console.log('[WEBHOOK] Guest order claim record created for:', guestEmail)
+              } catch (claimError) {
+                console.error('[WEBHOOK] Failed to create guest claim record:', claimError)
+              }
+            }
+          }
+        }
+      }
+
       return NextResponse.json({ received: true })
     }
 

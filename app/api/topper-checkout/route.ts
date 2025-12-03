@@ -33,8 +33,25 @@ export async function POST(req: Request) {
       recipes,
       isSubscription,
       userEmail: customerEmail,
+      userId: user?.id,
       isGuest: !user
     })
+
+    // CRITICAL: Verify user_id for authenticated users
+    if (user) {
+      console.log("[TOPPER CHECKOUT] ✓ User authenticated - ID:", user.id, "Email:", user.email)
+    } else {
+      console.log("[TOPPER CHECKOUT] ⚠ Guest checkout - Email:", guestEmail)
+    }
+
+    // Validate that subscriptions have user_id
+    if (isSubscription && !user?.id) {
+      console.error("[TOPPER CHECKOUT] ❌ CRITICAL: Subscription attempted without user_id!")
+      return NextResponse.json(
+        { error: "Account required for subscriptions" },
+        { status: 401 }
+      )
+    }
 
     if (!priceId) {
       return NextResponse.json(
@@ -99,7 +116,17 @@ export async function POST(req: Request) {
       sessionId: session.id,
       url: session.url,
       mode: session.mode,
-      amount_total: session.amount_total
+      amount_total: session.amount_total,
+      metadata: session.metadata,
+      customer_email: session.customer_email
+    })
+
+    // Log metadata for debugging "Customer: Unknown" issues
+    console.log("[TOPPER CHECKOUT] Session metadata:", {
+      user_id: session.metadata?.user_id || "NOT SET",
+      dog_id: session.metadata?.dog_id || "NOT SET",
+      product_type: session.metadata?.product_type || "NOT SET",
+      is_guest: session.metadata?.is_guest || "NOT SET"
     })
 
     return NextResponse.json({

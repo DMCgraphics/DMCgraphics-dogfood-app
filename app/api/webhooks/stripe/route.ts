@@ -232,13 +232,17 @@ export async function POST(req: Request) {
         }
       }
 
-      if (!subscriptionId) {
+      // Only return early for subscription mode checkouts without a subscription ID
+      // One-time payments (mode: payment) should continue to order creation logic
+      if (!subscriptionId && s.mode === 'subscription') {
         console.log("[webhook] session completed but no subscription yet; will rely on customer.subscription.created")
         return NextResponse.json({ received: true })
       }
 
-      // Billing customer and plan resolution code
-      if (s.metadata?.user_id && s.customer) {
+      // Only process subscription-related logic for subscription mode checkouts
+      if (subscriptionId && s.mode === 'subscription') {
+        // Billing customer and plan resolution code
+        if (s.metadata?.user_id && s.customer) {
         try {
           await getSupabaseAdmin().from("billing_customers").upsert({
             user_id: s.metadata.user_id,
@@ -390,6 +394,7 @@ export async function POST(req: Request) {
           }
         }
       }
+      } // End of subscription mode processing
 
       // CRITICAL: Create order record for individual pack purchases (one-time payments)
       // This ensures all individual pack orders are tracked in the database

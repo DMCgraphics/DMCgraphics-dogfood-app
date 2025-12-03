@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Package, Calendar } from "lucide-react"
+import { CheckCircle, Package, Calendar, Truck, Eye } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase/client"
@@ -17,6 +17,7 @@ export default function OrderSuccessPage() {
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [guestEmail, setGuestEmail] = useState<string>("")
+  const [orderId, setOrderId] = useState<string | null>(null)
   const { user, isLoading: authLoading, refreshSubscriptionStatus } = useAuth()
   const processingRef = useRef(false)
 
@@ -59,6 +60,24 @@ export default function OrderSuccessPage() {
             setOrderData({ ...sessionData, mode: sessionData.mode || 'payment' })
             setGuestEmail(sessionData.customer_email || "")
             console.log("[v0] Guest order processed:", sessionData)
+
+            // Fetch order ID from database for tracking
+            if (sessionData.mode === 'payment') {
+              try {
+                const { data: order } = await supabase
+                  .from('orders')
+                  .select('id')
+                  .eq('stripe_checkout_session_id', sessionId)
+                  .maybeSingle()
+
+                if (order) {
+                  setOrderId(order.id)
+                  console.log("[v0] Found order ID for guest:", order.id)
+                }
+              } catch (err) {
+                console.error("[v0] Error fetching order ID:", err)
+              }
+            }
           } else {
             throw new Error("Failed to fetch session details")
           }
@@ -141,6 +160,22 @@ export default function OrderSuccessPage() {
           // For one-time purchases by authenticated users, just use session data
           console.log("[v0] One-time purchase - using session data")
           setOrderData({ ...sessionData, mode: 'payment' })
+
+          // Fetch order ID from database for tracking
+          try {
+            const { data: order } = await supabase
+              .from('orders')
+              .select('id')
+              .eq('stripe_checkout_session_id', sessionId)
+              .maybeSingle()
+
+            if (order) {
+              setOrderId(order.id)
+              console.log("[v0] Found order ID for authenticated user:", order.id)
+            }
+          } catch (err) {
+            console.error("[v0] Error fetching order ID:", err)
+          }
         }
       } catch (error) {
         console.error("Error verifying payment:", error)
@@ -205,16 +240,28 @@ export default function OrderSuccessPage() {
               <h2 className="text-xl font-semibold mb-4">What's Next?</h2>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Package className="h-5 w-5 text-primary mt-0.5" />
+                  <Truck className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <h3 className="font-medium">Delivery</h3>
+                    <h3 className="font-medium">Local Delivery - 24-48 Hours</h3>
                     <p className="text-sm text-muted-foreground">
-                      Your order will arrive within 5-7 business days. We'll send tracking info to your email.
+                      We're looking for a driver now. Your fresh food will arrive within 24-48 hours!
                     </p>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Track Order Button */}
+            {orderId && (
+              <div className="mb-8">
+                <Button asChild size="lg" className="w-full gap-2">
+                  <Link href={`/order/track/${orderId}?session_id=${sessionId}`}>
+                    <Eye className="h-5 w-5" />
+                    Track Your Order Live
+                  </Link>
+                </Button>
+              </div>
+            )}
 
             {/* Account Creation Prompt */}
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
@@ -275,13 +322,13 @@ export default function OrderSuccessPage() {
             <h2 className="text-xl font-semibold mb-4">What's Next?</h2>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <Package className="h-5 w-5 text-primary mt-0.5" />
+                <Truck className="h-5 w-5 text-primary mt-0.5" />
                 <div>
-                  <h3 className="font-medium">{isSubscriptionOrder ? "First Delivery" : "Delivery"}</h3>
+                  <h3 className="font-medium">{isSubscriptionOrder ? "First Delivery" : "Local Delivery - 24-48 Hours"}</h3>
                   <p className="text-sm text-muted-foreground">
                     {isSubscriptionOrder
-                      ? "Your first shipment will arrive within 5-7 business days."
-                      : "Your order will arrive within 5-7 business days. We'll send tracking info to your email."}
+                      ? "Your first delivery arrives Sunday via local delivery. You'll receive a notification Saturday evening."
+                      : "We're looking for a driver now. Your fresh food will arrive within 24-48 hours!"}
                   </p>
                 </div>
               </div>
@@ -289,8 +336,8 @@ export default function OrderSuccessPage() {
                 <div className="flex items-start gap-3">
                   <Calendar className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <h3 className="font-medium">Monthly Deliveries</h3>
-                    <p className="text-sm text-muted-foreground">You'll receive fresh meals automatically every month.</p>
+                    <h3 className="font-medium">Bi-Weekly Sunday Deliveries</h3>
+                    <p className="text-sm text-muted-foreground">You'll receive fresh meals every other Sunday via local delivery.</p>
                   </div>
                 </div>
               )}
@@ -298,7 +345,16 @@ export default function OrderSuccessPage() {
           </div>
 
           <div className="space-y-4">
-            <Button asChild size="lg" className="w-full">
+            {/* Track order button for individual packs */}
+            {!isSubscriptionOrder && orderId && (
+              <Button asChild size="lg" className="w-full gap-2">
+                <Link href={`/order/track/${orderId}`}>
+                  <Eye className="h-5 w-5" />
+                  Track Your Order Live
+                </Link>
+              </Button>
+            )}
+            <Button asChild size="lg" className="w-full" variant={!isSubscriptionOrder && orderId ? "outline" : "default"}>
               <Link href="/dashboard">Go to Dashboard</Link>
             </Button>
             <Button variant="outline" asChild className="w-full bg-transparent">

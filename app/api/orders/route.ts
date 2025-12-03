@@ -158,7 +158,8 @@ export async function GET(req: Request) {
     }
 
     // 2. Fetch orders from database (when webhook creates them)
-    // This will be populated after we implement the webhook enhancement
+    // Database orders have tracking info and should be preferred over Stripe-only orders
+    const dbOrderPaymentIntentIds = new Set<string>()
     try {
       const { data: dbOrders, error: dbError } = await supabase
         .from("orders")
@@ -173,6 +174,11 @@ export async function GET(req: Request) {
 
         // Convert database orders to Order format
         for (const dbOrder of dbOrders) {
+          // Track payment intent IDs to avoid duplicates
+          if (dbOrder.stripe_payment_intent_id) {
+            dbOrderPaymentIntentIds.add(dbOrder.stripe_payment_intent_id)
+          }
+
           const recipes = dbOrder.recipes || []
           const recipeName =
             recipes.length > 0
@@ -213,14 +219,31 @@ export async function GET(req: Request) {
       console.error("[ORDERS API] Error fetching database orders:", error)
     }
 
-    // Sort orders by date (newest first)
-    orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    // Remove Stripe payment intent orders that are already in database
+    // Database orders are preferred because they have tracking info
+    const dedupedOrders = orders.filter((order, index) => {
+      // Keep all database orders (they were added second, so they're at the end)
+      if (order.hasTracking) {
+        return true
+      }
+      // For Stripe-only orders, only keep if not in database
+      return !dbOrderPaymentIntentIds.has(order.id)
+    })
 
-    console.log("[ORDERS API] Returning", orders.length, "total orders")
+    console.log(
+      "[ORDERS API] Deduplication: removed",
+      orders.length - dedupedOrders.length,
+      "duplicate orders"
+    )
+
+    // Sort orders by date (newest first)
+    dedupedOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    console.log("[ORDERS API] Returning", dedupedOrders.length, "total orders")
 
     return NextResponse.json({
-      orders,
-      count: orders.length,
+      orders: dedupedOrders,
+      count: dedupedOrders.length,
     })
   } catch (error: any) {
     console.error("[ORDERS API] Error fetching orders:", error)

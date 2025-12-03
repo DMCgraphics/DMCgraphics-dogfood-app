@@ -22,6 +22,10 @@ interface Order {
   }>
   trackingNumber?: string
   estimatedDelivery?: string
+  fulfillmentStatus?: string
+  hasTracking?: boolean
+  driverName?: string
+  estimatedDeliveryWindow?: string
 }
 
 export default function OrdersPage() {
@@ -174,7 +178,32 @@ export default function OrdersPage() {
                       </div>
 
                       {/* Tracking Information */}
-                      {order.trackingNumber && (
+                      {order.hasTracking && (
+                        <div className="p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium">Delivery Tracking</div>
+                              {order.driverName && (
+                                <div className="text-sm text-muted-foreground">Driver: {order.driverName}</div>
+                              )}
+                              {order.estimatedDeliveryWindow && (
+                                <div className="text-xs text-muted-foreground">
+                                  Estimated: {order.estimatedDeliveryWindow}
+                                </div>
+                              )}
+                              {!order.estimatedDeliveryWindow && order.estimatedDelivery && (
+                                <div className="text-xs text-muted-foreground">
+                                  Estimated delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                            <Button variant="default" size="sm" asChild>
+                              <a href={`/orders/${order.id}/track`}>View Tracking</a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {order.trackingNumber && !order.hasTracking && (
                         <div className="p-3 bg-muted/30 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>

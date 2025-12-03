@@ -21,6 +21,10 @@ interface Order {
   items: OrderItem[]
   trackingNumber?: string
   estimatedDelivery?: string
+  fulfillmentStatus?: string
+  hasTracking?: boolean
+  driverName?: string
+  estimatedDeliveryWindow?: string
 }
 
 /**
@@ -198,6 +202,10 @@ export async function GET(req: Request) {
               },
             ],
             estimatedDelivery: dbOrder.estimated_delivery_date || undefined,
+            fulfillmentStatus: dbOrder.fulfillment_status || undefined,
+            hasTracking: true, // All database orders have tracking
+            driverName: dbOrder.driver_name || undefined,
+            estimatedDeliveryWindow: dbOrder.estimated_delivery_window || undefined,
           })
         }
       }

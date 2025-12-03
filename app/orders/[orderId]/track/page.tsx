@@ -97,14 +97,19 @@ export default function TrackOrderPage() {
                     {(order.estimated_delivery_date || order.estimated_delivery_window) && (
                       <div>
                         <p className="text-sm text-muted-foreground">Estimated Delivery</p>
-                        <p className="font-semibold">
+                        <p className="font-semibold text-sm sm:text-base">
                           {order.estimated_delivery_date &&
                             `${new Date(order.estimated_delivery_date).toLocaleDateString('en-US', {
                               weekday: 'long',
                               month: 'long',
                               day: 'numeric'
                             })}`}
-                          {order.estimated_delivery_date && order.estimated_delivery_window && ' • '}
+                          {order.estimated_delivery_date && order.estimated_delivery_window && (
+                            <>
+                              <span className="hidden sm:inline"> • </span>
+                              <br className="sm:hidden" />
+                            </>
+                          )}
                           {order.estimated_delivery_window}
                         </p>
                       </div>

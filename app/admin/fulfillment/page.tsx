@@ -211,10 +211,10 @@ export default function FulfillmentPage() {
                   {pendingOrders.map(order => (
                     <Card key={order.id} className="border-2">
                       <CardContent className="pt-6">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">Order #{order.order_number}</h3>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                          <div className="space-y-2 flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-sm sm:text-base">Order #{order.order_number}</h3>
                               {getStatusBadge(order.fulfillment_status)}
                               {order.is_subscription_order && (
                                 <Badge variant="outline">Subscription</Badge>
@@ -234,38 +234,39 @@ export default function FulfillmentPage() {
                               Ordered: {new Date(order.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2 sm:min-w-[180px]">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => copyTrackingLink(order.id, order.tracking_token)}
-                              className="w-full"
+                              className="w-full whitespace-nowrap"
                             >
                               <Copy className="h-4 w-4 mr-2" />
-                              Copy Tracking Link
+                              <span className="hidden sm:inline">Copy Tracking Link</span>
+                              <span className="sm:hidden">Copy Link</span>
                             </Button>
                             {order.fulfillment_status === 'looking_for_driver' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'driver_assigned')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'driver_assigned')} className="w-full whitespace-nowrap">
                                 Assign Driver
                               </Button>
                             )}
                             {order.fulfillment_status === 'driver_assigned' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')} className="w-full whitespace-nowrap">
                                 Start Preparing
                               </Button>
                             )}
                             {order.fulfillment_status === 'pending' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')} className="w-full whitespace-nowrap">
                                 Mark Preparing
                               </Button>
                             )}
                             {order.fulfillment_status === 'preparing' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} className="w-full whitespace-nowrap">
                                 Out for Delivery
                               </Button>
                             )}
                             {order.fulfillment_status === 'out_for_delivery' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')} className="w-full whitespace-nowrap">
                                 Mark Delivered
                               </Button>
                             )}
@@ -294,10 +295,10 @@ export default function FulfillmentPage() {
                   {todayOrders.map(order => (
                     <Card key={order.id} className="border-2 border-green-200">
                       <CardContent className="pt-6">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">Order #{order.order_number}</h3>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                          <div className="space-y-2 flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-sm sm:text-base">Order #{order.order_number}</h3>
                               {getStatusBadge(order.fulfillment_status)}
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -310,23 +311,24 @@ export default function FulfillmentPage() {
                               <strong>Customer:</strong> {order.guest_email || 'Registered user'}
                             </p>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2 sm:min-w-[180px]">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => copyTrackingLink(order.id, order.tracking_token)}
-                              className="w-full"
+                              className="w-full whitespace-nowrap"
                             >
                               <Copy className="h-4 w-4 mr-2" />
-                              Copy Tracking Link
+                              <span className="hidden sm:inline">Copy Tracking Link</span>
+                              <span className="sm:hidden">Copy Link</span>
                             </Button>
                             {order.fulfillment_status === 'preparing' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} className="w-full whitespace-nowrap">
                                 Out for Delivery
                               </Button>
                             )}
                             {order.fulfillment_status === 'out_for_delivery' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')}>
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')} className="w-full whitespace-nowrap">
                                 Mark Delivered
                               </Button>
                             )}

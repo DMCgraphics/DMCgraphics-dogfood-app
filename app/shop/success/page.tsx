@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, Package, ArrowRight, Home, Loader2, MapPin } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/header"
-import { DeliveryStatusBanner } from "@/components/delivery-status-banner"
 
 interface Order {
   id: string
@@ -69,11 +68,6 @@ function ShopSuccessContent() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
-      {/* Delivery Status Banner */}
-      {order && (
-        <DeliveryStatusBanner orderId={order.id} sessionId={sessionId} />
-      )}
 
       <div className="container py-16 max-w-3xl">
         <div className="text-center mb-8">

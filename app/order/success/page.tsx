@@ -56,7 +56,7 @@ export default function OrderSuccessPage() {
 
           if (sessionResponse.ok) {
             const sessionData = await sessionResponse.json()
-            setOrderData(sessionData)
+            setOrderData({ ...sessionData, mode: sessionData.mode || 'payment' })
             setGuestEmail(sessionData.customer_email || "")
             console.log("[v0] Guest order processed:", sessionData)
           } else {
@@ -66,19 +66,42 @@ export default function OrderSuccessPage() {
           return
         }
 
-        // For authenticated users, verify the session and update plan status
-        console.log("[v0] Calling /api/verify-payment endpoint...")
-        const verifyResponse = await fetch("/api/verify-payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ sessionId }),
-        })
+        // First, fetch session data to determine if this is a subscription or one-time purchase
+        console.log("[v0] Fetching session details...")
+        const sessionResponse = await fetch(`/api/checkout-session?session_id=${sessionId}`)
 
-        if (verifyResponse.ok) {
+        if (!sessionResponse.ok) {
+          throw new Error("Failed to fetch session details")
+        }
+
+        const sessionData = await sessionResponse.json()
+        const isSubscription = sessionData.mode === 'subscription'
+
+        console.log("[v0] Session type:", sessionData.mode, "Is subscription:", isSubscription)
+
+        // For authenticated users with subscriptions, verify the session and update plan status
+        if (isSubscription) {
+          console.log("[v0] Calling /api/verify-payment endpoint...")
+          const verifyResponse = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ sessionId }),
+          })
+
+          if (!verifyResponse.ok) {
+            const errorData = await verifyResponse.json().catch(() => ({ error: "Unknown error" }))
+            console.error("[v0] Verify payment failed:", verifyResponse.status, errorData)
+            const errorMessage = errorData.error || errorData.message || "Unknown error"
+            const errorDetails = errorData.details ? `\n\nDetails: ${errorData.details}` : ""
+            setError(`Payment verification failed: ${errorMessage}${errorDetails}`)
+            setIsLoading(false)
+            return
+          }
+
           const verifyData = await verifyResponse.json()
-          setOrderData(verifyData)
+          setOrderData({ ...verifyData, mode: 'subscription' })
           console.log("[v0] Payment verified successfully:", verifyData)
 
           // Note: Removed supabase.auth.refreshSession() as it was causing the useEffect to re-run
@@ -115,11 +138,9 @@ export default function OrderSuccessPage() {
             console.log("[v0] Subscription creation backup error (this is OK if webhook already handled it):", createError)
           }
         } else {
-          const errorData = await verifyResponse.json().catch(() => ({ error: "Unknown error" }))
-          console.error("[v0] Verify payment failed:", verifyResponse.status, errorData)
-          const errorMessage = errorData.error || errorData.message || "Unknown error"
-          const errorDetails = errorData.details ? `\n\nDetails: ${errorData.details}` : ""
-          setError(`Payment verification failed: ${errorMessage}${errorDetails}`)
+          // For one-time purchases by authenticated users, just use session data
+          console.log("[v0] One-time purchase - using session data")
+          setOrderData({ ...sessionData, mode: 'payment' })
         }
       } catch (error) {
         console.error("Error verifying payment:", error)
@@ -230,36 +251,49 @@ export default function OrderSuccessPage() {
     )
   }
 
-  // Authenticated user success (existing code)
+  // Determine if this is a subscription or one-time purchase
+  const isSubscriptionOrder = orderData?.mode === 'subscription'
+
+  // Authenticated user success
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto text-center">
           <div className="mb-8">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-green-600 mb-2">Payment Successful!</h1>
-            <p className="text-muted-foreground">Thank you for your order. Your dog's nutrition plan is now active.</p>
+            <h1 className="text-3xl font-bold text-green-600 mb-2">
+              {isSubscriptionOrder ? "Payment Successful!" : "Order Confirmed!"}
+            </h1>
+            <p className="text-muted-foreground">
+              {isSubscriptionOrder
+                ? "Thank you for your order. Your dog's nutrition plan is now active."
+                : "Thank you for your order. We'll send confirmation and delivery updates to your email."}
+            </p>
           </div>
 
-          <div className="bg-card rounded-lg p-6 mb-8 text-left">
+          <div className="bg-card rounded-lg p-6 mb-8 text-left border-2 border-primary/20">
             <h2 className="text-xl font-semibold mb-4">What's Next?</h2>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-primary mt-0.5" />
                 <div>
-                  <h3 className="font-medium">First Delivery</h3>
+                  <h3 className="font-medium">{isSubscriptionOrder ? "First Delivery" : "Delivery"}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Your first shipment will arrive within 5-7 business days.
+                    {isSubscriptionOrder
+                      ? "Your first shipment will arrive within 5-7 business days."
+                      : "Your order will arrive within 5-7 business days. We'll send tracking info to your email."}
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <h3 className="font-medium">Monthly Deliveries</h3>
-                  <p className="text-sm text-muted-foreground">You'll receive fresh meals automatically every month.</p>
+              {isSubscriptionOrder && (
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-medium">Monthly Deliveries</h3>
+                    <p className="text-sm text-muted-foreground">You'll receive fresh meals automatically every month.</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

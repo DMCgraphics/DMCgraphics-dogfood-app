@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     // Return relevant session data
     return NextResponse.json({
       id: session.id,
+      mode: session.mode, // 'payment' or 'subscription'
       customer_email: session.customer_details?.email || session.customer_email,
       amount_total: session.amount_total,
       currency: session.currency,

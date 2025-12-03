@@ -10,14 +10,18 @@ export async function POST(req: Request) {
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
+    const { priceId, dogId, dogName, dogSize, productType, recipes, isSubscription, deliveryZipcode, guestEmail } = await req.json()
+
+    // For subscriptions, require authentication
+    if (isSubscription && !user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Account required for subscriptions. Please sign in or create an account." },
         { status: 401 }
       )
     }
 
-    const { priceId, dogId, dogName, dogSize, productType, recipes, isSubscription, deliveryZipcode } = await req.json()
+    // For guest checkout (one-time purchases), allow without auth
+    const customerEmail = user?.email || guestEmail
 
     // Debug logging
     console.log("[TOPPER CHECKOUT] Creating checkout session for:", {
@@ -28,7 +32,8 @@ export async function POST(req: Request) {
       productType,
       recipes,
       isSubscription,
-      userEmail: user.email
+      userEmail: customerEmail,
+      isGuest: !user
     })
 
     if (!priceId) {
@@ -40,7 +45,7 @@ export async function POST(req: Request) {
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      customer_email: user.email,
+      customer_email: customerEmail,
       line_items: [
         {
           price: priceId,
@@ -54,26 +59,28 @@ export async function POST(req: Request) {
       },
       // Also collect billing address
       billing_address_collection: 'required',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/order/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?checkout=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/order/success?session_id={CHECKOUT_SESSION_ID}${!user ? '&guest=true' : ''}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${user ? '/dashboard' : '/shop/individual-packs'}?checkout=cancelled`,
       metadata: {
-        user_id: user.id,
+        user_id: user?.id || '',
         dog_id: dogId || '',
         dog_name: dogName || '',
         dog_size: dogSize || '',
         product_type: productType,
         recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
+        is_guest: !user ? 'true' : 'false',
       },
       // For one-time payments, we need to pass metadata to the payment intent
       payment_intent_data: !isSubscription ? {
         metadata: {
-          user_id: user.id,
+          user_id: user?.id || '',
           dog_id: dogId || '',
           dog_name: dogName || '',
           dog_size: dogSize || '',
           product_type: productType,
           recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
           delivery_zipcode: deliveryZipcode || '',
+          is_guest: !user ? 'true' : 'false',
         },
       } : undefined,
       subscription_data: isSubscription ? {

@@ -5,11 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, ArrowLeft, Check, Loader2, Plus } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ShoppingCart, ArrowLeft, Check, Loader2, Plus, Mail } from "lucide-react"
 import Link from "next/link"
 import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { Header } from "@/components/header"
+import { useAuth } from "@/contexts/auth-context"
 
 function IndividualPacksContent() {
   const router = useRouter()
@@ -18,10 +21,12 @@ function IndividualPacksContent() {
   const dogName = searchParams.get('dogName')
   const { addItem } = useCart()
   const { toast } = useToast()
+  const { user } = useAuth()
 
   const [selectedQuantity, setSelectedQuantity] = useState<1 | 3 | null>(null)
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [guestEmail, setGuestEmail] = useState("")
 
   // Universal Stripe price IDs (same for all recipes)
   // Detect environment based on URL
@@ -145,6 +150,26 @@ function IndividualPacksContent() {
     const requiredRecipes = selectedQuantity === 1 ? 1 : 3
     if (selectedRecipes.length !== requiredRecipes) return
 
+    // Validate guest email if not logged in
+    if (!user && !guestEmail.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email to continue with checkout.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Basic email validation
+    if (!user && guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive"
+      })
+      return
+    }
+
     const priceId = selectedQuantity === 1 ? SINGLE_PACK_PRICE_ID : THREE_PACK_PRICE_ID
 
     setIsLoading(true)
@@ -168,6 +193,7 @@ function IndividualPacksContent() {
           productType: selectedQuantity === 1 ? "individual" : "3-packs",
           recipes: recipesData,
           isSubscription: false,
+          guestEmail: !user ? guestEmail : undefined,
         }),
       })
 
@@ -182,7 +208,11 @@ function IndividualPacksContent() {
       }
     } catch (error) {
       console.error("Error starting checkout:", error)
-      alert("Failed to start checkout. Please try again.")
+      toast({
+        title: "Checkout failed",
+        description: error instanceof Error ? error.message : "Failed to start checkout. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoading(false)
     }
@@ -373,6 +403,40 @@ function IndividualPacksContent() {
             </CardContent>
           </Card>
 
+          {/* Guest Email Collection */}
+          {!user && selectedQuantity && canCheckout && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-blue-900">Enter your email to continue</h3>
+                  </div>
+                  <p className="text-sm text-blue-800">
+                    We'll send your order confirmation and delivery updates to this email.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="guest-email" className="text-blue-900">Email Address</Label>
+                    <Input
+                      id="guest-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="bg-white"
+                    />
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    Want to track your orders and get personalized recommendations?{" "}
+                    <Link href="/auth/signup" className="underline font-medium">
+                      Create a free account
+                    </Link>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Action Buttons */}
           <div className="space-y-3 pt-4">
             <div className="grid grid-cols-2 gap-4">
@@ -387,7 +451,7 @@ function IndividualPacksContent() {
               </Button>
               <Button
                 onClick={handleCheckout}
-                disabled={!canCheckout || isLoading}
+                disabled={!canCheckout || isLoading || (!user && !guestEmail.trim())}
                 size="lg"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />

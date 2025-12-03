@@ -11,10 +11,12 @@ import { supabase } from "@/lib/supabase/client"
 export default function OrderSuccessPage() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
-  const [orderData, setOrderData] = useState(null)
+  const isGuest = searchParams.get("guest") === "true"
+  const [orderData, setOrderData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [guestEmail, setGuestEmail] = useState<string>("")
   const { user, isLoading: authLoading, refreshSubscriptionStatus } = useAuth()
   const processingRef = useRef(false)
 
@@ -45,9 +47,26 @@ export default function OrderSuccessPage() {
 
       try {
         console.log("[v0] Processing successful payment for session:", sessionId)
-        console.log("[v0] User authenticated:", !!user, "User ID:", user?.id)
+        console.log("[v0] User authenticated:", !!user, "User ID:", user?.id, "Is guest:", isGuest)
 
-        // First, verify the session and update plan status
+        // For guest orders, just fetch session data from Stripe
+        if (isGuest && !user) {
+          console.log("[v0] Guest checkout - fetching session details...")
+          const sessionResponse = await fetch(`/api/checkout-session?session_id=${sessionId}`)
+
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json()
+            setOrderData(sessionData)
+            setGuestEmail(sessionData.customer_email || "")
+            console.log("[v0] Guest order processed:", sessionData)
+          } else {
+            throw new Error("Failed to fetch session details")
+          }
+          setIsLoading(false)
+          return
+        }
+
+        // For authenticated users, verify the session and update plan status
         console.log("[v0] Calling /api/verify-payment endpoint...")
         const verifyResponse = await fetch("/api/verify-payment", {
           method: "POST",
@@ -147,6 +166,71 @@ export default function OrderSuccessPage() {
     )
   }
 
+  // Guest checkout success
+  if (isGuest && !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="mb-8">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold text-green-600 mb-2">Order Confirmed!</h1>
+              <p className="text-muted-foreground">
+                Thank you for your order. We've sent a confirmation to <strong>{guestEmail}</strong>
+              </p>
+            </div>
+
+            <div className="bg-card rounded-lg p-6 mb-8 text-left border-2 border-primary/20">
+              <h2 className="text-xl font-semibold mb-4">What's Next?</h2>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Package className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h3 className="font-medium">Delivery</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your order will arrive within 5-7 business days. We'll send tracking info to your email.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Creation Prompt */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-semibold mb-2 text-blue-900">Want to track your order?</h3>
+              <p className="text-sm text-blue-800 mb-4">
+                Create a free account to view your order status, manage deliveries, and get personalized recommendations for your dog.
+              </p>
+              <div className="space-y-3">
+                <Button asChild size="lg" className="w-full">
+                  <Link href={`/auth/signup?email=${encodeURIComponent(guestEmail)}`}>
+                    Create Free Account
+                  </Link>
+                </Button>
+                <p className="text-xs text-blue-700">
+                  Already have an account?{" "}
+                  <Link href="/auth/login" className="underline font-medium">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Button variant="outline" asChild className="w-full">
+                <Link href="/shop/individual-packs">Continue Shopping</Link>
+              </Button>
+              <Button variant="ghost" asChild className="w-full">
+                <Link href="/">Return Home</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Authenticated user success (existing code)
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">

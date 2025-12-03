@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { Header } from "@/components/header"
 import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase/client"
 
 function IndividualPacksContent() {
   const router = useRouter()
@@ -27,6 +28,8 @@ function IndividualPacksContent() {
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [guestEmail, setGuestEmail] = useState("")
+  const [inventory, setInventory] = useState<Record<string, number>>({})
+  const [inventoryLoading, setInventoryLoading] = useState(true)
 
   // Universal Stripe price IDs (same for all recipes)
   // Detect environment based on URL
@@ -84,6 +87,39 @@ function IndividualPacksContent() {
     }
   ]
 
+  // Fetch inventory on mount
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('inventory')
+          .select('recipe_name, quantity_on_hand, reserved_quantity')
+
+        if (error) throw error
+
+        if (data) {
+          const inventoryMap: Record<string, number> = {}
+          data.forEach(item => {
+            const available = item.quantity_on_hand - item.reserved_quantity
+            inventoryMap[item.recipe_name] = available
+          })
+          setInventory(inventoryMap)
+        }
+      } catch (error) {
+        console.error('Error fetching inventory:', error)
+      } finally {
+        setInventoryLoading(false)
+      }
+    }
+
+    fetchInventory()
+  }, [])
+
+  const isRecipeInStock = (recipeId: string) => {
+    const available = inventory[recipeId.toLowerCase()] || 0
+    return available > 0
+  }
+
   const handleQuantitySelection = (quantity: 1 | 3) => {
     setSelectedQuantity(quantity)
     setSelectedRecipes([]) // Reset recipe selection when changing quantity
@@ -91,6 +127,16 @@ function IndividualPacksContent() {
 
   const handleRecipeToggle = (recipeId: string) => {
     if (!selectedQuantity) return
+
+    // Prevent selecting out-of-stock recipes
+    if (!isRecipeInStock(recipeId)) {
+      toast({
+        title: "Out of Stock",
+        description: "This recipe is currently out of stock. Please choose another.",
+        variant: "destructive"
+      })
+      return
+    }
 
     const maxRecipes = selectedQuantity === 1 ? 1 : 3
     const isSelected = selectedRecipes.includes(recipeId)
@@ -337,18 +383,21 @@ function IndividualPacksContent() {
                   const isSelected = selectedRecipes.includes(recipe.id)
                   const maxRecipes = selectedQuantity === 1 ? 1 : 3
                   const canSelect = selectedRecipes.length < maxRecipes || isSelected
+                  const inStock = isRecipeInStock(recipe.id)
 
                   return (
                     <Card
                       key={recipe.id}
-                      className={`cursor-pointer transition-all ${
-                        isSelected
-                          ? "ring-2 ring-primary ring-offset-2"
+                      className={`transition-all ${
+                        !inStock
+                          ? "opacity-40 cursor-not-allowed bg-gray-50"
+                          : isSelected
+                          ? "ring-2 ring-primary ring-offset-2 cursor-pointer"
                           : !canSelect
                           ? "opacity-50 cursor-not-allowed"
-                          : "hover:shadow-lg"
+                          : "hover:shadow-lg cursor-pointer"
                       }`}
-                      onClick={() => handleRecipeToggle(recipe.id)}
+                      onClick={() => inStock && handleRecipeToggle(recipe.id)}
                     >
                       <CardHeader>
                         <div className="flex items-center gap-3">
@@ -363,8 +412,15 @@ function IndividualPacksContent() {
                               <Check className="h-3 w-3 text-primary-foreground" />
                             )}
                           </div>
-                          <div>
-                            <CardTitle className="text-lg">{recipe.name}</CardTitle>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-lg">{recipe.name}</CardTitle>
+                              {!inStock && (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-700 ml-2">
+                                  Out of Stock
+                                </Badge>
+                              )}
+                            </div>
                             <CardDescription className="text-sm mt-1">
                               {recipe.description}
                             </CardDescription>

@@ -406,9 +406,22 @@ export async function POST(req: Request) {
           // Parse recipes from metadata
           let recipes: any[] = []
           try {
-            if (s.metadata.recipes) {
+            // For cart purchases, recipes are in items_json
+            if (productType === 'cart' && s.metadata.items_json) {
+              const cartItems = JSON.parse(s.metadata.items_json)
+              // Flatten recipes from all cart items
+              recipes = cartItems.flatMap((item: any) =>
+                item.recipes.map((r: any) => ({
+                  id: r.id,
+                  name: r.name,
+                  quantity: item.qty || 1
+                }))
+              )
+            } else if (s.metadata.recipes) {
+              // For individual/3-pack purchases, recipes are in recipes field
               recipes = JSON.parse(s.metadata.recipes)
             }
+            console.log('[WEBHOOK] Parsed recipes:', recipes.length, 'items')
           } catch (e) {
             console.error('[WEBHOOK] Error parsing recipes:', e)
           }

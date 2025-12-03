@@ -76,8 +76,8 @@ export async function POST(req: Request) {
       },
       // Also collect billing address
       billing_address_collection: 'required',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/order/success?session_id={CHECKOUT_SESSION_ID}${!user ? '&guest=true' : ''}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${user ? '/dashboard' : '/shop/individual-packs'}?checkout=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/success?session_id={CHECKOUT_SESSION_ID}${!user ? '&guest=true' : ''}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop?checkout=cancelled`,
       metadata: {
         user_id: user?.id || '',
         dog_id: dogId || '',

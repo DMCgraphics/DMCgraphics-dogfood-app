@@ -78,8 +78,8 @@ export async function POST(req: Request) {
       mode: "subscription",
       customer_email: body?.email,
       line_items_count: line_items.length,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/order/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/cart`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/shop`,
     });
 
     // Get plan data to include in metadata (same pattern as existing checkout API)
@@ -118,8 +118,8 @@ export async function POST(req: Request) {
         prevalidated_zip: zip, 
         plan: body?.plan ?? "" 
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/order/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/cart`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.nouripet.net"}/shop`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
       shipping_address_collection: { allowed_countries: ["US"] },

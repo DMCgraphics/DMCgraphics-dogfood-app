@@ -63,7 +63,7 @@ export default function FulfillmentPage() {
         .from('orders')
         .select('*')
         .eq('is_subscription_order', false)
-        .in('fulfillment_status', ['pending', 'in_stock', 'needs_batch'])
+        .in('fulfillment_status', ['pending', 'looking_for_driver', 'driver_assigned', 'in_stock', 'needs_batch'])
         .order('created_at', { ascending: false })
 
       if (pending) setPendingOrders(pending)
@@ -141,6 +141,8 @@ export default function FulfillmentPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string, icon: any }> = {
       pending: { color: 'bg-gray-100 text-gray-800', icon: Clock },
+      looking_for_driver: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+      driver_assigned: { color: 'bg-blue-100 text-blue-800', icon: Package },
       in_stock: { color: 'bg-blue-100 text-blue-800', icon: Package },
       needs_batch: { color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
       preparing: { color: 'bg-purple-100 text-purple-800', icon: Package },
@@ -211,6 +213,16 @@ export default function FulfillmentPage() {
                             </p>
                           </div>
                           <div className="flex flex-col gap-2">
+                            {order.fulfillment_status === 'looking_for_driver' && (
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'driver_assigned')}>
+                                Assign Driver
+                              </Button>
+                            )}
+                            {order.fulfillment_status === 'driver_assigned' && (
+                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
+                                Start Preparing
+                              </Button>
+                            )}
                             {order.fulfillment_status === 'pending' && (
                               <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
                                 Mark Preparing

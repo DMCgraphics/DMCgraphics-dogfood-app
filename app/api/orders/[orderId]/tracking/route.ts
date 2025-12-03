@@ -25,16 +25,10 @@ export async function GET(
 
     console.log("[TRACKING API] Fetching order:", orderId, "sessionId:", sessionId, "user:", user?.email)
 
-    // Fetch order with user profile
+    // Fetch order (without profile join to avoid RLS issues)
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select(`
-        *,
-        profiles:user_id (
-          full_name,
-          email
-        )
-      `)
+      .select("*")
       .eq("id", orderId)
       .single()
 
@@ -111,12 +105,6 @@ export async function GET(
         driver_name: order.driver_name,
         driver_phone: order.driver_phone,
         created_at: order.created_at,
-        user: order.profiles
-          ? {
-              name: order.profiles.full_name,
-              email: order.profiles.email,
-            }
-          : null,
       },
       events: events || [],
     }

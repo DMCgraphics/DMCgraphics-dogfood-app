@@ -51,6 +51,10 @@ export default function FulfillmentPage() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
+      // Calculate today's date fresh each time we fetch
+      const today = new Date().toISOString().split('T')[0]
+      console.log('[FULFILLMENT] Fetching data for date:', today)
+
       // Fetch inventory
       const { data: inv } = await supabase
         .from('inventory')
@@ -68,9 +72,9 @@ export default function FulfillmentPage() {
         .order('created_at', { ascending: false })
 
       if (pending) setPendingOrders(pending)
+      console.log('[FULFILLMENT] Pending orders:', pending?.length || 0)
 
       // Fetch today's deliveries
-      const today = new Date().toISOString().split('T')[0]
       const { data: todayDel } = await supabase
         .from('orders')
         .select('*')
@@ -80,6 +84,7 @@ export default function FulfillmentPage() {
         .order('created_at', { ascending: false })
 
       if (todayDel) setTodayOrders(todayDel)
+      console.log('[FULFILLMENT] Today\'s deliveries:', todayDel?.length || 0)
     } catch (error) {
       console.error('Error fetching data:', error)
       toast({

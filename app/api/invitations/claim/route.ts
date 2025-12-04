@@ -125,8 +125,6 @@ export async function POST(req: Request) {
         claimed_from_invitation: invitation.id,
         original_customer_name: invitation.customer_name,
       },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     }
 
     const { data: subscription, error: subscriptionError } = await supabase
@@ -152,8 +150,7 @@ export async function POST(req: Request) {
       .update({
         status: 'claimed',
         claimed_at: new Date().toISOString(),
-        claimed_by_user_id: userId,
-        updated_at: new Date().toISOString()
+        claimed_by_user_id: userId
       })
       .eq("id", invitation.id)
 

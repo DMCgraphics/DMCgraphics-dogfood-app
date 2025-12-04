@@ -161,9 +161,16 @@ export default function FulfillmentPage() {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
+      const updateData: any = { fulfillment_status: status }
+
+      // Set delivered_at timestamp when order is marked as delivered
+      if (status === 'delivered') {
+        updateData.delivered_at = new Date().toISOString()
+      }
+
       const { error } = await supabase
         .from('orders')
-        .update({ fulfillment_status: status })
+        .update(updateData)
         .eq('id', orderId)
 
       if (error) throw error

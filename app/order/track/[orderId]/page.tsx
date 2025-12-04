@@ -157,34 +157,46 @@ export default function OrderTrackingPage({ params }: OrderTrackingPageProps) {
                 </div>
               )}
 
-              {/* Estimated delivery date */}
-              {order.estimated_delivery_date && (
+              {/* Delivery date - show actual delivery time if delivered, otherwise estimated */}
+              {(order.delivered_at || order.estimated_delivery_date) && (
                 <div>
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Estimated Delivery
+                    {order.fulfillment_status === 'delivered' && order.delivered_at ? 'Delivered' : 'Estimated Delivery'}
                   </h4>
                   <div className="bg-muted/30 p-3 rounded-lg">
-                    <p className="text-sm">
-                      {new Date(order.estimated_delivery_date).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                      {order.estimated_delivery_window && (
-                        <span className="ml-2 text-muted-foreground">
-                          {order.estimated_delivery_window}
-                        </span>
-                      )}
-                    </p>
+                    {order.fulfillment_status === 'delivered' && order.delivered_at ? (
+                      <p className="text-sm">
+                        {new Date(order.delivered_at).toLocaleString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    ) : (
+                      <p className="text-sm">
+                        {new Date(order.estimated_delivery_date).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                        {order.estimated_delivery_window && (
+                          <span className="ml-2 text-muted-foreground">
+                            {order.estimated_delivery_window}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Driver info card - only show if driver assigned */}
-          {order.driver_id && order.driver_name && (
+          {/* Driver info card - only show if driver assigned and not yet delivered */}
+          {order.driver_id && order.driver_name && order.fulfillment_status !== 'delivered' && (
             <DriverInfoCard
               driverName={order.driver_name}
               driverPhone={order.driver_phone}

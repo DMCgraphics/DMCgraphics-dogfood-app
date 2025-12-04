@@ -102,7 +102,7 @@ function generateDeliveryEmailHTML(data: {
     <div class="divider"></div>
 
     <div class="footer">
-      Questions or need a doorstep placement note? Reply here or text <b>‪(475) 208-3769‬</b>.<br>
+      Questions or need a doorstep placement note? Reply here or text <b>‪(203) 208-6186‬</b>.<br>
       NouriPet • Fresh, local meals for happier dogs 🐶
     </div>
   </div>

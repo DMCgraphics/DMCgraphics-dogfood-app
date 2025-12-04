@@ -438,12 +438,20 @@ export async function POST(req: Request) {
           // Generate order number
           const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-          // Calculate estimated delivery (2-4 hours for local delivery)
+          // Calculate estimated delivery based on order time
           const now = new Date()
-          const estimatedDeliveryDate = new Date(now.getTime() + 3 * 60 * 60 * 1000) // 3 hours from now
-          const startHour = estimatedDeliveryDate.getHours()
-          const endHour = startHour + 2
-          const estimatedDeliveryWindow = `${startHour % 12 || 12}:00 ${startHour >= 12 ? 'PM' : 'AM'} - ${endHour % 12 || 12}:00 ${endHour >= 12 ? 'PM' : 'AM'}`
+          const orderHour = now.getHours()
+
+          // Orders placed before noon: deliver next day
+          // Orders placed after noon: deliver in 2 days
+          const daysToAdd = orderHour < 12 ? 1 : 2
+
+          const estimatedDeliveryDate = new Date(now)
+          estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + daysToAdd)
+          estimatedDeliveryDate.setHours(0, 0, 0, 0) // Reset to start of day
+
+          // Standard delivery window: 9:00 AM - 5:00 PM
+          const estimatedDeliveryWindow = '9:00 AM - 5:00 PM'
 
           // Format recipe name from recipes array
           const recipeName = recipes.length > 0
@@ -499,6 +507,49 @@ export async function POST(req: Request) {
                 created_at: new Date().toISOString(),
               })
               console.log('[WEBHOOK] Initial tracking event created for order:', order.id)
+
+              // Send tracking email if customer email exists
+              if (guestEmail || s.customer_email) {
+                try {
+                  const customerEmail = guestEmail || s.customer_email
+                  const customerName = s.customer_details?.name || 'Customer'
+
+                  // Get the tracking token from the order
+                  const { data: orderWithToken } = await getSupabaseAdmin()
+                    .from('orders')
+                    .select('tracking_token')
+                    .eq('id', order.id)
+                    .single()
+
+                  if (orderWithToken?.tracking_token) {
+                    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://nouripet.net'
+
+                    // Send tracking email via internal API
+                    await fetch(`${baseUrl}/api/delivery/send-tracking-email`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        orderId: order.id,
+                        customerEmail,
+                        customerName,
+                        orderNumber: order.order_number,
+                        trackingToken: orderWithToken.tracking_token,
+                        deliveryDate: estimatedDeliveryDate.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                        }),
+                        deliveryWindow: estimatedDeliveryWindow,
+                        recipes: recipeName,
+                      })
+                    })
+                    console.log('[WEBHOOK] Tracking email sent to:', customerEmail)
+                  }
+                } catch (emailError) {
+                  console.error('[WEBHOOK] Failed to send tracking email:', emailError)
+                  // Don't fail the webhook if email fails
+                }
+              }
             } catch (trackingError) {
               console.error('[WEBHOOK] Failed to create tracking event:', trackingError)
             }

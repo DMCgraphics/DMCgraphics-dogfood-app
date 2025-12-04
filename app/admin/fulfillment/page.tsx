@@ -157,7 +157,7 @@ export default function FulfillmentPage() {
           interval_count,
           billing_cycle,
           plan_id,
-          plans!inner (
+          plans (
             delivery_zipcode
           )
         `)

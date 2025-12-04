@@ -2295,6 +2295,7 @@ function PlanBuilderContent() {
             isLastDog={currentDogIndex === totalDogs - 1}
             planType={planType}
             topperLevel={topperLevel}
+            isCustomizingSubscription={!!customizeSubscriptionId}
           />
         )
       default:

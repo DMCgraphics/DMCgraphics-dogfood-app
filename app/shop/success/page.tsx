@@ -102,7 +102,7 @@ function ShopSuccessContent() {
                     )}
                   </p>
                   <Button asChild size="lg" className="w-full sm:w-auto">
-                    <Link href={`/orders/${order.id}/track`}>
+                    <Link href={`/orders/${order.id}/track?session_id=${sessionId}`}>
                       <MapPin className="h-4 w-4 mr-2" />
                       Track Your Order
                       <ArrowRight className="h-4 w-4 ml-2" />

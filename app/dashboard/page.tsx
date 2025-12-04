@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -13,13 +14,12 @@ import { PrescriptionStatusCard } from "@/components/dashboard/prescription-stat
 import { MedicalConditionTracker } from "@/components/dashboard/medical-condition-tracker"
 import { NutrientInfo } from "@/components/dashboard/nutrient-info"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, AlertCircle, X, ArrowRight, PawPrint } from "lucide-react"
 import { mockVerificationRequests } from "@/lib/vet-verification"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { calculateDERFromProfile, calculateDailyGrams } from "@/lib/nutrition-calculator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, PawPrint } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
@@ -68,6 +68,7 @@ const mockMedicalConditions = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user, hasSubscription, refreshSubscriptionStatus, isLoading: authLoading } = useAuth()
   const [dogs, setDogs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +90,8 @@ export default function DashboardPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [showAddDogProfileModal, setShowAddDogProfileModal] = useState(false)
   const [hasSubscriptionWithoutDog, setHasSubscriptionWithoutDog] = useState(false)
+  const [hasSubscriptionWithoutPlan, setHasSubscriptionWithoutPlan] = useState(false)
+  const [subscriptionNeedingCustomization, setSubscriptionNeedingCustomization] = useState<any>(null)
 
   const [medicalConditions] = useState(mockMedicalConditions)
   const currentVerificationRequest = mockVerificationRequests.find((req) => req.userId === "user-123")
@@ -259,6 +262,17 @@ export default function DashboardPage() {
           console.log("[v0] User has subscriptions but no dogs - showing add dog profile modal")
           setHasSubscriptionWithoutDog(true)
           setShowAddDogProfileModal(true)
+        }
+
+        // Check if any active subscription has no plan_id (claimed from CSV import)
+        const subscriptionWithoutPlan = subscriptionsData?.find(
+          (sub: any) => sub.status === 'active' && !sub.plan_id
+        )
+
+        if (subscriptionWithoutPlan) {
+          console.log("[v0] User has subscription without plan_id - showing complete profile banner")
+          setHasSubscriptionWithoutPlan(true)
+          setSubscriptionNeedingCustomization(subscriptionWithoutPlan)
         }
 
         // Refresh auth context subscription status to ensure consistency
@@ -1166,6 +1180,33 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {hasSubscriptionWithoutPlan && subscriptionNeedingCustomization && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-900">Complete Your Profile</h3>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Tell us about your dog to customize your meal plan and unlock all subscription features!
+                  </p>
+                  <Button
+                    onClick={() => router.push(`/plan-builder?customize_subscription=${subscriptionNeedingCustomization.id}`)}
+                    className="mt-3"
+                    variant="default"
+                  >
+                    Complete Profile Now
+                  </Button>
+                </div>
+                <button
+                  onClick={() => setHasSubscriptionWithoutPlan(false)}
+                  className="text-amber-600 hover:text-amber-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           )}
 
           <div className="flex items-center justify-between mb-8">

@@ -145,6 +145,10 @@ function PlanBuilderContent() {
   const [isAddDogMode, setIsAddDogMode] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
+  // Customize existing subscription state
+  const customizeSubscriptionId = searchParams.get("customize_subscription")
+  const [existingSubscription, setExistingSubscription] = useState<any>(null)
+
   // Check if we're on the client and in add-dog mode
   useEffect(() => {
     setIsClient(true)
@@ -210,6 +214,38 @@ function PlanBuilderContent() {
 
     fetchExistingDogs()
   }, [user])
+
+  // Fetch existing subscription if customize_subscription parameter exists
+  useEffect(() => {
+    const fetchExistingSubscription = async () => {
+      if (!customizeSubscriptionId || !user) {
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("id", customizeSubscriptionId)
+          .eq("user_id", user.id)
+          .single()
+
+        if (data && !error) {
+          console.log("[plan-builder] Found subscription to customize:", data)
+          setExistingSubscription(data)
+        } else {
+          console.error("[plan-builder] Failed to fetch subscription:", error)
+          // Redirect if subscription doesn't exist or doesn't belong to user
+          router.push("/dashboard")
+        }
+      } catch (err) {
+        console.error("[plan-builder] Error fetching subscription:", err)
+        router.push("/dashboard")
+      }
+    }
+
+    fetchExistingSubscription()
+  }, [customizeSubscriptionId, user, router])
 
   const getDefaultDogData = (): DogPlanData => ({
     dogProfile: {
@@ -1870,8 +1906,53 @@ function PlanBuilderContent() {
         })
       }
 
+      // Check if we're customizing an existing claimed subscription (skip checkout)
+      if (customizeSubscriptionId && existingSubscription) {
+        console.log("[plan-builder] Linking plan to existing subscription (skip checkout)...")
+
+        try {
+          // Update subscription with new plan_id
+          const { error: linkError } = await supabase
+            .from("subscriptions")
+            .update({ plan_id: planId })
+            .eq("id", customizeSubscriptionId)
+            .eq("user_id", session.user.id)
+
+          if (linkError) {
+            throw new Error(linkError.message || "Failed to link plan")
+          }
+
+          // Mark plan as active (no checkout needed)
+          const { error: activateError } = await supabase
+            .from("plans")
+            .update({ status: "active" })
+            .eq("id", planId)
+
+          if (activateError) {
+            console.error("[plan-builder] Failed to activate plan:", activateError)
+            // Continue anyway, we can manually fix this
+          }
+
+          console.log("[plan-builder] ✅ Profile completed! Plan linked to subscription.")
+
+          // Close the modal after successful completion
+          setShowAuthModal(false)
+          setIsProcessingAuth(false)
+          authSuccessRef.current = false
+
+          // Show success message and redirect to dashboard
+          alert("Profile completed! Your plan has been customized.")
+          router.push("/dashboard")
+        } catch (error: any) {
+          console.error("[plan-builder] Error linking plan to subscription:", error)
+          alert(`Failed to link plan: ${error.message}`)
+
+          setIsProcessingAuth(false)
+          authSuccessRef.current = false
+        }
+      }
       // Check if we're modifying an existing subscription
-      if (isModifyMode && modifyStripeSubscriptionId) {
+      else if (isModifyMode && modifyStripeSubscriptionId) {
         console.log("[v0] Updating existing subscription instead of creating new one...")
 
         try {

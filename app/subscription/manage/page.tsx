@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,6 +34,7 @@ interface DogSubscription {
 }
 
 export default function SubscriptionManagePage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [subscriptions, setSubscriptions] = useState<DogSubscription[]>([])
   const [loading, setLoading] = useState(true)
@@ -283,6 +285,20 @@ export default function SubscriptionManagePage() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-6">
+                        {selectedSub.dogName === "Your Dog" && (
+                          <div className="rounded-md bg-amber-50 border border-amber-200 p-3 mb-4">
+                            <p className="text-sm text-amber-800 mb-2">
+                              <strong>Profile Incomplete:</strong> Complete your dog's profile to customize your meals.
+                            </p>
+                            <Button
+                              size="sm"
+                              onClick={() => router.push(`/plan-builder?customize_subscription=${selectedSub.id}`)}
+                            >
+                              Complete Profile
+                            </Button>
+                          </div>
+                        )}
+
                         <div className="grid md:grid-cols-2 gap-6">
                           <div>
                             <Label className="text-sm font-medium">Current Recipe</Label>

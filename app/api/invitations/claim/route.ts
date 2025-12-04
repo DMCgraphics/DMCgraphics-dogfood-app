@@ -116,8 +116,18 @@ export async function POST(req: Request) {
       status: 'active', // Assuming active since it's from CSV
       currency: invitation.currency,
       interval: invitation.interval,
-      interval_count: invitation.interval_count,
-      billing_cycle: invitation.billing_cycle || 'weekly',
+      interval_count: invitation.interval_count || 1, // Default to 1 if NULL
+      billing_cycle: (() => {
+        const cycle = invitation.billing_cycle || invitation.interval || 'week'
+        // Map Stripe interval format to our billing_cycle format
+        const mapping: Record<string, string> = {
+          'day': 'day',
+          'week': 'weekly',
+          'month': 'monthly',
+          'year': 'yearly',
+        }
+        return mapping[cycle] || 'weekly'
+      })(),
       current_period_start: invitation.current_period_start,
       current_period_end: invitation.current_period_end,
       metadata: {

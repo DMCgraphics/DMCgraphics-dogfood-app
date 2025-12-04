@@ -56,11 +56,7 @@ export default function SubscriptionManagePage() {
             plans (
               id,
               dog_id,
-              plan_data,
-              dogs (
-                id,
-                name
-              )
+              plan_data
             )
           `)
           .eq("user_id", user.id)

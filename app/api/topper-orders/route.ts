@@ -39,8 +39,10 @@ export async function GET(req: Request) {
           const metadata = stripeSub.metadata || dbSub.metadata || {}
           const isPaused = !!stripeSub.pause_collection
 
-          // Extract product type and strip "topper-" prefix if present
-          let productType = metadata.product_type || getTopperLevelFromPrice(stripeSub.items.data[0]?.price?.unit_amount || 0)
+          // Extract product type from topper_level or product_type, strip "topper-" prefix if present
+          let productType = metadata.topper_level?.replace('%', '') ||
+                           metadata.product_type ||
+                           getTopperLevelFromPrice(stripeSub.items.data[0]?.price?.unit_amount || 0)
           if (productType.startsWith('topper-')) {
             productType = productType.replace('topper-', '')
           }
@@ -66,7 +68,9 @@ export async function GET(req: Request) {
           console.error('[TOPPER-ORDERS] Error fetching Stripe subscription:', dbSub.stripe_subscription_id, err)
           // Return subscription data from database if Stripe fetch fails
           const metadata = dbSub.metadata || {}
-          let productType = metadata.product_type || '25'
+          let productType = metadata.topper_level?.replace('%', '') ||
+                           metadata.product_type ||
+                           '25'
           if (productType.startsWith('topper-')) {
             productType = productType.replace('topper-', '')
           }

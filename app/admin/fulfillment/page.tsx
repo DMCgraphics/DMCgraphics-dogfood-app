@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Package, Truck, CheckCircle, Clock, AlertCircle, Copy, ExternalLink } from "lucide-react"
+import { Package, Truck, CheckCircle, Clock, AlertCircle, Copy, ExternalLink, ArrowUp, ArrowDown, RotateCcw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
 
@@ -40,6 +40,9 @@ type Order = {
   driver_name?: string
   driver_phone?: string
   driver_home_zipcode?: string
+  route_position?: number
+  route_override?: boolean
+  route_notes?: string
 }
 
 type Driver = {
@@ -52,11 +55,27 @@ type Driver = {
   is_active: boolean
 }
 
+type Subscription = {
+  id: string
+  user_id: string
+  stripe_subscription_id: string
+  status: string
+  current_period_end: string
+  interval: string
+  interval_count: number
+  billing_cycle: string
+  user_email: string
+  plan_id: string
+  delivery_zipcode?: string
+}
+
 export default function FulfillmentPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [pendingOrders, setPendingOrders] = useState<Order[]>([])
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isGeneratingOrders, setIsGeneratingOrders] = useState(false)
   const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all'>('today')
   const [drivers, setDrivers] = useState<Driver[]>([])
   const { toast } = useToast()
@@ -124,6 +143,46 @@ export default function FulfillmentPage() {
 
       if (todayDel) setTodayOrders(todayDel)
       console.log(`[FULFILLMENT] Deliveries (${dateFilter}):`, todayDel?.length || 0)
+
+      // Fetch active subscriptions with user email
+      const { data: subs, error: subsError } = await supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          user_id,
+          stripe_subscription_id,
+          status,
+          current_period_end,
+          interval,
+          interval_count,
+          billing_cycle,
+          plan_id,
+          plans!inner (
+            delivery_zipcode
+          )
+        `)
+        .eq('status', 'active')
+        .order('current_period_end')
+
+      if (subs) {
+        // Fetch user emails for subscriptions
+        const userIds = subs.map((s: any) => s.user_id)
+        const { data: users } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .in('id', userIds)
+
+        const userMap = new Map(users?.map((u: any) => [u.id, u.email]) || [])
+
+        const subsWithEmails = subs.map((s: any) => ({
+          ...s,
+          user_email: userMap.get(s.user_id) || 'Unknown',
+          delivery_zipcode: s.plans?.delivery_zipcode || null
+        }))
+
+        setSubscriptions(subsWithEmails)
+        console.log('[FULFILLMENT] Active subscriptions:', subsWithEmails.length)
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
       toast({
@@ -211,6 +270,44 @@ export default function FulfillmentPage() {
     }
   }
 
+  const generateSubscriptionOrders = async (deliveryDate?: string) => {
+    setIsGeneratingOrders(true)
+    try {
+      const response = await fetch('/api/admin/subscriptions/generate-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deliveryDate: deliveryDate || new Date().toISOString().split('T')[0]
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Orders generated",
+          description: `Created ${data.created} subscription orders. ${data.failed > 0 ? `${data.failed} failed.` : ''}`
+        })
+        fetchData()
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to generate orders",
+          variant: "destructive"
+        })
+      }
+    } catch (error: any) {
+      console.error('Error generating orders:', error)
+      toast({
+        title: "Error",
+        description: "Failed to generate orders",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGeneratingOrders(false)
+    }
+  }
+
   const calculateZipcodeDistance = (zip1: string, zip2: string): number => {
     // Simple numeric difference (works well for same geographic region)
     const num1 = parseInt(zip1.replace(/\D/g, '')) || 0
@@ -221,11 +318,100 @@ export default function FulfillmentPage() {
   const sortOrdersByDistance = (orders: Order[], driverZipcode: string | null): Order[] => {
     if (!driverZipcode) return orders
 
+    // Check if any orders have manual route override
+    const hasManualRoute = orders.some(o => o.route_override && o.route_position != null)
+
+    if (hasManualRoute) {
+      // Sort by manual route_position
+      return [...orders].sort((a, b) => {
+        const posA = a.route_position ?? 999
+        const posB = b.route_position ?? 999
+        return posA - posB
+      })
+    }
+
+    // Default: sort by distance
     return [...orders].sort((a, b) => {
       const distA = calculateZipcodeDistance(driverZipcode, a.delivery_zipcode || '')
       const distB = calculateZipcodeDistance(driverZipcode, b.delivery_zipcode || '')
       return distA - distB
     })
+  }
+
+  const moveOrderInRoute = async (orderId: string, direction: 'up' | 'down', orders: Order[]) => {
+    const currentIndex = orders.findIndex(o => o.id === orderId)
+    if (currentIndex === -1) return
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    if (newIndex < 0 || newIndex >= orders.length) return
+
+    try {
+      // Swap the positions
+      const updates = [
+        {
+          id: orders[currentIndex].id,
+          route_position: newIndex + 1,
+          route_override: true
+        },
+        {
+          id: orders[newIndex].id,
+          route_position: currentIndex + 1,
+          route_override: true
+        }
+      ]
+
+      for (const update of updates) {
+        await supabase
+          .from('orders')
+          .update({
+            route_position: update.route_position,
+            route_override: update.route_override
+          })
+          .eq('id', update.id)
+      }
+
+      toast({
+        title: "Route updated",
+        description: "Stop order has been rearranged"
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating route:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update route",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const resetRouteToAutomatic = async (driverZip: string) => {
+    try {
+      const ordersToReset = todayOrders.filter(o => o.driver_home_zipcode === driverZip)
+
+      for (const order of ordersToReset) {
+        await supabase
+          .from('orders')
+          .update({
+            route_position: null,
+            route_override: false
+          })
+          .eq('id', order.id)
+      }
+
+      toast({
+        title: "Route reset",
+        description: "Route has been reset to automatic optimization"
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error resetting route:', error)
+      toast({
+        title: "Error",
+        description: "Failed to reset route",
+        variant: "destructive"
+      })
+    }
   }
 
   const assignDriver = async (orderId: string, driverId: string) => {
@@ -294,6 +480,7 @@ export default function FulfillmentPage() {
       <Tabs defaultValue="orders" className="space-y-4">
         <TabsList>
           <TabsTrigger value="orders">Pending Orders ({pendingOrders.length})</TabsTrigger>
+          <TabsTrigger value="subscriptions">Subscriptions ({subscriptions.length})</TabsTrigger>
           <TabsTrigger value="today">Today's Deliveries ({todayOrders.length})</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
@@ -394,6 +581,73 @@ export default function FulfillmentPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="subscriptions">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Active Subscriptions</CardTitle>
+                  <CardDescription>Manage bi-weekly subscription deliveries</CardDescription>
+                </div>
+                <Button
+                  onClick={() => generateSubscriptionOrders()}
+                  disabled={isGeneratingOrders}
+                >
+                  {isGeneratingOrders ? "Generating..." : "Generate Today's Orders"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {subscriptions.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No active subscriptions</p>
+              ) : (
+                <div className="space-y-4">
+                  {subscriptions.map(subscription => (
+                    <Card key={subscription.id} className="border-2">
+                      <CardContent className="pt-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{subscription.user_email}</h3>
+                              <Badge variant="outline">
+                                {subscription.billing_cycle === 'weekly' && subscription.interval_count === 2
+                                  ? 'Bi-Weekly'
+                                  : subscription.billing_cycle}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Stripe ID:</strong> {subscription.stripe_subscription_id}
+                            </p>
+                            <p className="text-sm">
+                              <strong>Next Delivery:</strong> {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </p>
+                            {subscription.delivery_zipcode && (
+                              <p className="text-sm">
+                                <strong>Zipcode:</strong> {subscription.delivery_zipcode}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <Badge className="bg-green-100 text-green-800 w-fit">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              {subscription.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="today">
           <Card>
             <CardHeader>
@@ -444,14 +698,31 @@ export default function FulfillmentPage() {
                       }
                     })
 
-                    return Object.entries(grouped).map(([driverZip, orders]) => (
+                    return Object.entries(grouped).map(([driverZip, orders]) => {
+                      const hasManualRoute = orders.some(o => o.route_override)
+                      return (
                       <div key={driverZip} className="space-y-4">
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <Truck className="h-5 w-5" />
-                          {driverZip === 'unassigned'
-                            ? `Unassigned Deliveries (${orders.length})`
-                            : `Driver Route (${driverZip}) - ${orders.length} deliveries`}
-                        </h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <Truck className="h-5 w-5" />
+                            {driverZip === 'unassigned'
+                              ? `Unassigned Deliveries (${orders.length})`
+                              : `Driver Route (${driverZip}) - ${orders.length} deliveries`}
+                            {hasManualRoute && driverZip !== 'unassigned' && (
+                              <Badge variant="secondary" className="ml-2">Manual Route</Badge>
+                            )}
+                          </h3>
+                          {driverZip !== 'unassigned' && hasManualRoute && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => resetRouteToAutomatic(driverZip)}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Reset to Auto
+                            </Button>
+                          )}
+                        </div>
                         <div className="space-y-4">
                           {orders.map((order, idx) => (
                             <Card key={order.id} className="border-2 border-green-200">
@@ -486,6 +757,28 @@ export default function FulfillmentPage() {
                                     )}
                                   </div>
                                   <div className="flex flex-col gap-2 sm:min-w-[180px]">
+                                    {driverZip !== 'unassigned' && (
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => moveOrderInRoute(order.id, 'up', orders)}
+                                          disabled={idx === 0}
+                                          className="flex-1"
+                                        >
+                                          <ArrowUp className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => moveOrderInRoute(order.id, 'down', orders)}
+                                          disabled={idx === orders.length - 1}
+                                          className="flex-1"
+                                        >
+                                          <ArrowDown className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -513,7 +806,7 @@ export default function FulfillmentPage() {
                           ))}
                         </div>
                       </div>
-                    ))
+                    )})
                   })()}
                 </div>
               )}

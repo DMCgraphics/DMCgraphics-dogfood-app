@@ -164,7 +164,12 @@ export default function FulfillmentPage() {
         .eq('status', 'active')
         .order('current_period_end')
 
+      if (subsError) {
+        console.error('[FULFILLMENT] Error fetching subscriptions:', subsError)
+      }
+
       if (subs) {
+        console.log('[FULFILLMENT] Raw subscriptions from DB:', subs.length, subs)
         // Fetch user emails for subscriptions
         const userIds = subs.map((s: any) => s.user_id)
         const { data: users } = await supabase

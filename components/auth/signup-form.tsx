@@ -161,6 +161,24 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
           }
         }
 
+        // Claim any guest orders with matching email
+        try {
+          const claimResponse = await fetch("/api/orders/claim-guest-orders", {
+            method: "POST",
+          })
+          const claimData = await claimResponse.json()
+
+          if (claimData.success && claimData.claimed > 0) {
+            console.log("[v0] guest_orders_claimed", {
+              count: claimData.claimed,
+              orderIds: claimData.orders?.map((o: any) => o.id)
+            })
+          }
+        } catch (error) {
+          console.error("[v0] Failed to claim guest orders:", error)
+          // Don't block signup on failure - user can still access orders via email match
+        }
+
         // The auth context will automatically handle the session change
         // Call onSuccess immediately - the parent component will handle modal closing
         setIsLoading(false)

@@ -52,11 +52,17 @@ export async function GET(
       fulfillment_status: order.fulfillment_status,
     })
 
-    // Authorization check
-    // 1. If user is authenticated and owns the order
+    // Authorization check - multiple valid paths
+    // 1. If valid tracking token provided (for shareable links - works for everyone)
+    const hasValidToken = token && order.tracking_token === token
+
+    // 2. If user is authenticated and owns the order
     const isOwner = user && order.user_id === user.id
 
-    // 2. If this is a guest order and valid session_id provided
+    // 3. If user is authenticated and email matches guest_email (handles claimed orders)
+    const isGuestEmailMatch = user && order.guest_email && order.guest_email === user.email
+
+    // 4. If this is a guest order and valid session_id provided
     let isGuestWithValidSession = false
     if (!user && order.guest_email && sessionId) {
       // Verify the session_id matches this order
@@ -71,11 +77,15 @@ export async function GET(
       console.log("[TRACKING API] Guest claim found:", !!claim)
     }
 
-    // 3. If valid tracking token provided (for shareable links)
-    const hasValidToken = token && order.tracking_token === token
-    console.log("[TRACKING API] Valid token:", hasValidToken)
+    console.log("[TRACKING API] Access methods:", {
+      token: hasValidToken,
+      owner: isOwner,
+      guestEmail: isGuestEmailMatch,
+      session: isGuestWithValidSession
+    })
 
-    if (!isOwner && !isGuestWithValidSession && !hasValidToken) {
+    // Allow access if ANY authorization method succeeds
+    if (!hasValidToken && !isOwner && !isGuestEmailMatch && !isGuestWithValidSession) {
       console.log("[TRACKING API] Unauthorized access attempt")
       return NextResponse.json(
         { error: "Unauthorized. You do not have access to this order." },

@@ -164,7 +164,7 @@ export async function GET(req: Request) {
       const { data: dbOrders, error: dbError } = await supabase
         .from("orders")
         .select("*")
-        .eq("user_id", user.id)
+        .or(`user_id.eq.${user.id},and(user_id.is.null,guest_email.ilike.${user.email})`)
         .order("created_at", { ascending: false })
 
       if (dbError) {

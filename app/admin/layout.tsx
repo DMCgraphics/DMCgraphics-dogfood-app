@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   Mail,
-  ClipboardList
+  ClipboardList,
+  UserCircle
 } from "lucide-react"
 
 export default async function AdminLayout({
@@ -90,6 +91,13 @@ export default async function AdminLayout({
               >
                 <Truck className="h-5 w-5" />
                 <span className="font-medium">Deliveries</span>
+              </Link>
+              <Link
+                href="/admin/drivers"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <UserCircle className="h-5 w-5" />
+                <span className="font-medium">Drivers</span>
               </Link>
               <Link
                 href="/admin/stripe"

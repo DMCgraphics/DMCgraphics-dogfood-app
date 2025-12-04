@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Package, Truck, CheckCircle, Clock, AlertCircle, Copy, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
@@ -35,6 +36,20 @@ type Order = {
   guest_email: string
   is_subscription_order: boolean
   tracking_token: string
+  driver_id?: string
+  driver_name?: string
+  driver_phone?: string
+  driver_home_zipcode?: string
+}
+
+type Driver = {
+  id: string
+  name: string
+  phone?: string
+  email?: string
+  home_zipcode: string
+  home_address?: string
+  is_active: boolean
 }
 
 export default function FulfillmentPage() {
@@ -42,11 +57,13 @@ export default function FulfillmentPage() {
   const [pendingOrders, setPendingOrders] = useState<Order[]>([])
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all'>('today')
+  const [drivers, setDrivers] = useState<Driver[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [dateFilter])
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -63,6 +80,16 @@ export default function FulfillmentPage() {
 
       if (inv) setInventory(inv)
 
+      // Fetch active drivers
+      const { data: driversList } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
+
+      if (driversList) setDrivers(driversList)
+      console.log('[FULFILLMENT] Active drivers:', driversList?.length || 0)
+
       // Fetch pending orders (one-time only, not subscriptions)
       const { data: pending } = await supabase
         .from('orders')
@@ -74,17 +101,29 @@ export default function FulfillmentPage() {
       if (pending) setPendingOrders(pending)
       console.log('[FULFILLMENT] Pending orders:', pending?.length || 0)
 
-      // Fetch today's deliveries
-      const { data: todayDel } = await supabase
+      // Fetch deliveries based on date filter
+      let query = supabase
         .from('orders')
         .select('*')
         .eq('is_subscription_order', false)
-        .eq('estimated_delivery_date', today)
         .in('fulfillment_status', ['preparing', 'out_for_delivery'])
+
+      // Apply date filter conditionally
+      if (dateFilter === 'today') {
+        query = query.eq('estimated_delivery_date', today)
+      } else if (dateFilter === 'upcoming') {
+        query = query.gte('estimated_delivery_date', today)
+      }
+      // 'all' = no date filter
+
+      query = query
+        .order('estimated_delivery_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false })
 
+      const { data: todayDel } = await query
+
       if (todayDel) setTodayOrders(todayDel)
-      console.log('[FULFILLMENT] Today\'s deliveries:', todayDel?.length || 0)
+      console.log(`[FULFILLMENT] Deliveries (${dateFilter}):`, todayDel?.length || 0)
     } catch (error) {
       console.error('Error fetching data:', error)
       toast({
@@ -160,6 +199,56 @@ export default function FulfillmentPage() {
       toast({
         title: "Error",
         description: "Failed to copy link",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const calculateZipcodeDistance = (zip1: string, zip2: string): number => {
+    // Simple numeric difference (works well for same geographic region)
+    const num1 = parseInt(zip1.replace(/\D/g, '')) || 0
+    const num2 = parseInt(zip2.replace(/\D/g, '')) || 0
+    return Math.abs(num1 - num2)
+  }
+
+  const sortOrdersByDistance = (orders: Order[], driverZipcode: string | null): Order[] => {
+    if (!driverZipcode) return orders
+
+    return [...orders].sort((a, b) => {
+      const distA = calculateZipcodeDistance(driverZipcode, a.delivery_zipcode || '')
+      const distB = calculateZipcodeDistance(driverZipcode, b.delivery_zipcode || '')
+      return distA - distB
+    })
+  }
+
+  const assignDriver = async (orderId: string, driverId: string) => {
+    try {
+      const driver = drivers.find(d => d.id === driverId)
+      if (!driver) throw new Error('Driver not found')
+
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          fulfillment_status: 'driver_assigned',
+          driver_id: driverId,
+          driver_name: driver.name,
+          driver_phone: driver.phone || null,
+          driver_home_zipcode: driver.home_zipcode,
+        })
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      toast({
+        title: "Driver assigned",
+        description: `Order assigned to ${driver.name}`
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error assigning driver:', error)
+      toast({
+        title: "Error",
+        description: "Failed to assign driver",
         variant: "destructive"
       })
     }
@@ -251,9 +340,21 @@ export default function FulfillmentPage() {
                               <span className="sm:hidden">Copy Link</span>
                             </Button>
                             {order.fulfillment_status === 'looking_for_driver' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'driver_assigned')} className="w-full whitespace-nowrap">
-                                Assign Driver
-                              </Button>
+                              <div className="space-y-2 w-full">
+                                <Label htmlFor={`driver-${order.id}`} className="text-xs">Assign Driver</Label>
+                                <Select onValueChange={(driverId) => assignDriver(order.id, driverId)}>
+                                  <SelectTrigger id={`driver-${order.id}`} className="h-9 w-full">
+                                    <SelectValue placeholder="Select driver..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {drivers.map(driver => (
+                                      <SelectItem key={driver.id} value={driver.id}>
+                                        {driver.name} ({driver.home_zipcode})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             )}
                             {order.fulfillment_status === 'driver_assigned' && (
                               <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')} className="w-full whitespace-nowrap">
@@ -291,57 +392,122 @@ export default function FulfillmentPage() {
             <CardHeader>
               <CardTitle>Today's Deliveries</CardTitle>
               <CardDescription>Orders scheduled for delivery today</CardDescription>
+              <div className="flex gap-2 mt-4">
+                <Button
+                  size="sm"
+                  variant={dateFilter === 'today' ? 'default' : 'outline'}
+                  onClick={() => setDateFilter('today')}
+                >
+                  Today
+                </Button>
+                <Button
+                  size="sm"
+                  variant={dateFilter === 'upcoming' ? 'default' : 'outline'}
+                  onClick={() => setDateFilter('upcoming')}
+                >
+                  Upcoming
+                </Button>
+                <Button
+                  size="sm"
+                  variant={dateFilter === 'all' ? 'default' : 'outline'}
+                  onClick={() => setDateFilter('all')}
+                >
+                  All Deliveries
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {todayOrders.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No deliveries scheduled for today</p>
+                <p className="text-muted-foreground text-center py-8">No deliveries scheduled</p>
               ) : (
-                <div className="space-y-4">
-                  {todayOrders.map(order => (
-                    <Card key={order.id} className="border-2 border-green-200">
-                      <CardContent className="pt-6">
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
-                          <div className="space-y-2 flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="font-semibold text-sm sm:text-base">Order #{order.order_number}</h3>
-                              {getStatusBadge(order.fulfillment_status)}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {order.recipe_name} × {order.quantity}
-                            </p>
-                            <p className="text-sm">
-                              <strong>Zipcode:</strong> {order.delivery_zipcode}
-                            </p>
-                            <p className="text-sm">
-                              <strong>Customer:</strong> {order.guest_email || 'Registered user'}
-                            </p>
-                          </div>
-                          <div className="flex flex-col gap-2 sm:min-w-[180px]">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => copyTrackingLink(order.id, order.tracking_token)}
-                              className="w-full whitespace-nowrap"
-                            >
-                              <Copy className="h-4 w-4 mr-2" />
-                              <span className="hidden sm:inline">Copy Tracking Link</span>
-                              <span className="sm:hidden">Copy Link</span>
-                            </Button>
-                            {order.fulfillment_status === 'preparing' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} className="w-full whitespace-nowrap">
-                                Out for Delivery
-                              </Button>
-                            )}
-                            {order.fulfillment_status === 'out_for_delivery' && (
-                              <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')} className="w-full whitespace-nowrap">
-                                Mark Delivered
-                              </Button>
-                            )}
-                          </div>
+                <div className="space-y-6">
+                  {(() => {
+                    // Group orders by driver zipcode
+                    const grouped = todayOrders.reduce((acc, order) => {
+                      const driverZip = order.driver_home_zipcode || 'unassigned'
+                      if (!acc[driverZip]) acc[driverZip] = []
+                      acc[driverZip].push(order)
+                      return acc
+                    }, {} as Record<string, Order[]>)
+
+                    // Sort each driver's orders by distance
+                    Object.keys(grouped).forEach(driverZip => {
+                      if (driverZip !== 'unassigned') {
+                        grouped[driverZip] = sortOrdersByDistance(grouped[driverZip], driverZip)
+                      }
+                    })
+
+                    return Object.entries(grouped).map(([driverZip, orders]) => (
+                      <div key={driverZip} className="space-y-4">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <Truck className="h-5 w-5" />
+                          {driverZip === 'unassigned'
+                            ? `Unassigned Deliveries (${orders.length})`
+                            : `Driver Route (${driverZip}) - ${orders.length} deliveries`}
+                        </h3>
+                        <div className="space-y-4">
+                          {orders.map((order, idx) => (
+                            <Card key={order.id} className="border-2 border-green-200">
+                              <CardContent className="pt-6">
+                                <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                                  <div className="space-y-2 flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      {driverZip !== 'unassigned' && (
+                                        <Badge variant="secondary" className="text-xs">Stop #{idx + 1}</Badge>
+                                      )}
+                                      <h3 className="font-semibold text-sm sm:text-base">Order #{order.order_number}</h3>
+                                      {getStatusBadge(order.fulfillment_status)}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {order.recipe_name} × {order.quantity}
+                                    </p>
+                                    <p className="text-sm">
+                                      <strong>Zipcode:</strong> {order.delivery_zipcode}
+                                      {driverZip !== 'unassigned' && order.delivery_zipcode && (
+                                        <span className="ml-2 text-xs text-muted-foreground">
+                                          (distance: {calculateZipcodeDistance(driverZip, order.delivery_zipcode)})
+                                        </span>
+                                      )}
+                                    </p>
+                                    <p className="text-sm">
+                                      <strong>Customer:</strong> {order.guest_email || 'Registered user'}
+                                    </p>
+                                    {order.driver_name && (
+                                      <p className="text-sm">
+                                        <strong>Driver:</strong> {order.driver_name}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-2 sm:min-w-[180px]">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => copyTrackingLink(order.id, order.tracking_token)}
+                                      className="w-full whitespace-nowrap"
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      <span className="hidden sm:inline">Copy Tracking Link</span>
+                                      <span className="sm:hidden">Copy Link</span>
+                                    </Button>
+                                    {order.fulfillment_status === 'preparing' && (
+                                      <Button size="sm" onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} className="w-full whitespace-nowrap">
+                                        Out for Delivery
+                                      </Button>
+                                    )}
+                                    {order.fulfillment_status === 'out_for_delivery' && (
+                                      <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')} className="w-full whitespace-nowrap">
+                                        Mark Delivered
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    ))
+                  })()}
                 </div>
               )}
             </CardContent>

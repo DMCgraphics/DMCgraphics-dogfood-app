@@ -64,6 +64,7 @@ export default function SubscriptionManagePage() {
             )
           `)
           .eq("user_id", user.id)
+          .eq("status", "active")
           .order("created_at", { ascending: false })
 
         if (error) {
@@ -75,18 +76,18 @@ export default function SubscriptionManagePage() {
         const transformedSubscriptions: DogSubscription[] =
           subscriptionsData?.map((sub) => ({
             id: sub.id,
-            dogId: sub.plans.dog_id,
-            dogName: sub.plans.dogs.name,
+            dogId: sub.plans?.dog_id || null,
+            dogName: sub.plans?.dogs?.name || "Your Dog",
             planId: sub.plan_id,
             status: sub.status,
-            billingCycle: sub.billing_cycle,
-            nextBillingDate: sub.next_billing_date,
-            priceMonthly: sub.price_monthly,
-            currentRecipe: sub.plans.plan_data?.selectedRecipe || "Chicken & Greens",
-            mealsPerDay: sub.plans.plan_data?.mealsPerDay || 2,
-            addOns: sub.plans.plan_data?.selectedAddOns || [],
-            deliveryFrequency: "biweekly",
-            nextDeliveryDate: "2024-12-15",
+            billingCycle: sub.billing_cycle || sub.interval,
+            nextBillingDate: sub.next_billing_date || sub.current_period_end,
+            priceMonthly: sub.price_monthly || 0,
+            currentRecipe: sub.plans?.plan_data?.selectedRecipe || "Fresh Food Pack",
+            mealsPerDay: sub.plans?.plan_data?.mealsPerDay || 2,
+            addOns: sub.plans?.plan_data?.selectedAddOns || [],
+            deliveryFrequency: sub.interval_count === 2 ? "biweekly" : "weekly",
+            nextDeliveryDate: sub.current_period_end || "2024-12-15",
           })) || []
 
         setSubscriptions(transformedSubscriptions)

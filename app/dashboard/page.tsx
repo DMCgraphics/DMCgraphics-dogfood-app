@@ -1039,6 +1039,33 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container py-8">
+          {hasSubscriptionWithoutPlan && subscriptionNeedingCustomization && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-900">Complete Your Profile</h3>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Tell us about your dog to customize your meal plan and unlock all subscription features!
+                  </p>
+                  <Button
+                    onClick={() => router.push(`/plan-builder?customize_subscription=${subscriptionNeedingCustomization.id}`)}
+                    className="mt-3"
+                    variant="default"
+                  >
+                    Complete Profile Now
+                  </Button>
+                </div>
+                <button
+                  onClick={() => setHasSubscriptionWithoutPlan(false)}
+                  className="text-amber-600 hover:text-amber-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="font-manrope text-2xl lg:text-3xl font-bold">Welcome back, {user?.name || "there"}!</h1>

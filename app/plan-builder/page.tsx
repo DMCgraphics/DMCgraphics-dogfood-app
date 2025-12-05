@@ -927,6 +927,18 @@ function PlanBuilderContent() {
     // Always proceed directly to checkout, regardless of multi-dog state
     // Users can create plans for additional dogs separately
 
+    // PRIORITY 1: Check if customizing an existing subscription (skip checkout entirely)
+    if (customizeSubscriptionId) {
+      console.log("[plan-builder] Customize subscription detected - bypassing all checkout flows")
+      if (!user) {
+        setShowAuthModal(true)
+        return
+      }
+      // Call handleAuthSuccess which will create plan and link to subscription
+      handleAuthSuccess()
+      return
+    }
+
     // Handle topper plan checkout
     if (planType === "topper" && topperLevel) {
       // For topper plans, use the topper checkout flow

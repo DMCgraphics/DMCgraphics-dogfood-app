@@ -1913,10 +1913,24 @@ function PlanBuilderContent() {
         existingSubscription
       })
 
-      if (customizeSubscriptionId && existingSubscription) {
-        console.log("[plan-builder] ✅ SKIPPING CHECKOUT - Linking plan to existing subscription...")
+      if (customizeSubscriptionId) {
+        console.log("[plan-builder] ✅ SKIPPING CHECKOUT - Fetching and linking plan to existing subscription...")
 
         try {
+          // Fetch the subscription directly to avoid race conditions with state
+          const { data: subscription, error: fetchError } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("id", customizeSubscriptionId)
+            .eq("user_id", session.user.id)
+            .single()
+
+          if (fetchError || !subscription) {
+            throw new Error("Subscription not found or does not belong to you")
+          }
+
+          console.log("[plan-builder] Found subscription to link:", subscription)
+
           // Update subscription with new plan_id
           const { error: linkError } = await supabase
             .from("subscriptions")

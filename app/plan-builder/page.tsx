@@ -1907,8 +1907,14 @@ function PlanBuilderContent() {
       }
 
       // Check if we're customizing an existing claimed subscription (skip checkout)
+      console.log("[plan-builder] Skip checkout check:", {
+        customizeSubscriptionId,
+        hasExistingSubscription: !!existingSubscription,
+        existingSubscription
+      })
+
       if (customizeSubscriptionId && existingSubscription) {
-        console.log("[plan-builder] Linking plan to existing subscription (skip checkout)...")
+        console.log("[plan-builder] ✅ SKIPPING CHECKOUT - Linking plan to existing subscription...")
 
         try {
           // Update subscription with new plan_id

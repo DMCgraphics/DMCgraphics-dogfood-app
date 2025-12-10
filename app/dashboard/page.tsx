@@ -74,6 +74,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false)
   const [showVerifiedSuccess, setShowVerifiedSuccess] = useState(false)
+  const [showProfileCompletedSuccess, setShowProfileCompletedSuccess] = useState(false)
   const [weightEntries, setWeightEntries] = useState([])
   const [stoolEntries, setStoolEntries] = useState([])
   const [isStoolLoading, setIsStoolLoading] = useState(false)
@@ -119,6 +120,18 @@ export default function DashboardPage() {
       window.history.replaceState({}, "", window.location.pathname)
       // Auto-hide after 5 seconds
       setTimeout(() => setShowUpdateSuccess(false), 5000)
+    }
+  }, [])
+
+  // Check for profile completed success message in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("profile_completed") === "true") {
+      setShowProfileCompletedSuccess(true)
+      // Remove the parameter from URL
+      window.history.replaceState({}, "", window.location.pathname)
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowProfileCompletedSuccess(false), 5000)
     }
   }, [])
 
@@ -1049,7 +1062,7 @@ export default function DashboardPage() {
                     Tell us about your dog to customize your meal plan and unlock all subscription features!
                   </p>
                   <Button
-                    onClick={() => router.push(`/plan-builder?customize_subscription=${subscriptionNeedingCustomization.id}`)}
+                    onClick={() => router.push(`/subscription/customize?id=${subscriptionNeedingCustomization.id}`)}
                     className="mt-3"
                     variant="default"
                   >
@@ -1209,6 +1222,32 @@ export default function DashboardPage() {
             </Card>
           )}
 
+          {showProfileCompletedSuccess && (
+            <Card className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-green-900 dark:text-green-100">Profile Completed!</h4>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Your dog's profile and meal plan have been successfully set up. Your first delivery is on the way!
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowProfileCompletedSuccess(false)}
+                    className="ml-auto"
+                  >
+                    ×
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {hasSubscriptionWithoutPlan && subscriptionNeedingCustomization && (
             <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <div className="flex items-start gap-3">
@@ -1219,7 +1258,7 @@ export default function DashboardPage() {
                     Tell us about your dog to customize your meal plan and unlock all subscription features!
                   </p>
                   <Button
-                    onClick={() => router.push(`/plan-builder?customize_subscription=${subscriptionNeedingCustomization.id}`)}
+                    onClick={() => router.push(`/subscription/customize?id=${subscriptionNeedingCustomization.id}`)}
                     className="mt-3"
                     variant="default"
                   >

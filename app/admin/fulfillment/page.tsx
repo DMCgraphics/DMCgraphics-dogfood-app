@@ -65,8 +65,23 @@ type Subscription = {
   interval_count: number
   billing_cycle: string
   user_email: string
+  user_name?: string
   plan_id: string
   delivery_zipcode?: string
+  plan_type?: string
+  topper_level?: string
+  dogs: Array<{
+    id: string
+    name: string
+    breed?: string
+    weight?: number
+    weight_unit?: string
+  }>
+  recipes: Array<{
+    id: string
+    name: string
+    slug: string
+  }>
 }
 
 export default function FulfillmentPage() {
@@ -144,7 +159,7 @@ export default function FulfillmentPage() {
       if (todayDel) setTodayOrders(todayDel)
       console.log(`[FULFILLMENT] Deliveries (${dateFilter}):`, todayDel?.length || 0)
 
-      // Fetch active subscriptions with user email
+      // Fetch active subscriptions with user email, dog info, and recipes
       const { data: subs, error: subsError } = await supabase
         .from('subscriptions')
         .select(`
@@ -158,7 +173,30 @@ export default function FulfillmentPage() {
           billing_cycle,
           plan_id,
           plans (
-            delivery_zipcode
+            id,
+            delivery_zipcode,
+            plan_type,
+            topper_level,
+            plan_dogs (
+              dog_id,
+              meals_per_day,
+              dogs (
+                id,
+                name,
+                breed,
+                weight,
+                weight_unit
+              )
+            ),
+            plan_items (
+              recipe_id,
+              qty,
+              recipes (
+                id,
+                name,
+                slug
+              )
+            )
           )
         `)
         .eq('status', 'active')
@@ -170,23 +208,35 @@ export default function FulfillmentPage() {
 
       if (subs) {
         console.log('[FULFILLMENT] Raw subscriptions from DB:', subs.length, subs)
-        // Fetch user emails for subscriptions
-        const userIds = subs.map((s: any) => s.user_id)
+        // Fetch user details for subscriptions
+        const userIds = subs.map((s: any) => s.user_id).filter(Boolean)
         const { data: users } = await supabase
           .from('profiles')
-          .select('id, email')
+          .select('id, email, full_name')
           .in('id', userIds)
 
-        const userMap = new Map(users?.map((u: any) => [u.id, u.email]) || [])
+        const userMap = new Map(users?.map((u: any) => [u.id, { email: u.email, name: u.full_name }]) || [])
 
-        const subsWithEmails = subs.map((s: any) => ({
-          ...s,
-          user_email: userMap.get(s.user_id) || 'Unknown',
-          delivery_zipcode: s.plans?.delivery_zipcode || null
-        }))
+        const subsWithDetails = subs.map((s: any) => {
+          const user = userMap.get(s.user_id)
+          const plan = s.plans
+          const dogs = plan?.plan_dogs?.map((pd: any) => pd.dogs).filter(Boolean) || []
+          const recipes = plan?.plan_items?.map((pi: any) => pi.recipes).filter(Boolean) || []
 
-        setSubscriptions(subsWithEmails)
-        console.log('[FULFILLMENT] Active subscriptions:', subsWithEmails.length)
+          return {
+            ...s,
+            user_email: user?.email || 'Unknown',
+            user_name: user?.name || null,
+            delivery_zipcode: plan?.delivery_zipcode || null,
+            plan_type: plan?.plan_type || null,
+            topper_level: plan?.topper_level || null,
+            dogs,
+            recipes
+          }
+        })
+
+        setSubscriptions(subsWithDetails)
+        console.log('[FULFILLMENT] Active subscriptions:', subsWithDetails.length)
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -610,38 +660,85 @@ export default function FulfillmentPage() {
                   {subscriptions.map(subscription => (
                     <Card key={subscription.id} className="border-2">
                       <CardContent className="pt-6">
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{subscription.user_email}</h3>
-                              <Badge variant="outline">
-                                {subscription.billing_cycle === 'weekly' && subscription.interval_count === 2
-                                  ? 'Bi-Weekly'
-                                  : subscription.billing_cycle}
-                              </Badge>
+                        <div className="flex flex-col gap-4">
+                          {/* Header with user info and status */}
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-lg">
+                                  {subscription.user_name || subscription.user_email}
+                                </h3>
+                                <Badge variant="outline">
+                                  {subscription.billing_cycle === 'weekly' && subscription.interval_count === 2
+                                    ? 'Bi-Weekly'
+                                    : subscription.billing_cycle}
+                                </Badge>
+                                {subscription.plan_type && (
+                                  <Badge variant="secondary">
+                                    {subscription.plan_type}
+                                    {subscription.topper_level && ` (${subscription.topper_level}%)`}
+                                  </Badge>
+                                )}
+                              </div>
+                              {subscription.user_name && (
+                                <p className="text-sm text-muted-foreground">{subscription.user_email}</p>
+                              )}
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              <strong>Stripe ID:</strong> {subscription.stripe_subscription_id}
-                            </p>
-                            <p className="text-sm">
-                              <strong>Next Delivery:</strong> {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                month: 'long',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </p>
-                            {subscription.delivery_zipcode && (
-                              <p className="text-sm">
-                                <strong>Zipcode:</strong> {subscription.delivery_zipcode}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <Badge className="bg-green-100 text-green-800 w-fit">
+                            <Badge className="bg-green-100 text-green-800 w-fit h-fit">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               {subscription.status}
                             </Badge>
+                          </div>
+
+                          {/* Dogs */}
+                          {subscription.dogs.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium">Dogs:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {subscription.dogs.map(dog => (
+                                  <Badge key={dog.id} variant="outline" className="text-xs">
+                                    {dog.name}
+                                    {dog.breed && ` - ${dog.breed}`}
+                                    {dog.weight && ` (${dog.weight}${dog.weight_unit})`}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recipes */}
+                          {subscription.recipes.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium">Recipes:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {subscription.recipes.map(recipe => (
+                                  <Badge key={recipe.id} variant="outline" className="text-xs bg-blue-50">
+                                    {recipe.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Delivery info */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm border-t pt-4">
+                            <div>
+                              <strong>Next Delivery:</strong>{' '}
+                              {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </div>
+                            {subscription.delivery_zipcode && (
+                              <div>
+                                <strong>Zipcode:</strong> {subscription.delivery_zipcode}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground sm:col-span-2">
+                              <strong>Stripe ID:</strong> {subscription.stripe_subscription_id}
+                            </div>
                           </div>
                         </div>
                       </CardContent>

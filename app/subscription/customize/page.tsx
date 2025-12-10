@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase/client"
@@ -29,7 +29,7 @@ interface DogProfile {
   conditions?: string[]
 }
 
-export default function SubscriptionCustomizePage() {
+function SubscriptionCustomizeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
@@ -376,5 +376,26 @@ export default function SubscriptionCustomizePage() {
         <Footer />
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function SubscriptionCustomizePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <SubscriptionCustomizeContent />
+    </Suspense>
   )
 }

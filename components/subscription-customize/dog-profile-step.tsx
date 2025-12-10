@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { BreedSelector } from "@/components/ui/breed-selector"
+import { ALL_BREEDS } from "@/lib/data/dog-breeds"
 
 interface DogProfile {
   name: string
@@ -56,6 +57,7 @@ export function DogProfileStep({ dogProfile, onUpdate }: DogProfileStepProps) {
       <div className="space-y-2">
         <Label htmlFor="breed">Breed (Optional)</Label>
         <BreedSelector
+          options={ALL_BREEDS}
           value={dogProfile.breed || ""}
           onValueChange={(value) => updateField("breed", value)}
         />

@@ -208,14 +208,16 @@ export default function FulfillmentPage() {
 
       if (subs) {
         console.log('[FULFILLMENT] Raw subscriptions from DB:', subs.length, subs)
-        // Fetch user details for subscriptions
+        // Fetch user details using RPC function (gets emails from auth.users)
         const userIds = subs.map((s: any) => s.user_id).filter(Boolean)
-        const { data: users } = await supabase
-          .from('profiles')
-          .select('id, email, full_name')
-          .in('id', userIds)
+        const { data: users, error: usersError } = await supabase
+          .rpc('get_user_emails', { user_ids: userIds })
 
-        const userMap = new Map(users?.map((u: any) => [u.id, { email: u.email, name: u.full_name }]) || [])
+        if (usersError) {
+          console.error('[FULFILLMENT] Error fetching user emails:', usersError)
+        }
+
+        const userMap = new Map(users?.map((u: any) => [u.user_id, { email: u.email, name: u.full_name }]) || [])
 
         const subsWithDetails = subs.map((s: any) => {
           const user = userMap.get(s.user_id)
@@ -236,7 +238,7 @@ export default function FulfillmentPage() {
         })
 
         setSubscriptions(subsWithDetails)
-        console.log('[FULFILLMENT] Active subscriptions:', subsWithDetails.length)
+        console.log('[FULFILLMENT] Active subscriptions with details:', subsWithDetails)
       }
     } catch (error) {
       console.error('Error fetching data:', error)

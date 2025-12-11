@@ -50,6 +50,11 @@ export async function GET(req: Request) {
             size_g,
             recipes (name, slug)
           )
+        ),
+        profiles (
+          full_name,
+          email,
+          phone
         )
       `)
       .order("scheduled_date", { ascending: true })

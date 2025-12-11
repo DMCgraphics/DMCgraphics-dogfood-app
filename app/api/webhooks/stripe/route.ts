@@ -439,6 +439,9 @@ export async function POST(req: Request) {
           const deliveryCity = shippingAddress?.city
           const deliveryState = shippingAddress?.state
 
+          // Get customer name
+          const customerName = s.customer_details?.name || s.shipping_details?.name
+
           // Generate order number
           const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
@@ -465,6 +468,7 @@ export async function POST(req: Request) {
           const orderData = {
             user_id: userId,
             guest_email: guestEmail,
+            customer_name: customerName,
             order_number: orderNumber,
             order_type: 'individual-pack',
             status: 'paid',

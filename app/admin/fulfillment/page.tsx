@@ -34,6 +34,7 @@ type Order = {
   created_at: string
   user_id: string
   guest_email: string
+  customer_name?: string
   is_subscription_order: boolean
   tracking_token: string
   driver_id?: string
@@ -574,7 +575,7 @@ export default function FulfillmentPage() {
                               <strong> Zipcode:</strong> {order.delivery_zipcode || 'Not set'}
                             </p>
                             <p className="text-sm">
-                              <strong>Customer:</strong> {order.guest_email || 'Registered user'}
+                              <strong>Customer:</strong> {order.customer_name || order.guest_email || 'Registered user'}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               Ordered: {new Date(order.created_at).toLocaleDateString()}
@@ -868,7 +869,7 @@ export default function FulfillmentPage() {
                                       )}
                                     </p>
                                     <p className="text-sm">
-                                      <strong>Customer:</strong> {order.guest_email || 'Registered user'}
+                                      <strong>Customer:</strong> {order.customer_name || order.guest_email || 'Registered user'}
                                     </p>
                                     {order.driver_name && (
                                       <p className="text-sm">

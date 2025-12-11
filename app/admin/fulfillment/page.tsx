@@ -124,22 +124,20 @@ export default function FulfillmentPage() {
       if (driversList) setDrivers(driversList)
       console.log('[FULFILLMENT] Active drivers:', driversList?.length || 0)
 
-      // Fetch pending orders (one-time only, not subscriptions)
+      // Fetch pending orders (both individual packs and subscriptions)
       const { data: pending } = await supabase
         .from('orders')
         .select('*')
-        .eq('is_subscription_order', false)
         .in('fulfillment_status', ['pending', 'looking_for_driver', 'driver_assigned', 'in_stock', 'needs_batch'])
         .order('created_at', { ascending: false })
 
       if (pending) setPendingOrders(pending)
       console.log('[FULFILLMENT] Pending orders:', pending?.length || 0)
 
-      // Fetch deliveries based on date filter
+      // Fetch deliveries based on date filter (both individual packs and subscriptions)
       let query = supabase
         .from('orders')
         .select('*')
-        .eq('is_subscription_order', false)
         .in('fulfillment_status', ['preparing', 'out_for_delivery'])
 
       // Apply date filter conditionally

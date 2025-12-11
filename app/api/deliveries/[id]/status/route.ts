@@ -39,7 +39,7 @@ export async function PATCH(
     const { status, driver_notes } = body
 
     // Validate status
-    const validStatuses = ["preparing", "out_for_delivery", "delivered", "failed", "cancelled"]
+    const validStatuses = ["pending", "preparing", "out_for_delivery", "delivered", "failed", "cancelled"]
     if (!status || !validStatuses.includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },

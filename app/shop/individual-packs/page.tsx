@@ -116,7 +116,11 @@ function IndividualPacksContent() {
   }, [])
 
   const isRecipeInStock = (recipeId: string) => {
-    const available = inventory[recipeId.toLowerCase()] || 0
+    // Map recipe ID to full name to match inventory table
+    const recipe = recipes.find(r => r.id === recipeId)
+    if (!recipe) return false
+
+    const available = inventory[recipe.name] || 0
     return available > 0
   }
 

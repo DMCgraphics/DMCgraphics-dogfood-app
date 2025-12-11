@@ -10,11 +10,13 @@ function SignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteToken = searchParams.get("invite")
+  const returnTo = searchParams.get("returnTo")
 
   const handleSuccess = () => {
-    // If there's an invitation, redirect to a success page
-    // Otherwise, redirect to plan builder for new users
-    if (inviteToken) {
+    // Priority: returnTo > inviteToken > default (plan-builder)
+    if (returnTo) {
+      router.push(decodeURIComponent(returnTo))
+    } else if (inviteToken) {
       router.push("/subscription/manage")
     } else {
       router.push("/plan-builder")

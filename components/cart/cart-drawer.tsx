@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/contexts/cart-context"
+import { useAuth } from "@/contexts/auth-context"
 import {
   Sheet,
   SheetContent,
@@ -18,12 +19,22 @@ import { Separator } from "@/components/ui/separator"
 
 export function CartDrawer() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice, clearCart } = useCart()
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleCheckout = async () => {
     if (items.length === 0) return
+
+    // Require authentication
+    if (!user) {
+      // Save cart for after signup
+      localStorage.setItem('nouripet-cart-restore', JSON.stringify({ items, timestamp: Date.now() }))
+      setOpen(false)
+      router.push('/auth/signup?returnTo=%2Fshop%2Findividual-packs')
+      return
+    }
 
     setIsLoading(true)
 

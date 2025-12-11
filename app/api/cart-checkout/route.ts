@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Please create an account or sign in to checkout." },
         { status: 401 }
       )
     }

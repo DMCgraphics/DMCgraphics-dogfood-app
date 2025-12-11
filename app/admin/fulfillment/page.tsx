@@ -140,7 +140,7 @@ export default function FulfillmentPage() {
       let query = supabase
         .from('orders')
         .select('*')
-        .in('fulfillment_status', ['preparing', 'out_for_delivery'])
+        .in('fulfillment_status', ['driver_assigned', 'preparing', 'out_for_delivery'])
 
       // Apply date filter conditionally
       if (dateFilter === 'today') {
@@ -475,8 +475,14 @@ export default function FulfillmentPage() {
 
   const assignDriver = async (orderId: string, driverId: string) => {
     try {
+      console.log('[FULFILLMENT] Assigning driver:', { orderId, driverId })
       const driver = drivers.find(d => d.id === driverId)
-      if (!driver) throw new Error('Driver not found')
+      if (!driver) {
+        console.error('[FULFILLMENT] Driver not found:', driverId)
+        throw new Error('Driver not found')
+      }
+
+      console.log('[FULFILLMENT] Driver details:', driver)
 
       const { error } = await supabase
         .from('orders')
@@ -489,15 +495,19 @@ export default function FulfillmentPage() {
         })
         .eq('id', orderId)
 
-      if (error) throw error
+      if (error) {
+        console.error('[FULFILLMENT] Error updating order:', error)
+        throw error
+      }
 
+      console.log('[FULFILLMENT] Driver assigned successfully')
       toast({
         title: "Driver assigned",
         description: `Order assigned to ${driver.name}`
       })
       fetchData()
     } catch (error) {
-      console.error('Error assigning driver:', error)
+      console.error('[FULFILLMENT] Error assigning driver:', error)
       toast({
         title: "Error",
         description: "Failed to assign driver",
@@ -592,10 +602,18 @@ export default function FulfillmentPage() {
                               <span className="hidden sm:inline">Copy Tracking Link</span>
                               <span className="sm:hidden">Copy Link</span>
                             </Button>
-                            {order.fulfillment_status === 'looking_for_driver' && (
+                            {(order.fulfillment_status === 'looking_for_driver' || order.fulfillment_status === 'driver_assigned') && (
                               <div className="space-y-2 w-full">
-                                <Label htmlFor={`driver-${order.id}`} className="text-xs">Assign Driver</Label>
-                                <Select onValueChange={(driverId) => assignDriver(order.id, driverId)}>
+                                <Label htmlFor={`driver-${order.id}`} className="text-xs">
+                                  {order.driver_id ? 'Reassign Driver' : 'Assign Driver'}
+                                </Label>
+                                <Select
+                                  value={order.driver_id || ''}
+                                  onValueChange={(driverId) => {
+                                    console.log('[FULFILLMENT] Select onChange triggered:', driverId)
+                                    assignDriver(order.id, driverId)
+                                  }}
+                                >
                                   <SelectTrigger id={`driver-${order.id}`} className="h-9 w-full">
                                     <SelectValue placeholder="Select driver..." />
                                   </SelectTrigger>

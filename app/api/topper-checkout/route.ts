@@ -10,18 +10,17 @@ export async function POST(req: Request) {
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { priceId, dogId, dogName, dogSize, productType, recipes, isSubscription, deliveryZipcode, guestEmail } = await req.json()
+    const { priceId, dogId, dogName, dogSize, productType, recipes, isSubscription, deliveryZipcode } = await req.json()
 
-    // For subscriptions, require authentication
-    if (isSubscription && !user) {
+    // Require authentication for all purchases
+    if (!user) {
       return NextResponse.json(
-        { error: "Account required for subscriptions. Please sign in or create an account." },
+        { error: "Account required. Please sign in or create an account to continue." },
         { status: 401 }
       )
     }
 
-    // For guest checkout (one-time purchases), allow without auth
-    const customerEmail = user?.email || guestEmail
+    const customerEmail = user.email
 
     // Debug logging
     console.log("[TOPPER CHECKOUT] Creating checkout session for:", {
@@ -33,25 +32,10 @@ export async function POST(req: Request) {
       recipes,
       isSubscription,
       userEmail: customerEmail,
-      userId: user?.id,
-      isGuest: !user
+      userId: user.id,
     })
 
-    // CRITICAL: Verify user_id for authenticated users
-    if (user) {
-      console.log("[TOPPER CHECKOUT] ✓ User authenticated - ID:", user.id, "Email:", user.email)
-    } else {
-      console.log("[TOPPER CHECKOUT] ⚠ Guest checkout - Email:", guestEmail)
-    }
-
-    // Validate that subscriptions have user_id
-    if (isSubscription && !user?.id) {
-      console.error("[TOPPER CHECKOUT] ❌ CRITICAL: Subscription attempted without user_id!")
-      return NextResponse.json(
-        { error: "Account required for subscriptions" },
-        { status: 401 }
-      )
-    }
+    console.log("[TOPPER CHECKOUT] ✓ User authenticated - ID:", user.id, "Email:", user.email)
 
     if (!priceId) {
       return NextResponse.json(
@@ -76,28 +60,26 @@ export async function POST(req: Request) {
       },
       // Also collect billing address
       billing_address_collection: 'required',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/success?session_id={CHECKOUT_SESSION_ID}${!user ? '&guest=true' : ''}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop?checkout=cancelled`,
       metadata: {
-        user_id: user?.id || '',
+        user_id: user.id,
         dog_id: dogId || '',
         dog_name: dogName || '',
         dog_size: dogSize || '',
         product_type: productType,
         recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
-        is_guest: !user ? 'true' : 'false',
       },
       // For one-time payments, we need to pass metadata to the payment intent
       payment_intent_data: !isSubscription ? {
         metadata: {
-          user_id: user?.id || '',
+          user_id: user.id,
           dog_id: dogId || '',
           dog_name: dogName || '',
           dog_size: dogSize || '',
           product_type: productType,
           recipes: recipes && recipes.length > 0 ? JSON.stringify(recipes) : '',
           delivery_zipcode: deliveryZipcode || '',
-          is_guest: !user ? 'true' : 'false',
         },
       } : undefined,
       subscription_data: isSubscription ? {
@@ -121,12 +103,11 @@ export async function POST(req: Request) {
       customer_email: session.customer_email
     })
 
-    // Log metadata for debugging "Customer: Unknown" issues
+    // Log metadata for debugging
     console.log("[TOPPER CHECKOUT] Session metadata:", {
       user_id: session.metadata?.user_id || "NOT SET",
       dog_id: session.metadata?.dog_id || "NOT SET",
       product_type: session.metadata?.product_type || "NOT SET",
-      is_guest: session.metadata?.is_guest || "NOT SET"
     })
 
     return NextResponse.json({

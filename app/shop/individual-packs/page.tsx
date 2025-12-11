@@ -27,7 +27,6 @@ function IndividualPacksContent() {
   const [selectedQuantity, setSelectedQuantity] = useState<1 | 3 | null>(null)
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [guestEmail, setGuestEmail] = useState("")
   const [inventory, setInventory] = useState<Record<string, number>>({})
   const [inventoryLoading, setInventoryLoading] = useState(true)
 
@@ -115,6 +114,29 @@ function IndividualPacksContent() {
     fetchInventory()
   }, [])
 
+  // Restore pending purchase after signup
+  useEffect(() => {
+    if (user) {
+      const pendingPurchase = localStorage.getItem('nouripet-pending-purchase')
+      if (pendingPurchase) {
+        try {
+          const { selectedQuantity: qty, selectedRecipes: recipes, timestamp } = JSON.parse(pendingPurchase)
+          if (Date.now() - timestamp < 30 * 60 * 1000) { // 30 min expiration
+            setSelectedQuantity(qty)
+            setSelectedRecipes(recipes)
+            toast({
+              title: "Welcome back!",
+              description: "Your selection has been restored. Click 'Buy Now' to continue.",
+            })
+          }
+          localStorage.removeItem('nouripet-pending-purchase')
+        } catch (e) {
+          console.error('Failed to restore pending purchase', e)
+        }
+      }
+    }
+  }, [user, toast])
+
   const isRecipeInStock = (recipeId: string) => {
     // Map recipe ID to full name to match inventory table
     const recipe = recipes.find(r => r.id === recipeId)
@@ -200,23 +222,18 @@ function IndividualPacksContent() {
     const requiredRecipes = selectedQuantity === 1 ? 1 : 3
     if (selectedRecipes.length !== requiredRecipes) return
 
-    // Validate guest email if not logged in
-    if (!user && !guestEmail.trim()) {
+    // Require authentication
+    if (!user) {
+      localStorage.setItem('nouripet-pending-purchase', JSON.stringify({
+        selectedQuantity,
+        selectedRecipes,
+        timestamp: Date.now()
+      }))
       toast({
-        title: "Email required",
-        description: "Please enter your email to continue with checkout.",
-        variant: "destructive"
+        title: "Account required",
+        description: "Please create an account or sign in to complete your purchase.",
       })
-      return
-    }
-
-    // Basic email validation
-    if (!user && guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive"
-      })
+      router.push(`/auth/signup?returnTo=${encodeURIComponent('/shop/individual-packs')}`)
       return
     }
 
@@ -243,7 +260,6 @@ function IndividualPacksContent() {
           productType: selectedQuantity === 1 ? "individual" : "3-packs",
           recipes: recipesData,
           isSubscription: false,
-          guestEmail: !user ? guestEmail : undefined,
         }),
       })
 
@@ -463,33 +479,35 @@ function IndividualPacksContent() {
             </CardContent>
           </Card>
 
-          {/* Guest Email Collection */}
+          {/* Account Required */}
           {!user && selectedQuantity && canCheckout && (
             <Card className="border-blue-200 bg-blue-50">
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900">Enter your email to continue</h3>
+                    <h3 className="font-semibold text-blue-900">Account Required</h3>
                   </div>
                   <p className="text-sm text-blue-800">
-                    We'll send your order confirmation and delivery updates to this email.
+                    Create a free account to complete your purchase and track your orders.
                   </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="guest-email" className="text-blue-900">Email Address</Label>
-                    <Input
-                      id="guest-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={guestEmail}
-                      onChange={(e) => setGuestEmail(e.target.value)}
-                      className="bg-white"
-                    />
-                  </div>
-                  <p className="text-xs text-blue-700">
-                    Want to track your orders and get personalized recommendations?{" "}
-                    <Link href="/auth/signup" className="underline font-medium">
-                      Create a free account
+                  <Button
+                    onClick={() => {
+                      localStorage.setItem('nouripet-pending-purchase', JSON.stringify({
+                        selectedQuantity,
+                        selectedRecipes,
+                        timestamp: Date.now()
+                      }))
+                      router.push(`/auth/signup?returnTo=${encodeURIComponent('/shop/individual-packs')}`)
+                    }}
+                    className="w-full"
+                  >
+                    Create Account
+                  </Button>
+                  <p className="text-xs text-blue-700 text-center">
+                    Already have an account?{" "}
+                    <Link href="/auth/login?returnTo=%2Fshop%2Findividual-packs" className="underline font-medium">
+                      Sign in
                     </Link>
                   </p>
                 </div>
@@ -511,7 +529,7 @@ function IndividualPacksContent() {
               </Button>
               <Button
                 onClick={handleCheckout}
-                disabled={!canCheckout || isLoading || (!user && !guestEmail.trim())}
+                disabled={!canCheckout || isLoading}
                 size="lg"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />

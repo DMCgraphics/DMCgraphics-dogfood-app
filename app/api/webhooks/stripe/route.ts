@@ -431,9 +431,13 @@ export async function POST(req: Request) {
             console.error('[WEBHOOK] Error parsing recipes:', e)
           }
 
-          // Get shipping address zipcode
-          const deliveryZipcode = s.shipping_details?.address?.postal_code ||
-                                 s.customer_details?.address?.postal_code
+          // Get shipping address details
+          const shippingAddress = s.shipping_details?.address || s.customer_details?.address
+          const deliveryZipcode = shippingAddress?.postal_code
+          const deliveryAddressLine1 = shippingAddress?.line1
+          const deliveryAddressLine2 = shippingAddress?.line2
+          const deliveryCity = shippingAddress?.city
+          const deliveryState = shippingAddress?.state
 
           // Generate order number
           const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
@@ -467,6 +471,10 @@ export async function POST(req: Request) {
             fulfillment_status: 'looking_for_driver',
             delivery_method: 'local_delivery',
             delivery_zipcode: deliveryZipcode,
+            delivery_address_line1: deliveryAddressLine1,
+            delivery_address_line2: deliveryAddressLine2,
+            delivery_city: deliveryCity,
+            delivery_state: deliveryState,
             estimated_delivery_date: estimatedDeliveryDate.toISOString().split('T')[0],
             estimated_delivery_window: estimatedDeliveryWindow,
             stripe_session_id: s.id,

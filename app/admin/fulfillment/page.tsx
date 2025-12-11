@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Package, Truck, CheckCircle, Clock, AlertCircle, Copy, ExternalLink, ArrowUp, ArrowDown, RotateCcw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
+import { DeliveryCalendar } from "@/components/admin/delivery-calendar"
 
 type InventoryItem = {
   id: string
@@ -551,6 +552,7 @@ export default function FulfillmentPage() {
           <TabsTrigger value="orders">Pending Orders ({pendingOrders.length})</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions ({subscriptions.length})</TabsTrigger>
           <TabsTrigger value="today">Deliveries ({todayOrders.length})</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
 
@@ -1008,6 +1010,18 @@ export default function FulfillmentPage() {
                   )
                 })}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <Card>
+            <CardHeader>
+              <CardTitle>Delivery Calendar</CardTitle>
+              <CardDescription>Monthly view of all scheduled deliveries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeliveryCalendar />
             </CardContent>
           </Card>
         </TabsContent>

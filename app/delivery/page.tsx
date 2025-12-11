@@ -4,11 +4,12 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Loader2, AlertCircle, RefreshCw } from "lucide-react"
+import { ArrowLeft, Loader2, AlertCircle, RefreshCw, Calendar as CalendarIcon } from "lucide-react"
 import Link from "next/link"
 import { RouteOverviewCard } from "@/components/delivery/route-overview-card"
 import { DeliveryStopCard } from "@/components/delivery/delivery-stop-card"
 import { FailedDeliveryModal } from "@/components/delivery/failed-delivery-modal"
+import { DriverCalendar } from "@/components/delivery/driver-calendar"
 
 interface Delivery {
   id: string
@@ -53,6 +54,7 @@ export default function DeliveryPage() {
   const [error, setError] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "pending" | "delivered">("pending")
+  const [showCalendar, setShowCalendar] = useState(false)
   const [failedDeliveryModal, setFailedDeliveryModal] = useState<{
     isOpen: boolean
     deliveryId: string | null
@@ -247,14 +249,24 @@ export default function DeliveryPage() {
                 All
               </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchDeliveries}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCalendar(!showCalendar)}
+              >
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                {showCalendar ? "Hide" : "Show"} Calendar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchDeliveries}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -267,6 +279,13 @@ export default function DeliveryPage() {
         </div>
       ) : (
         <div className="container py-4 space-y-4">
+          {/* Calendar View */}
+          {showCalendar && (
+            <div className="mb-4">
+              <DriverCalendar />
+            </div>
+          )}
+
           {/* Route Overview Card */}
           <RouteOverviewCard
             routeMeta={routeMeta}

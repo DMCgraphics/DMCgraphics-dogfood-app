@@ -91,13 +91,14 @@ export default function FulfillmentPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isGeneratingOrders, setIsGeneratingOrders] = useState(false)
-  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all'>('today')
+  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'custom'>('today')
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [drivers, setDrivers] = useState<Driver[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
     fetchData()
-  }, [dateFilter])
+  }, [dateFilter, selectedDate])
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -145,6 +146,8 @@ export default function FulfillmentPage() {
         query = query.eq('estimated_delivery_date', today)
       } else if (dateFilter === 'upcoming') {
         query = query.gte('estimated_delivery_date', today)
+      } else if (dateFilter === 'custom') {
+        query = query.eq('estimated_delivery_date', selectedDate)
       }
       // 'all' = no date filter
 
@@ -536,7 +539,7 @@ export default function FulfillmentPage() {
         <TabsList>
           <TabsTrigger value="orders">Pending Orders ({pendingOrders.length})</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions ({subscriptions.length})</TabsTrigger>
-          <TabsTrigger value="today">Today's Deliveries ({todayOrders.length})</TabsTrigger>
+          <TabsTrigger value="today">Deliveries ({todayOrders.length})</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
 
@@ -753,9 +756,9 @@ export default function FulfillmentPage() {
         <TabsContent value="today">
           <Card>
             <CardHeader>
-              <CardTitle>Today's Deliveries</CardTitle>
-              <CardDescription>Orders scheduled for delivery today</CardDescription>
-              <div className="flex gap-2 mt-4">
+              <CardTitle>Deliveries</CardTitle>
+              <CardDescription>Manage and track delivery orders</CardDescription>
+              <div className="flex flex-wrap gap-2 mt-4">
                 <Button
                   size="sm"
                   variant={dateFilter === 'today' ? 'default' : 'outline'}
@@ -777,6 +780,21 @@ export default function FulfillmentPage() {
                 >
                   All Deliveries
                 </Button>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Label htmlFor="date-picker" className="text-sm">
+                    Select Date:
+                  </Label>
+                  <Input
+                    id="date-picker"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value)
+                      setDateFilter('custom')
+                    }}
+                    className="w-40"
+                  />
+                </div>
               </div>
             </CardHeader>
             <CardContent>

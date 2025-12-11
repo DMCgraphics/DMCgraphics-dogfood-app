@@ -10,33 +10,17 @@ import Link from "next/link"
 
 interface Delivery {
   id: string
-  user_id: string
-  scheduled_date: string
-  status: string
+  order_number: string
+  user_id: string | null
+  guest_email: string | null
+  estimated_delivery_date: string
+  fulfillment_status: string
+  recipe_name: string
+  quantity: number
+  delivery_method: string
+  delivery_zipcode: string
+  tracking_token: string
   driver_notes: string | null
-  delivery_address_line1: string | null
-  delivery_address_line2: string | null
-  delivery_city: string | null
-  delivery_state: string | null
-  delivery_zipcode: string | null
-  items: any[]
-  plans: {
-    id: string
-    dog_id: string
-    delivery_zipcode: string
-    dogs: { name: string; breed: string } | null
-    plan_items: Array<{
-      id: string
-      qty: number
-      size_g: number
-      recipes: { name: string; slug: string } | null
-    }>
-  } | null
-  profiles: {
-    full_name: string | null
-    email: string | null
-    phone: string | null
-  } | null
 }
 
 export default function DeliveryPage() {
@@ -107,27 +91,19 @@ export default function DeliveryPage() {
 
   function getStatusBadge(status: string) {
     switch (status) {
-      case "scheduled":
-        return <Badge className="bg-blue-100 text-blue-800">Scheduled</Badge>
       case "preparing":
         return <Badge className="bg-yellow-100 text-yellow-800">Preparing</Badge>
       case "out_for_delivery":
         return <Badge className="bg-orange-100 text-orange-800">Out for Delivery</Badge>
       case "delivered":
         return <Badge className="bg-green-100 text-green-800">Delivered</Badge>
-      case "failed":
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>
-      case "cancelled":
-        return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>
       default:
-        return <Badge>{status}</Badge>
+        return <Badge>{status.replace(/_/g, ' ')}</Badge>
     }
   }
 
   function getNextStatus(currentStatus: string): string | null {
     switch (currentStatus) {
-      case "scheduled":
-        return "preparing"
       case "preparing":
         return "out_for_delivery"
       case "out_for_delivery":
@@ -139,8 +115,6 @@ export default function DeliveryPage() {
 
   function getNextStatusLabel(currentStatus: string): string {
     switch (currentStatus) {
-      case "scheduled":
-        return "Start Preparing"
       case "preparing":
         return "Mark Out for Delivery"
       case "out_for_delivery":
@@ -225,10 +199,7 @@ export default function DeliveryPage() {
               {/* Deliveries List */}
               <div className="grid gap-4">
                 {deliveries.map((delivery) => {
-                  const dog = delivery.plans?.dogs
-                  const customer = delivery.profiles
-                  const planItems = delivery.plans?.plan_items || []
-                  const nextStatus = getNextStatus(delivery.status)
+                  const nextStatus = getNextStatus(delivery.fulfillment_status)
                   const isProcessing = processingId === delivery.id
 
                   return (
@@ -238,14 +209,13 @@ export default function DeliveryPage() {
                           <div>
                             <CardTitle className="flex items-center gap-2">
                               <Package className="h-5 w-5" />
-                              Delivery for {dog?.name || "Unknown Dog"}
+                              Order #{delivery.order_number}
                             </CardTitle>
                             <CardDescription className="mt-2">
-                              Customer: {customer?.full_name || "Unknown"} ({customer?.email || "No email"})
-                              {customer?.phone && <span className="ml-2">• {customer.phone}</span>}
+                              Customer: {delivery.guest_email || "Registered user"}
                             </CardDescription>
                           </div>
-                          {getStatusBadge(delivery.status)}
+                          {getStatusBadge(delivery.fulfillment_status)}
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -255,61 +225,34 @@ export default function DeliveryPage() {
                             <div>
                               <div className="text-sm text-gray-600 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                Scheduled Date
+                                Delivery Date
                               </div>
                               <div className="font-medium">
-                                {new Date(delivery.scheduled_date).toLocaleDateString()}
+                                {delivery.estimated_delivery_date ? new Date(delivery.estimated_delivery_date).toLocaleDateString() : "Not set"}
                               </div>
                             </div>
                             <div>
                               <div className="text-sm text-gray-600 flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />
-                                Delivery Address
+                                ZIP Code
                               </div>
-                              <div className="text-sm">
-                                {delivery.delivery_address_line1 || delivery.plans?.delivery_zipcode || "Not set"}
-                                {delivery.delivery_address_line2 && (
-                                  <div className="text-xs text-gray-500">
-                                    {delivery.delivery_address_line2}
-                                  </div>
-                                )}
-                                {delivery.delivery_city && (
-                                  <div className="text-xs text-gray-500">
-                                    {delivery.delivery_city}, {delivery.delivery_state} {delivery.delivery_zipcode}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-600">Dog Breed</div>
-                              <div className="text-sm font-medium">
-                                {dog?.breed || "Unknown breed"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-600">ZIP Code</div>
                               <div className="text-lg font-bold">
-                                {delivery.delivery_zipcode || delivery.plans?.delivery_zipcode || "N/A"}
+                                {delivery.delivery_zipcode || "N/A"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-gray-600">Recipe</div>
+                              <div className="text-sm font-medium">
+                                {delivery.recipe_name || "Unknown"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-gray-600">Quantity</div>
+                              <div className="text-sm font-medium">
+                                {delivery.quantity || 1}
                               </div>
                             </div>
                           </div>
-
-                          {/* Items */}
-                          {planItems.length > 0 && (
-                            <div className="border-t pt-4">
-                              <div className="text-sm font-medium mb-2">Items to Deliver:</div>
-                              <div className="space-y-1">
-                                {planItems.map((item) => (
-                                  <div key={item.id} className="text-sm text-gray-600 flex justify-between">
-                                    <span>• {item.recipes?.name || "Unknown item"}</span>
-                                    <span className="font-medium">
-                                      {item.qty} × {item.size_g}g
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
 
                           {/* Driver Notes */}
                           {delivery.driver_notes && (
@@ -339,11 +282,11 @@ export default function DeliveryPage() {
                                     ) : (
                                       <Play className="h-4 w-4 mr-2" />
                                     )}
-                                    {getNextStatusLabel(delivery.status)}
+                                    {getNextStatusLabel(delivery.fulfillment_status)}
                                   </>
                                 )}
                               </Button>
-                              {delivery.status === "out_for_delivery" && (
+                              {delivery.fulfillment_status === "out_for_delivery" && (
                                 <Button
                                   variant="destructive"
                                   onClick={() => {
@@ -361,7 +304,7 @@ export default function DeliveryPage() {
                             </div>
                           )}
 
-                          {delivery.status === "delivered" && (
+                          {delivery.fulfillment_status === "delivered" && (
                             <div className="border-t pt-4">
                               <div className="flex items-center gap-2 text-green-600">
                                 <CheckCircle className="h-5 w-5" />

@@ -36,42 +36,27 @@ export async function GET(req: Request) {
     const date = searchParams.get("date") // YYYY-MM-DD format
 
     let query = supabaseAdmin
-      .from("deliveries")
+      .from("orders")
       .select(`
-        *,
-        plans (
-          id,
-          dog_id,
-          delivery_zipcode,
-          dogs (name, breed),
-          plan_items (
-            id,
-            qty,
-            size_g,
-            recipes (name, slug)
-          )
-        ),
-        profiles (
-          full_name,
-          email,
-          phone
-        )
+        *
       `)
-      .order("scheduled_date", { ascending: true })
+      .order("estimated_delivery_date", { ascending: true })
 
-    // Filter by status
+    // Filter by fulfillment status
     if (status) {
       if (status === "pending") {
-        // Pending means scheduled, preparing, or out_for_delivery
-        query = query.in("status", ["scheduled", "preparing", "out_for_delivery"])
+        // Pending means preparing or out_for_delivery
+        query = query.in("fulfillment_status", ["preparing", "out_for_delivery"])
+      } else if (status === "delivered") {
+        query = query.eq("fulfillment_status", "delivered")
       } else {
-        query = query.eq("status", status)
+        query = query.eq("fulfillment_status", status)
       }
     }
 
     // Filter by date
     if (date) {
-      query = query.eq("scheduled_date", date)
+      query = query.eq("estimated_delivery_date", date)
     }
 
     const { data: deliveries, error } = await query

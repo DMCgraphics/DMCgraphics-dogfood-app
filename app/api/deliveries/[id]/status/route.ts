@@ -39,7 +39,7 @@ export async function PATCH(
     const { status, driver_notes } = body
 
     // Validate status
-    const validStatuses = ["scheduled", "preparing", "out_for_delivery", "delivered", "failed", "cancelled"]
+    const validStatuses = ["preparing", "out_for_delivery", "delivered", "failed", "cancelled"]
     if (!status || !validStatuses.includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` },
@@ -49,53 +49,46 @@ export async function PATCH(
 
     // Prepare update data
     const updateData: Record<string, any> = {
-      status,
+      fulfillment_status: status,
       driver_id: user.id,
     }
 
-    // Set actual delivery date when marked as delivered
+    // Set delivered_at when marked as delivered
     if (status === "delivered") {
-      updateData.actual_delivery_date = new Date().toISOString()
+      updateData.delivered_at = new Date().toISOString()
     }
 
-    // Add driver notes if provided
+    // Add driver notes if provided (we don't have this field in orders, but keep for compatibility)
     if (driver_notes !== undefined) {
-      updateData.driver_notes = driver_notes
+      updateData.route_notes = driver_notes
     }
 
-    const { data: delivery, error } = await supabaseAdmin
-      .from("deliveries")
+    const { data: order, error } = await supabaseAdmin
+      .from("orders")
       .update(updateData)
       .eq("id", id)
-      .select(`
-        *,
-        plans (
-          id,
-          dog_id,
-          dogs (name, breed)
-        )
-      `)
+      .select("*")
       .single()
 
     if (error) {
-      console.error("Error updating delivery status:", error)
+      console.error("Error updating order status:", error)
       return NextResponse.json(
-        { error: "Failed to update delivery status" },
+        { error: "Failed to update order status" },
         { status: 500 }
       )
     }
 
-    if (!delivery) {
+    if (!order) {
       return NextResponse.json(
-        { error: "Delivery not found" },
+        { error: "Order not found" },
         { status: 404 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      message: `Delivery marked as ${status}`,
-      delivery,
+      message: `Order marked as ${status}`,
+      delivery: order,
     })
   } catch (error: any) {
     console.error("Error in update delivery status API:", error)

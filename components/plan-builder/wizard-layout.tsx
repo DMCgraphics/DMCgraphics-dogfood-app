@@ -5,6 +5,8 @@ import type React from "react"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import { AIStepGuidance, AIProgressBreadcrumbs } from "./ai-step-guidance"
+import type { MultiDogProfile } from "@/lib/multi-dog-types"
 
 interface WizardLayoutProps {
   currentStep: number
@@ -19,6 +21,8 @@ interface WizardLayoutProps {
   nextLabel?: string
   isLoading?: boolean
   showNextButton?: boolean
+  dogProfile?: Partial<MultiDogProfile>
+  completedSteps?: number[]
 }
 
 export function WizardLayout({
@@ -34,6 +38,8 @@ export function WizardLayout({
   nextLabel = "Continue",
   isLoading = false,
   showNextButton = true,
+  dogProfile,
+  completedSteps = [],
 }: WizardLayoutProps) {
   const progress = (currentStep / totalSteps) * 100
 
@@ -95,21 +101,32 @@ export function WizardLayout({
       <div className="container max-w-4xl py-8">
         {/* Progress Header */}
         <div className="mb-8 space-y-4">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              Step {currentStep} of {totalSteps}
-            </span>
+          <div className="flex items-center justify-end text-sm text-muted-foreground">
             <span>{Math.round(progress)}% Complete</span>
           </div>
           <Progress value={progress} className="h-3" />
 
-          {renderStepIndicator()}
+          {/* AI Progress Breadcrumbs - only show after step 0 */}
+          {dogProfile && currentStep > 0 && (
+            <AIProgressBreadcrumbs
+              currentStep={currentStep}
+              completedSteps={completedSteps}
+            />
+          )}
 
           <div className="space-y-2">
             <h1 className="font-manrope text-2xl lg:text-3xl font-bold">{stepTitle}</h1>
             <p className="text-muted-foreground">{stepDescription}</p>
           </div>
         </div>
+
+        {/* AI Step Guidance - only show after step 0 */}
+        {dogProfile && currentStep > 0 && (
+          <AIStepGuidance
+            step={currentStep}
+            dogProfile={dogProfile}
+          />
+        )}
 
         {/* Step Content */}
         <div className="mb-8">{children}</div>

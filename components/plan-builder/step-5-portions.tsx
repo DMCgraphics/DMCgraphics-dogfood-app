@@ -9,6 +9,7 @@ import { prescriptionDiets, getPrescriptionDietsByCondition, getMedicalCondition
 import { useState, useEffect, useRef } from "react"
 import { PlanPricingProvider, usePlanPricing } from "@/lib/plan-pricing-context"
 import { PricingClarityCard } from "@/components/ui/pricing-clarity-card"
+import { ServingSizeHelper } from "./ai-inline-helper"
 
 interface Step5Props {
   dogProfile: Partial<DogProfile>
@@ -280,6 +281,16 @@ function Step5PortionsInner({
           )}
         </CardContent>
       </Card>
+
+      {/* AI Serving Size Helper */}
+      {dogProfile.name && (
+        <ServingSizeHelper
+          dogName={dogProfile.name}
+          dailyCalories={Math.round(der)}
+          gramsPerDay={Math.round(dailyGrams)}
+          mealsPerDay={mealsPerDay}
+        />
+      )}
 
       {/* Meal Schedule */}
       <Card>

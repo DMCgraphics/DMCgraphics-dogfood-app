@@ -10,6 +10,7 @@ import { AIRecommendationCard } from "./ai-recommendation-card"
 import { MultipleMealSelector } from "./multiple-meal-selector"
 import { generateAIMealRecommendations } from "@/lib/ai-meal-recommendations"
 import type { MultiDogProfile } from "@/lib/multi-dog-types"
+import { TransparencyCard } from "./transparency-card"
 
 interface Step4Props {
   selectedRecipe: string | null
@@ -19,6 +20,7 @@ interface Step4Props {
   excludedAllergens: string[]
   dogProfile?: Partial<DogProfile>
   allowMultipleSelection?: boolean
+  healthGoals?: any
 }
 
 export function Step4RecipeSelection({
@@ -29,8 +31,9 @@ export function Step4RecipeSelection({
   excludedAllergens,
   dogProfile,
   allowMultipleSelection = false,
+  healthGoals,
 }: Step4Props) {
-  const [showAIRecommendations, setShowAIRecommendations] = useState(false)
+  const [showAIRecommendations, setShowAIRecommendations] = useState(true)
   const [aiRecommendation, setAIRecommendation] = useState<any>(null)
   const [selectionMode, setSelectionMode] = useState<"single" | "multiple">(
     allowMultipleSelection ? "multiple" : "single",
@@ -94,6 +97,15 @@ export function Step4RecipeSelection({
 
   return (
     <div className="space-y-6">
+      {/* Transparency Card - what AI knows */}
+      {dogProfile && (
+        <TransparencyCard
+          dogProfile={dogProfile}
+          healthGoals={healthGoals}
+          selectedAllergens={excludedAllergens}
+        />
+      )}
+
       {excludedAllergens.length > 0 && (
         <Card>
           <CardContent className="pt-6">

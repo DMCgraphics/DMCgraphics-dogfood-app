@@ -8,6 +8,8 @@ import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import type { HealthGoals, DogProfile } from "@/lib/nutrition-calculator"
+import { WeightGoalHelper } from "./ai-inline-helper"
+import { AILiveFeedback } from "./ai-live-feedback"
 
 interface Step2Props {
   goals: Partial<HealthGoals>
@@ -221,6 +223,17 @@ export function Step2HealthGoals({ goals, onUpdate, dogProfile }: Step2Props) {
                   }
                 />
               </div>
+
+              {/* AI Weight Goal Helper */}
+              {goals.targetWeight && dogProfile?.weight && dogProfile?.name && goals.weightGoal && (
+                <WeightGoalHelper
+                  dogName={dogProfile.name}
+                  currentWeight={dogProfile.weight}
+                  targetWeight={goals.targetWeight}
+                  weightUnit={dogProfile.weightUnit || "lb"}
+                  goal={goals.weightGoal}
+                />
+              )}
 
               <p className="text-xs text-muted-foreground">
                 We'll track progress toward this goal in your dashboard and adjust portions accordingly.

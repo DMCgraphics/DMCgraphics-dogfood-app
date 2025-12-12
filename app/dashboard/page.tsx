@@ -278,8 +278,27 @@ export default function DashboardPage() {
         }
 
         // Check if any active subscription has no plan_id (claimed from CSV import)
+        // Exclude topper subscriptions which also don't have plan_id but are valid subscriptions
         const subscriptionWithoutPlan = subscriptionsData?.find(
-          (sub: any) => sub.status === 'active' && !sub.plan_id
+          (sub: any) => {
+            console.log("[v0] Checking subscription for banner:", {
+              id: sub.id,
+              status: sub.status,
+              plan_id: sub.plan_id,
+              metadata: sub.metadata,
+              product_type: sub.metadata?.product_type,
+            })
+
+            // Skip topper subscriptions - they don't have plan_id by design
+            if (sub.metadata?.product_type?.startsWith('topper')) {
+              console.log("[v0] Skipping topper subscription:", sub.id)
+              return false
+            }
+            // Only show banner for non-topper subscriptions without plan_id
+            const shouldShow = sub.status === 'active' && !sub.plan_id
+            console.log("[v0] Should show banner for subscription:", sub.id, shouldShow)
+            return shouldShow
+          }
         )
 
         if (subscriptionWithoutPlan) {
@@ -769,8 +788,7 @@ export default function DashboardPage() {
   }, [selectedDogId, user])
 
   const handleEditDog = (dogId: string) => {
-    setEditingDogId(dogId)
-    setShowEditDogModal(true)
+    router.push(`/dogs/${dogId}`)
   }
 
   const handleDeleteDog = async (dogId: string) => {

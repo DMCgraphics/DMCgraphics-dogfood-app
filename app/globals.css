@@ -144,9 +144,24 @@
   }
 }
 
+/* AI gradient animation - smooth flowing gradient */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 /* Adding utility class for gradient shift animation */
 @layer utilities {
   .animate-gradient-shift {
     animation: gradient-shift 3s ease-in-out infinite;
+  }
+
+  .animate-gradient-x {
+    background-size: 200% 100%;
+    animation: gradient-x 8s ease infinite;
   }
 }

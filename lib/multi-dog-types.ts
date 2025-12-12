@@ -23,6 +23,36 @@ export interface MultiDogPlan {
   totalCostEstimate: number
 }
 
+export interface ScoringFactor {
+  factor: string
+  points: number
+  description: string
+  impact: 'high' | 'medium' | 'low'
+  category: 'age' | 'activity' | 'weight' | 'health' | 'breed' | 'allergens' | 'portions'
+}
+
+export interface ConfidenceAdjustment {
+  factor: string
+  points: number
+  description: string
+  impact: 'high' | 'medium' | 'low'
+}
+
+export interface ConfidenceBreakdown {
+  baseScore: number
+  adjustments: ConfidenceAdjustment[]
+  totalScore: number
+  confidenceLevel: 'very high' | 'high' | 'moderate' | 'needs more info'
+}
+
+export interface AlternativeRecommendation {
+  recipeId: string
+  recipeName: string
+  confidence: number
+  reasoning: string
+  differenceFromTop: string
+}
+
 export interface AIRecommendation {
   dogId: string
   dogName: string
@@ -30,4 +60,11 @@ export interface AIRecommendation {
   reasoning: string
   confidence: number
   nutritionalFocus: string[]
+  // Enhanced fields for trust and transparency
+  confidenceBreakdown?: ConfidenceBreakdown
+  llmExplanation?: string
+  factorsConsidered: ScoringFactor[]
+  alternativeRecommendations?: AlternativeRecommendation[]
+  missingData?: string[]
+  edgeCases?: string[]
 }

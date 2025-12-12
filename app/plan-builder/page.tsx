@@ -2278,7 +2278,11 @@ function PlanBuilderContent() {
               selectedCondition={medicalNeeds.selectedCondition}
               onUpdate={updateMedicalNeeds}
             />
-            <Step3Allergies selectedAllergens={selectedAllergens} onUpdate={setSelectedAllergens} />
+            <Step3Allergies
+              selectedAllergens={selectedAllergens}
+              onUpdate={setSelectedAllergens}
+              dogName={dogProfile.name}
+            />
             {medicalNeeds.hasMedicalNeeds === "yes" &&
               medicalNeeds.selectedCondition &&
               medicalNeeds.selectedCondition !== "other" && (
@@ -2303,6 +2307,7 @@ function PlanBuilderContent() {
               excludedAllergens={selectedAllergens}
               dogProfile={dogProfile}
               allowMultipleSelection={true}
+              healthGoals={healthGoals}
             />
           </div>
         )
@@ -2410,6 +2415,8 @@ function PlanBuilderContent() {
             ? "Start Building Plan"
             : "Continue"
         }
+        dogProfile={dogProfile}
+        completedSteps={currentStep > 0 ? Array.from({ length: currentStep - 1 }, (_, i) => i + 1) : []}
       >
         {getStepContent()}
       </WizardLayout>

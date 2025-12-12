@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Edit, Calendar, Weight, Activity, Check, ShoppingBag, Trash2, Loader2 } from "lucide-react"
+import { Eye, Calendar, Weight, Activity, Check, ShoppingBag, Trash2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import {
@@ -127,7 +127,7 @@ export function DogCard({ dog, onEdit, onDelete, onSelect, isSelected = false, s
                 onEdit(dog.id)
               }}
             >
-              <Edit className="h-4 w-4" />
+              <Eye className="h-4 w-4" />
             </Button>
             {onDelete && (
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

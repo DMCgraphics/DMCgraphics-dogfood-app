@@ -4,14 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { commonAllergens } from "@/lib/nutrition-calculator"
+import { commonAllergens, mockRecipes } from "@/lib/nutrition-calculator"
+import { AllergenImpactHelper } from "./ai-inline-helper"
 
 interface Step3Props {
   selectedAllergens: string[]
   onUpdate: (allergens: string[]) => void
+  dogName?: string
 }
 
-export function Step3Allergies({ selectedAllergens, onUpdate }: Step3Props) {
+export function Step3Allergies({ selectedAllergens, onUpdate, dogName }: Step3Props) {
   const toggleAllergen = (allergen: string) => {
     if (selectedAllergens.includes(allergen)) {
       onUpdate(selectedAllergens.filter((a) => a !== allergen))
@@ -23,6 +25,12 @@ export function Step3Allergies({ selectedAllergens, onUpdate }: Step3Props) {
   const removeAllergen = (allergen: string) => {
     onUpdate(selectedAllergens.filter((a) => a !== allergen))
   }
+
+  // Calculate available recipes after filtering
+  const availableRecipes = mockRecipes.filter((recipe) => {
+    if (selectedAllergens.length === 0) return true
+    return !recipe.allergens.some((allergen) => selectedAllergens.includes(allergen))
+  }).length
 
   return (
     <div className="space-y-6">
@@ -93,6 +101,16 @@ export function Step3Allergies({ selectedAllergens, onUpdate }: Step3Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Allergen Impact Helper */}
+      {selectedAllergens.length > 0 && dogName && (
+        <AllergenImpactHelper
+          dogName={dogName}
+          selectedAllergens={selectedAllergens}
+          availableRecipes={availableRecipes}
+          totalRecipes={mockRecipes.length}
+        />
+      )}
     </div>
   )
 }

@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
+  AlertCircle,
   Calendar,
   CreditCard,
   Package,
@@ -77,6 +78,12 @@ export function SubscriptionManagementModal({
   const [selectedNewLevel, setSelectedNewLevel] = useState<string>("");
   const [isModifyingTopper, setIsModifyingTopper] = useState(false);
   const [isPausingTopper, setIsPausingTopper] = useState<string | null>(null);
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false);
+  const [subscriptionToPause, setSubscriptionToPause] = useState<{
+    id: string;
+    type: "main" | "topper";
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     if (open && user) {
@@ -144,13 +151,24 @@ export function SubscriptionManagementModal({
     }
   };
 
-  const handlePauseTopperSubscription = async (subscriptionId: string) => {
-    setIsPausingTopper(subscriptionId);
+  const handlePauseTopperSubscription = async (subscriptionId: string, dogName: string) => {
+    setSubscriptionToPause({
+      id: subscriptionId,
+      type: "topper",
+      name: dogName,
+    });
+    setShowPauseConfirm(true);
+  };
+
+  const executePauseTopperSubscription = async () => {
+    if (!subscriptionToPause) return;
+
+    setIsPausingTopper(subscriptionToPause.id);
     try {
       const response = await fetch("/api/topper-orders/manage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "pause", subscriptionId }),
+        body: JSON.stringify({ action: "pause", subscriptionId: subscriptionToPause.id }),
       });
 
       const data = await response.json();
@@ -160,7 +178,8 @@ export function SubscriptionManagementModal({
       }
 
       await fetchTopperSubscriptions();
-      alert("Topper subscription paused successfully.");
+      setShowPauseConfirm(false);
+      setSubscriptionToPause(null);
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -495,25 +514,32 @@ export function SubscriptionManagementModal({
     }
   };
 
-  const handlePauseSubscription = async (subscriptionId: string) => {
-    try {
-      if (!subscriptionId) {
-        console.error("[v0] Modal - No subscription ID provided to pause");
-        alert("Cannot pause subscription: No subscription ID found");
-        return;
-      }
+  const handlePauseSubscription = async (subscriptionId: string, dogName: string) => {
+    setSubscriptionToPause({
+      id: subscriptionId,
+      type: "main",
+      name: dogName,
+    });
+    setShowPauseConfirm(true);
+  };
 
-      console.log("[v0] Modal - Pausing subscription:", subscriptionId);
+  const executePauseSubscription = async () => {
+    if (!subscriptionToPause) return;
+
+    try {
+      console.log("[v0] Modal - Pausing subscription:", subscriptionToPause.id);
       const response = await fetch("/api/subscriptions/pause", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription_id: subscriptionId }),
+        body: JSON.stringify({ subscription_id: subscriptionToPause.id }),
       });
 
       if (response.ok) {
         console.log("[v0] Modal - Subscription paused successfully");
         await fetchSubscriptions(); // Refresh data
         await refreshSubscriptionStatus(); // Update auth context
+        setShowPauseConfirm(false);
+        setSubscriptionToPause(null);
       } else {
         const errorText = await response.text();
         console.error("[v0] Modal - Failed to pause subscription:", errorText);
@@ -939,11 +965,12 @@ export function SubscriptionManagementModal({
                                   onClick={() =>
                                     handlePauseSubscription(
                                       subscription.stripe_subscription_id,
+                                      subscription.dogData?.name || "Unknown Dog",
                                     )
                                   }
                                 >
                                   <Pause className="h-4 w-4 mr-2" />
-                                  Pause Subscription
+                                  Pause
                                 </Button>
                               ) : subscription.status === "paused" ? (
                                 <Button
@@ -1084,14 +1111,12 @@ export function SubscriptionManagementModal({
                                     variant="outline"
                                     size="sm"
                                     onClick={() =>
-                                      handlePauseTopperSubscription(topper.id)
+                                      handlePauseTopperSubscription(topper.id, topper.dogName)
                                     }
                                     disabled={isPausingTopper === topper.id}
                                   >
                                     <Pause className="h-4 w-4 mr-1" />
-                                    {isPausingTopper === topper.id
-                                      ? "Pausing..."
-                                      : "Pause"}
+                                    Pause
                                   </Button>
                                 )
                               )}
@@ -1196,21 +1221,142 @@ export function SubscriptionManagementModal({
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Confirmation Dialog */}
-      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-        <DialogContent className="max-w-md">
+      {/* Pause Confirmation Dialog */}
+      <Dialog open={showPauseConfirm} onOpenChange={setShowPauseConfirm}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="h-5 w-5" />
-              Cancel Subscription
+            <DialogTitle className="flex items-center gap-2">
+              <Pause className="h-5 w-5 text-orange-600" />
+              Pause Subscription?
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel this subscription? You'll continue
-              to have access until the end of your current billing period.
+              Pausing your subscription for {subscriptionToPause?.name}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="space-y-4 py-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold text-amber-900 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                What happens when you pause?
+              </h4>
+              <ul className="space-y-2 text-sm text-amber-800">
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>No new deliveries will be scheduled</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You won't be charged during the pause</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You can resume anytime from your dashboard</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>Your meal preferences will be saved</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">Need a break?</h4>
+              <p className="text-sm text-blue-800">
+                You can also skip just one delivery instead of pausing your entire subscription.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPauseConfirm(false);
+                setSubscriptionToPause(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                if (subscriptionToPause?.type === "topper") {
+                  executePauseTopperSubscription();
+                } else {
+                  executePauseSubscription();
+                }
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Yes, Pause Subscription
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Cancel Subscription?
+            </DialogTitle>
+            <DialogDescription>
+              Before you go, please review what this means
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold text-red-900 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                What happens when you cancel?
+              </h4>
+              <ul className="space-y-2 text-sm text-red-800">
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You'll continue to have access until the end of your current billing period</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>No further deliveries will be scheduled</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You'll lose any promotional pricing or discounts</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You can reactivate anytime, but pricing may change</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <Pause className="h-4 w-4" />
+                Consider pausing instead?
+              </h4>
+              <p className="text-sm text-blue-800 mb-3">
+                If you just need a break, you can pause your subscription instead. You won't be charged, and you can resume whenever you're ready.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  // The subscription info is already available from subscriptionToCancel
+                }}
+                className="w-full"
+              >
+                Pause Instead
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -1218,10 +1364,10 @@ export function SubscriptionManagementModal({
                 setSubscriptionToCancel(null);
               }}
             >
-              No, Keep Subscription
+              Keep Subscription
             </Button>
             <Button variant="destructive" onClick={handleCancelSubscription}>
-              Yes, Cancel Subscription
+              Yes, Cancel Permanently
             </Button>
           </div>
         </DialogContent>
@@ -1232,21 +1378,51 @@ export function SubscriptionManagementModal({
         open={!!topperToCancel}
         onOpenChange={(open) => !open && setTopperToCancel(null)}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-orange-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600">
               <XCircle className="h-5 w-5" />
-              Cancel Topper Subscription
+              Cancel Topper Subscription?
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel your{" "}
-              <strong>{topperToCancel?.name}</strong> subscription? You'll
-              continue to receive toppers until the end of your current billing
-              period.
+              Cancelling <strong>{topperToCancel?.name}</strong>
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="space-y-4 py-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold text-red-900 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                What happens when you cancel?
+              </h4>
+              <ul className="space-y-2 text-sm text-red-800">
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You'll continue to receive toppers until the end of your current billing period</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>No further deliveries will be scheduled after that</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>•</span>
+                  <span>You can resubscribe anytime, but pricing may change</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <Pause className="h-4 w-4" />
+                Consider pausing instead?
+              </h4>
+              <p className="text-sm text-blue-800">
+                If you just need a break, you can pause your topper subscription. You won't be charged, and you can resume whenever you're ready.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setTopperToCancel(null)}
@@ -1259,7 +1435,7 @@ export function SubscriptionManagementModal({
               onClick={handleCancelTopperSubscription}
               disabled={isCancellingTopper}
             >
-              {isCancellingTopper ? "Cancelling..." : "Yes, Cancel"}
+              {isCancellingTopper ? "Cancelling..." : "Yes, Cancel Permanently"}
             </Button>
           </div>
         </DialogContent>

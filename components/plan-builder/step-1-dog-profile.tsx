@@ -9,6 +9,8 @@ import { Slider } from "@/components/ui/slider"
 import { BreedSelector } from "@/components/ui/breed-selector"
 import { ALL_BREEDS } from "@/lib/data/dog-breeds"
 import { type DogProfile } from "@/lib/nutrition-calculator"
+import { BodyConditionHelper } from "./ai-inline-helper"
+import { AILiveFeedback, LiveConfidenceIndicator } from "./ai-live-feedback"
 
 interface Step1Props {
   profile: Partial<DogProfile>
@@ -20,6 +22,11 @@ export function Step1DogProfile({ profile, onUpdate }: Step1Props) {
 
   return (
     <div className="space-y-6">
+      {/* AI Confidence Indicator */}
+      {profile.name && (
+        <LiveConfidenceIndicator dogProfile={profile} />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Tell us about your dog</CardTitle>
@@ -162,6 +169,14 @@ export function Step1DogProfile({ profile, onUpdate }: Step1Props) {
             </div>
           </div>
 
+          {/* AI Live Feedback for Activity */}
+          {profile.activity && profile.name && (
+            <AILiveFeedback
+              dogProfile={profile}
+              feedbackType="activity"
+            />
+          )}
+
           {/* Body Condition Score */}
           <div className="space-y-4">
             <Label>Body Condition Score (1-9 scale)</Label>
@@ -184,6 +199,14 @@ export function Step1DogProfile({ profile, onUpdate }: Step1Props) {
               </div>
             </div>
           </div>
+
+          {/* AI Body Condition Helper */}
+          {profile.bodyCondition && profile.name && (
+            <BodyConditionHelper
+              bodyCondition={profile.bodyCondition}
+              dogName={profile.name}
+            />
+          )}
 
           {/* Neutered Status */}
           <div className="space-y-2">

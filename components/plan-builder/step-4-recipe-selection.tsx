@@ -69,7 +69,7 @@ export function Step4RecipeSelection({
         isNeutered: dogProfile.isNeutered ?? true,
         lifeStage: dogProfile.age && dogProfile.ageUnit === "years" && dogProfile.age < 1 ? "puppy" : "adult",
         selectedAllergens: excludedAllergens,
-        healthGoals: dogProfile.healthGoals,
+        healthGoals: healthGoals, // Use the healthGoals prop, not dogProfile.healthGoals!
         portions: dogProfile.portions,
       }
 
@@ -85,7 +85,7 @@ export function Step4RecipeSelection({
     dogProfile?.breed,
     dogProfile?.activity,
     dogProfile?.bodyCondition,
-    JSON.stringify(dogProfile?.healthGoals), // Stringify to detect object changes
+    JSON.stringify(healthGoals), // Use healthGoals prop, not dogProfile.healthGoals
     JSON.stringify(excludedAllergens),
   ])
 

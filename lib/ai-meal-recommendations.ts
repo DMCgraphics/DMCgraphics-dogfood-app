@@ -205,7 +205,7 @@ export function generateAIMealRecommendations(dogs: MultiDogProfile[]): AIRecomm
       // Breed-specific recommendations (simplified)
       if (dog.breed) {
         const largeBreedsKeywords = ["German Shepherd", "Golden Retriever", "Labrador", "Great Dane", "Mastiff"]
-        const smallBreedsKeywords = ["Chihuahua", "Yorkshire", "Maltese", "Pomeranian", "Papillon"]
+        const smallBreedsKeywords = ["Chihuahua", "Yorkshire", "Maltese", "Pomeranian", "Papillon", "Cavalier", "Cavapoo", "Poodle", "Shih Tzu", "Bichon"]
 
         if (largeBreedsKeywords.some((keyword) => dog.breed.includes(keyword))) {
           if (recipe.calcium >= 1200 && recipe.phosphorus >= 900) {

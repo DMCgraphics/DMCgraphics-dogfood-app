@@ -13,6 +13,7 @@ interface Recipe {
   slug: string
   description: string
   allergens: string[]
+  ingredients: string[]
 }
 
 interface RecipeSelectionStepProps {
@@ -36,7 +37,7 @@ export function RecipeSelectionStep({
       try {
         const { data, error } = await supabase
           .from("recipes")
-          .select("id, name, slug, description, allergens")
+          .select("id, name, slug, description, allergens, ingredients")
           .eq("is_active", true)
           .eq("status", "active")
           .order("name")
@@ -147,16 +148,21 @@ export function RecipeSelectionStep({
                     <p className="text-xs text-muted-foreground line-clamp-2">
                       {recipe.description || "Nutritious and delicious meal for your dog"}
                     </p>
-                    {recipe.allergens && recipe.allergens.length > 0 && (
+                    {recipe.ingredients && recipe.ingredients.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {recipe.allergens.slice(0, 2).map((allergen) => (
+                        {recipe.ingredients.slice(0, 4).map((ingredient) => (
                           <span
-                            key={allergen}
+                            key={ingredient}
                             className="text-xs px-2 py-0.5 bg-muted rounded-full"
                           >
-                            {allergen}
+                            {ingredient}
                           </span>
                         ))}
+                        {recipe.ingredients.length > 4 && (
+                          <span className="text-xs px-2 py-0.5 bg-muted rounded-full font-medium">
+                            +{recipe.ingredients.length - 4} more
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

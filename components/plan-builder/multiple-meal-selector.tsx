@@ -132,14 +132,14 @@ export function MultipleMealSelector({
                       {recipe.protein}% protein • {recipe.kcalPer100g} kcal/100g
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {recipe.allergens.slice(0, 2).map((allergen) => (
-                        <Badge key={allergen} variant="outline" className="text-xs">
-                          {allergen}
+                      {recipe.ingredients && recipe.ingredients.slice(0, 3).map((ingredient) => (
+                        <Badge key={ingredient} variant="outline" className="text-xs">
+                          {ingredient}
                         </Badge>
                       ))}
-                      {recipe.allergens.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{recipe.allergens.length - 2} more
+                      {recipe.ingredients && recipe.ingredients.length > 3 && (
+                        <Badge variant="outline" className="text-xs font-medium">
+                          +{recipe.ingredients.length - 3} more
                         </Badge>
                       )}
                     </div>

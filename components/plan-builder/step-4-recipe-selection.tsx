@@ -240,15 +240,20 @@ export function Step4RecipeSelection({
                       </div>
                     </div>
 
-                    {/* Allergens */}
+                    {/* Ingredients */}
                     <div className="space-y-2">
-                      <div className="text-sm font-medium">Contains:</div>
+                      <div className="text-sm font-medium">Ingredients:</div>
                       <div className="flex flex-wrap gap-1">
-                        {recipe.allergens.map((allergen) => (
-                          <Badge key={allergen} variant="outline" className="text-xs capitalize">
-                            {allergen}
+                        {recipe.ingredients && recipe.ingredients.slice(0, 5).map((ingredient) => (
+                          <Badge key={ingredient} variant="outline" className="text-xs">
+                            {ingredient}
                           </Badge>
                         ))}
+                        {recipe.ingredients && recipe.ingredients.length > 5 && (
+                          <Badge variant="outline" className="text-xs font-medium">
+                            +{recipe.ingredients.length - 5} more
+                          </Badge>
+                        )}
                       </div>
                     </div>
 

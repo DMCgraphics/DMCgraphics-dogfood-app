@@ -65,7 +65,7 @@ export function Step4RecipeSelection({
         sex: dogProfile.sex || "male",
         breed: dogProfile.breed,
         activity: dogProfile.activity || "moderate",
-        bodyCondition: dogProfile.bodyCondition || 5,
+        bodyCondition: dogProfile.bodyCondition, // Don't default - let it be undefined
         isNeutered: dogProfile.isNeutered ?? true,
         lifeStage: dogProfile.age && dogProfile.ageUnit === "years" && dogProfile.age < 1 ? "puppy" : "adult",
         selectedAllergens: excludedAllergens,
@@ -78,7 +78,16 @@ export function Step4RecipeSelection({
         setAIRecommendation(recommendations[0])
       }
     }
-  }, [dogProfile, excludedAllergens])
+  }, [
+    dogProfile?.name,
+    dogProfile?.weight,
+    dogProfile?.age,
+    dogProfile?.breed,
+    dogProfile?.activity,
+    dogProfile?.bodyCondition,
+    JSON.stringify(dogProfile?.healthGoals), // Stringify to detect object changes
+    JSON.stringify(excludedAllergens),
+  ])
 
   // Filter recipes based on allergens and coming soon status
   const availableRecipes = mockRecipes.filter(

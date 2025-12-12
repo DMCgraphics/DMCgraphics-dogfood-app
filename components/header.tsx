@@ -82,7 +82,7 @@ export function Header() {
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <img src="/nouripet-logo.svg" alt="NouriPet Logo" className="h-8 w-8" />
-            <span className="font-serif text-xl font-bold">NouriPet</span>
+            <span className="font-sans text-xl font-bold">NouriPet</span>
           </Link>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
@@ -105,7 +105,7 @@ export function Header() {
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <img src="/nouripet-logo.svg" alt="NouriPet Logo" className="h-8 w-8" />
-            <span className="font-serif text-xl font-bold">NouriPet</span>
+            <span className="font-sans text-xl font-bold">NouriPet</span>
           </Link>
 
           {/* Desktop Navigation */}

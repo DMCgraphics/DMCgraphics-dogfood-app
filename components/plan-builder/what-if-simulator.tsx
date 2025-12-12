@@ -64,7 +64,7 @@ export function WhatIfSimulator({ dogProfile, currentRecommendation }: WhatIfSim
         healthGoals: {
           ...p.healthGoals,
           weightGoal: 'lose' as const,
-          targetWeight: p.weight ? p.weight * 0.9 : undefined
+          targetWeight: p.weight ? Math.round(p.weight * 0.9 * 10) / 10 : undefined
         }
       })
     },
@@ -80,7 +80,7 @@ export function WhatIfSimulator({ dogProfile, currentRecommendation }: WhatIfSim
         healthGoals: {
           ...p.healthGoals,
           weightGoal: 'gain' as const,
-          targetWeight: p.weight ? p.weight * 1.1 : undefined
+          targetWeight: p.weight ? Math.round(p.weight * 1.1 * 10) / 10 : undefined
         }
       })
     },

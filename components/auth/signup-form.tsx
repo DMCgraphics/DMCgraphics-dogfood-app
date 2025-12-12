@@ -35,7 +35,6 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
   const [invitation, setInvitation] = useState<any>(null)
   const [isVerifyingInvite, setIsVerifyingInvite] = useState(false)
   const [inviteError, setInviteError] = useState("")
-  const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false)
 
   // Verify invitation token on mount
   useEffect(() => {
@@ -126,20 +125,8 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
           email: formData.email,
           name: formData.name,
           userId: data.user.id,
-          hasInvitation: !!inviteToken,
-          hasSession: !!data.session
+          hasInvitation: !!inviteToken
         })
-
-        // Check if email confirmation is required (user created but no session)
-        if (!data.session) {
-          console.log("[v0] email_confirmation_required", {
-            email: formData.email,
-            userId: data.user.id
-          })
-          setEmailConfirmationRequired(true)
-          setIsLoading(false)
-          return
-        }
 
         // Store subscription ID to pass to redirect handler
         let claimedSubscriptionId: string | undefined = undefined

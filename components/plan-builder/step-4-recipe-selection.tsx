@@ -11,6 +11,7 @@ import { MultipleMealSelector } from "./multiple-meal-selector"
 import { generateAIMealRecommendations } from "@/lib/ai-meal-recommendations"
 import type { MultiDogProfile } from "@/lib/multi-dog-types"
 import { TransparencyCard } from "./transparency-card"
+import { WhatIfSimulator } from "./what-if-simulator"
 
 interface Step4Props {
   selectedRecipe: string | null
@@ -144,11 +145,40 @@ export function Step4RecipeSelection({
           </div>
 
           {showAIRecommendations && (
-            <AIRecommendationCard
-              recommendation={aiRecommendation}
-              onSelectRecipe={onUpdate}
-              selectedRecipe={selectedRecipe}
-            />
+            <div className="space-y-4">
+              <AIRecommendationCard
+                recommendation={aiRecommendation}
+                onSelectRecipe={onUpdate}
+                selectedRecipe={selectedRecipe}
+              />
+
+              {/* What If Simulator */}
+              {dogProfile && dogProfile.name && dogProfile.weight && (
+                <WhatIfSimulator
+                  dogProfile={{
+                    id: "current-dog",
+                    name: dogProfile.name,
+                    weight: dogProfile.weight,
+                    weightUnit: dogProfile.weightUnit || "lb",
+                    age: dogProfile.age || 3,
+                    ageUnit: dogProfile.ageUnit || "years",
+                    sex: dogProfile.sex || "male",
+                    breed: dogProfile.breed,
+                    activity: dogProfile.activity || "moderate",
+                    bodyCondition: dogProfile.bodyCondition,
+                    isNeutered: dogProfile.isNeutered ?? true,
+                    lifeStage: dogProfile.age && dogProfile.ageUnit === "years" && dogProfile.age < 1 ? "puppy" : "adult",
+                    selectedAllergens: excludedAllergens,
+                    healthGoals: healthGoals,
+                    portions: dogProfile.portions,
+                  } as MultiDogProfile}
+                  currentRecommendation={{
+                    recipeId: aiRecommendation.recommendedRecipes[0],
+                    confidence: aiRecommendation.confidence,
+                  }}
+                />
+              )}
+            </div>
           )}
         </div>
       )}

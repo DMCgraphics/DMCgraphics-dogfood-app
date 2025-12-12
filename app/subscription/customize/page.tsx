@@ -318,9 +318,9 @@ function SubscriptionCustomizeContent() {
         <main className="container py-8 max-w-4xl mx-auto">
           {/* Progress indicator */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center mb-4 max-w-md mx-auto">
               {steps.map((step, idx) => (
-                <div key={idx} className="flex items-center flex-1">
+                <div key={idx} className="flex items-center">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                     idx <= currentStep
                       ? "bg-primary border-primary text-primary-foreground"
@@ -329,7 +329,7 @@ function SubscriptionCustomizeContent() {
                     {idx < currentStep ? <CheckCircle2 className="h-5 w-5" /> : idx + 1}
                   </div>
                   {idx < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${
+                    <div className={`w-24 h-1 mx-2 ${
                       idx < currentStep ? "bg-primary" : "bg-muted"
                     }`} />
                   )}
@@ -351,7 +351,7 @@ function SubscriptionCustomizeContent() {
                     <PawPrint className="h-10 w-10 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold mb-3">Complete Your Profile</h1>
+                    <h1 className="text-3xl font-bold mb-3">Complete Your Dog's Profile</h1>
                     <p className="text-lg text-muted-foreground mb-6">
                       You're all set with your subscription! Now let's personalize your dog's meal plan.
                     </p>

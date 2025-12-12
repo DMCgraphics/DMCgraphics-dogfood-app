@@ -1,4 +1,5 @@
 import type { DogProfile, HealthGoals } from "@/lib/nutrition-calculator"
+import type { Citation } from "@/lib/ai/citations"
 
 export interface MultiDogProfile extends DogProfile {
   id: string
@@ -67,4 +68,5 @@ export interface AIRecommendation {
   alternativeRecommendations?: AlternativeRecommendation[]
   missingData?: string[]
   edgeCases?: string[]
+  citations?: Citation[]
 }

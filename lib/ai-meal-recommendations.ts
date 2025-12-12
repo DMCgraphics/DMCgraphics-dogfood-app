@@ -8,6 +8,7 @@ import type {
 import { mockRecipes } from "@/lib/nutrition-calculator"
 import { prescriptionDiets } from "@/lib/prescription-diets"
 import { calculateConfidence } from "@/lib/ai/confidence-calculator"
+import { getCitationsForRecommendation, citations as citationDb } from "@/lib/ai/citations"
 
 export function generateAIMealRecommendations(dogs: MultiDogProfile[]): AIRecommendation[] {
   return dogs.map((dog) => {
@@ -548,6 +549,57 @@ export function generateAIMealRecommendations(dogs: MultiDogProfile[]): AIRecomm
       allFocusAreas.push("overall-health")
     }
     recommendations.nutritionalFocus = allFocusAreas
+
+    // Add relevant scientific citations
+    const relevantCitations: Set<string> = new Set()
+
+    // Add citations based on health goals
+    if (dog.healthGoals?.weightGoal === "lose") {
+      getCitationsForRecommendation("weight-loss").forEach(c => relevantCitations.add(c.id))
+    }
+    if (dog.healthGoals?.weightGoal === "gain") {
+      getCitationsForRecommendation("weight-gain").forEach(c => relevantCitations.add(c.id))
+    }
+    if (dog.healthGoals?.skinCoat) {
+      getCitationsForRecommendation("skin-coat").forEach(c => relevantCitations.add(c.id))
+    }
+    if (dog.healthGoals?.joints) {
+      getCitationsForRecommendation("joints").forEach(c => relevantCitations.add(c.id))
+    }
+    if (dog.healthGoals?.digestiveHealth) {
+      getCitationsForRecommendation("digestive-health").forEach(c => relevantCitations.add(c.id))
+    }
+
+    // Add citations based on breed size
+    if (dog.breed) {
+      const largeBreedsKeywords = ["German Shepherd", "Golden Retriever", "Labrador", "Great Dane", "Mastiff"]
+      const smallBreedsKeywords = ["Chihuahua", "Yorkshire", "Maltese", "Pomeranian", "Papillon", "Cavalier", "Cavapoo", "Poodle", "Shih Tzu", "Bichon"]
+
+      if (largeBreedsKeywords.some(keyword => dog.breed.includes(keyword))) {
+        getCitationsForRecommendation("large-breed").forEach(c => relevantCitations.add(c.id))
+      } else if (smallBreedsKeywords.some(keyword => dog.breed.includes(keyword))) {
+        getCitationsForRecommendation("small-breed").forEach(c => relevantCitations.add(c.id))
+      }
+    }
+
+    // Add citations based on activity level
+    if (dog.activity === "high") {
+      getCitationsForRecommendation("high-activity").forEach(c => relevantCitations.add(c.id))
+    }
+
+    // Add citations based on body condition
+    if (dog.bodyCondition) {
+      getCitationsForRecommendation("body-condition").forEach(c => relevantCitations.add(c.id))
+    }
+
+    // Always include AAFCO standards
+    relevantCitations.add("aafco-adult-protein")
+
+    // Convert citation IDs to citation objects
+    recommendations.citations = Array.from(relevantCitations)
+      .map(id => citationDb[id])
+      .filter(Boolean)
+      .slice(0, 5) // Limit to top 5 most relevant citations
 
     return recommendations
   })

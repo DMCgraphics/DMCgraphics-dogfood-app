@@ -8,6 +8,7 @@ import { Sparkles, Brain, TrendingUp, ChevronDown, ChevronUp, Info, AlertTriangl
 import type { AIRecommendation } from "@/lib/multi-dog-types"
 import { mockRecipes } from "@/lib/nutrition-calculator"
 import { ConfidenceVisualization } from "./confidence-visualization"
+import { CitationsSection } from "./citations-section"
 import { cn } from "@/lib/utils"
 
 interface AIRecommendationCardProps {
@@ -203,6 +204,11 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
               </div>
             )}
           </div>
+        )}
+
+        {/* Scientific References */}
+        {recommendation.citations && recommendation.citations.length > 0 && (
+          <CitationsSection citations={recommendation.citations} />
         )}
       </CardContent>
     </Card>

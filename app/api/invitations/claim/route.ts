@@ -174,6 +174,12 @@ export async function POST(req: Request) {
     }
 
     console.log(`[invitations] Subscription claimed by user ${userId} from invitation ${invitation.id}`)
+    console.log(`[invitations] Returning subscription data:`, {
+      id: subscription.id,
+      status: subscription.status,
+      stripeSubscriptionId: subscription.stripe_subscription_id,
+      userId: subscription.user_id
+    })
 
     return NextResponse.json({
       success: true,

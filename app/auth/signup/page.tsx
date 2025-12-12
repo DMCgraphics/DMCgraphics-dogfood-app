@@ -12,11 +12,22 @@ function SignupContent() {
   const inviteToken = searchParams.get("invite")
   const returnTo = searchParams.get("returnTo")
 
-  const handleSuccess = () => {
-    // Priority: returnTo > inviteToken > default (plan-builder)
+  const handleSuccess = (subscriptionId?: string) => {
+    console.log("[v0] signup_success_redirect", {
+      hasInvite: !!inviteToken,
+      hasReturnTo: !!returnTo,
+      subscriptionId
+    })
+
+    // Priority: returnTo > inviteToken with subscription > default (plan-builder)
     if (returnTo) {
       router.push(decodeURIComponent(returnTo))
+    } else if (inviteToken && subscriptionId) {
+      // Direct redirect to customization flow with subscription ID
+      router.push(`/subscription/customize?id=${subscriptionId}`)
     } else if (inviteToken) {
+      // Fallback if subscription ID is missing - try manage page
+      console.warn("[v0] Invitation claimed but subscription ID not available")
       router.push("/subscription/manage")
     } else {
       router.push("/plan-builder")

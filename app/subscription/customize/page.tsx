@@ -8,7 +8,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, ArrowLeft, CheckCircle2, PawPrint } from "lucide-react"
+import { ArrowRight, ArrowLeft, CheckCircle2, PawPrint, AlertTriangle } from "lucide-react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 
 // Import step components (we'll create these next)
@@ -40,6 +40,11 @@ function SubscriptionCustomizeContent() {
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<{
+    title: string
+    message: string
+    action?: () => void
+  } | null>(null)
 
   // Form data
   const [dogProfile, setDogProfile] = useState<DogProfile>({
@@ -55,7 +60,7 @@ function SubscriptionCustomizeContent() {
 
   // Fetch subscription details
   useEffect(() => {
-    const fetchSubscription = async () => {
+    const fetchSubscription = async (retryCount = 0) => {
       if (!user || !subscriptionId) {
         setLoading(false)
         return
@@ -70,8 +75,21 @@ function SubscriptionCustomizeContent() {
           .single()
 
         if (error || !data) {
-          console.error("[customize] Subscription not found:", error)
-          router.push("/dashboard")
+          // Retry up to 3 times with exponential backoff if subscription not found
+          if (retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 500 // 500ms, 1s, 2s
+            console.log(`[customize] Subscription not found, retrying in ${delay}ms (attempt ${retryCount + 1}/3)`)
+            setTimeout(() => fetchSubscription(retryCount + 1), delay)
+            return
+          }
+
+          console.error("[customize] Subscription not found after retries:", error)
+          setError({
+            title: "Subscription Not Found",
+            message: "We couldn't find your subscription. Please contact support if this issue persists.",
+            action: () => router.push("/dashboard")
+          })
+          setLoading(false)
           return
         }
 
@@ -84,10 +102,14 @@ function SubscriptionCustomizeContent() {
 
         setSubscription(data)
         console.log("[customize] Loaded subscription:", data)
+        setLoading(false)
       } catch (err) {
         console.error("[customize] Error loading subscription:", err)
-        router.push("/dashboard")
-      } finally {
+        setError({
+          title: "Error Loading Subscription",
+          message: "An unexpected error occurred. Please try again.",
+          action: () => router.push("/dashboard")
+        })
         setLoading(false)
       }
     }
@@ -224,6 +246,33 @@ function SubscriptionCustomizeContent() {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container py-8">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                {error.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">{error.message}</p>
+              {error.action && (
+                <Button onClick={error.action} className="w-full">
+                  Go to Dashboard
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   if (loading || authLoading) {

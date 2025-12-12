@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase/client"
 
 interface SignupFormProps {
-  onSuccess?: () => void
+  onSuccess?: (subscriptionId?: string) => void
   onSwitchToLogin?: () => void
   onUserInteraction?: () => void
   inviteToken?: string
@@ -128,6 +128,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
           hasInvitation: !!inviteToken
         })
 
+        // Store subscription ID to pass to redirect handler
+        let claimedSubscriptionId: string | undefined = undefined
+
         // If there's an invitation, claim it
         if (inviteToken) {
           try {
@@ -149,9 +152,12 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
               return
             }
 
+            // Capture subscription ID for redirect
+            claimedSubscriptionId = claimData.subscription?.id
+
             console.log("[v0] invitation_claimed_success", {
               userId: data.user.id,
-              subscriptionId: claimData.subscription?.id
+              subscriptionId: claimedSubscriptionId
             })
           } catch (claimError: any) {
             console.error("[v0] invitation_claim_error", claimError)
@@ -186,11 +192,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
         // Add a fallback timeout to ensure modal closes even if auth state doesn't update
         setTimeout(() => {
           console.log("[v0] signup_form_fallback_close")
-          onSuccess?.()
+          onSuccess?.(claimedSubscriptionId)
         }, 1000) // Reduced to 1 second fallback
 
         // Call onSuccess immediately as primary mechanism
-        onSuccess?.()
+        onSuccess?.(claimedSubscriptionId)
       } else {
         setIsLoading(false)
       }

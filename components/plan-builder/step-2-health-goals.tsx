@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import type { HealthGoals, DogProfile } from "@/lib/nutrition-calculator"
 import { WeightGoalHelper } from "./ai-inline-helper"
-import { AILiveFeedback } from "./ai-live-feedback"
+import { AILiveFeedback, LiveConfidenceIndicator } from "./ai-live-feedback"
 
 interface Step2Props {
   goals: Partial<HealthGoals>
@@ -89,6 +89,11 @@ export function Step2HealthGoals({ goals, onUpdate, dogProfile }: Step2Props) {
 
   return (
     <div className="space-y-6">
+      {/* AI Confidence Indicator */}
+      {dogProfile && dogProfile.name && dogProfile.weight && dogProfile.age && (
+        <LiveConfidenceIndicator dogProfile={dogProfile} healthGoals={goals} />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Health & Wellness Goals</CardTitle>

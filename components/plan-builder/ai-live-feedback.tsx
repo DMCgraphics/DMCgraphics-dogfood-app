@@ -168,7 +168,13 @@ export function AILiveFeedback({
 /**
  * Simple real-time confidence indicator
  */
-export function LiveConfidenceIndicator({ dogProfile }: { dogProfile: Partial<MultiDogProfile> }) {
+export function LiveConfidenceIndicator({
+  dogProfile,
+  healthGoals
+}: {
+  dogProfile: Partial<MultiDogProfile>
+  healthGoals?: any
+}) {
   const [confidence, setConfidence] = useState(0)
   const [previousConfidence, setPreviousConfidence] = useState(0)
 
@@ -185,6 +191,7 @@ export function LiveConfidenceIndicator({ dogProfile }: { dogProfile: Partial<Mu
       ...dogProfile,
       weightUnit: dogProfile.weightUnit || "lb",
       ageUnit: dogProfile.ageUnit || "years",
+      healthGoals: healthGoals || dogProfile.healthGoals, // Use provided healthGoals or fall back to dogProfile
     } as MultiDogProfile
 
     try {
@@ -196,7 +203,7 @@ export function LiveConfidenceIndicator({ dogProfile }: { dogProfile: Partial<Mu
     } catch {
       setConfidence(0)
     }
-  }, [dogProfile.name, dogProfile.weight, dogProfile.age, dogProfile.activity, dogProfile.bodyCondition, dogProfile.breed, dogProfile.healthGoals])
+  }, [dogProfile.name, dogProfile.weight, dogProfile.age, dogProfile.activity, dogProfile.bodyCondition, dogProfile.breed, dogProfile.healthGoals, JSON.stringify(healthGoals)])
 
   // Only show when we have meaningful data
   if (!dogProfile.name || !dogProfile.weight || !dogProfile.age || confidence === 0) {

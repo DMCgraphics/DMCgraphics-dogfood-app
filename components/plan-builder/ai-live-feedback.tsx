@@ -173,7 +173,8 @@ export function LiveConfidenceIndicator({ dogProfile }: { dogProfile: Partial<Mu
   const [previousConfidence, setPreviousConfidence] = useState(0)
 
   useEffect(() => {
-    if (!dogProfile.name) {
+    // Only show confidence when we have meaningful data (weight AND age minimum)
+    if (!dogProfile.name || !dogProfile.weight || !dogProfile.age) {
       setConfidence(0)
       return
     }
@@ -193,11 +194,12 @@ export function LiveConfidenceIndicator({ dogProfile }: { dogProfile: Partial<Mu
       setPreviousConfidence(confidence)
       setConfidence(newConfidence)
     } catch {
-      setConfidence(50)
+      setConfidence(0)
     }
-  }, [dogProfile])
+  }, [dogProfile.name, dogProfile.weight, dogProfile.age, dogProfile.activity, dogProfile.bodyCondition, dogProfile.breed, dogProfile.healthGoals])
 
-  if (!dogProfile.name) {
+  // Only show when we have meaningful data
+  if (!dogProfile.name || !dogProfile.weight || !dogProfile.age || confidence === 0) {
     return null
   }
 

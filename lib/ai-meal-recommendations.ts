@@ -438,7 +438,10 @@ export function generateAIMealRecommendations(dogs: MultiDogProfile[]): AIRecomm
 
     console.log("[v0] Final reasoning text:", recommendations.reasoning)
 
-    recommendations.confidence = Math.min(95, Math.max(60, topRecipes[0].score))
+    // Only apply 60% minimum if we have sufficient data (weight, age, and at least one of: activity, breed, or bodyCondition)
+    const hasSufficientData = dog.weight && dog.age && (dog.activity || dog.breed || dog.bodyCondition)
+    const minConfidence = hasSufficientData ? 60 : 0
+    recommendations.confidence = Math.min(95, Math.max(minConfidence, topRecipes[0].score))
 
     // Build comprehensive confidence breakdown
     const topScoringFactors = topRecipes[0].scoringFactors

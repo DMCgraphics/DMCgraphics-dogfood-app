@@ -11,6 +11,8 @@ import { ConfidenceVisualization } from "./confidence-visualization"
 import { CitationsSection } from "./citations-section"
 import { AIChat } from "./ai-chat"
 import { cn } from "@/lib/utils"
+import { generateCacheKey, getCachedExplanation, cacheExplanation } from "@/lib/ai/cache-manager"
+import { trackRecommendationViewed, trackExplanationGenerated } from "@/lib/analytics/ai-events"
 
 interface AIRecommendationCardProps {
   recommendation: AIRecommendation
@@ -40,7 +42,17 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
   const hasMissingData = recommendation.missingData && recommendation.missingData.length > 0
   const hasEdgeCases = recommendation.edgeCases && recommendation.edgeCases.length > 0
 
-  // Fetch LLM explanation on mount
+  // Track recommendation view on mount
+  useEffect(() => {
+    trackRecommendationViewed({
+      dogName: recommendation.dogName,
+      confidence: recommendation.confidence,
+      topRecipe: recommendedRecipes[0]?.name || "Unknown",
+      cached: false,
+    })
+  }, [recommendation.dogName, recommendation.confidence])
+
+  // Fetch LLM explanation on mount (with caching)
   useEffect(() => {
     async function fetchLLMExplanation() {
       // Only fetch if we have dog profile data
@@ -48,7 +60,24 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
         return
       }
 
+      // Generate cache key
+      const cacheKey = generateCacheKey(dogProfile, 'reasoning')
+
+      // Check cache first (checks session + localStorage)
+      const cachedExplanation = getCachedExplanation(cacheKey)
+      if (cachedExplanation) {
+        setLlmExplanation(cachedExplanation)
+        trackExplanationGenerated({
+          explanationType: 'reasoning',
+          cached: true,
+          llmUsed: true,
+        })
+        return // Cache hit! No API call needed
+      }
+
+      // Cache miss - fetch from API
       setLoadingLLM(true)
+      const startTime = Date.now()
 
       try {
         const response = await fetch('/api/ai/generate-explanation', {
@@ -65,10 +94,23 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
           }),
         })
 
+        const responseTime = Date.now() - startTime
+
         if (response.ok) {
           const data = await response.json()
           if (data.explanation) {
             setLlmExplanation(data.explanation)
+            // Cache the response
+            cacheExplanation(cacheKey, data.explanation, data.tokensUsed)
+
+            // Track explanation generation
+            trackExplanationGenerated({
+              explanationType: 'reasoning',
+              cached: false,
+              tokensUsed: data.tokensUsed,
+              responseTime,
+              llmUsed: data.llmUsed || false,
+            })
           }
         }
       } catch (error) {

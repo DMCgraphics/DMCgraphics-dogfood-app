@@ -9,6 +9,7 @@ import type { AIRecommendation, MultiDogProfile } from "@/lib/multi-dog-types"
 import { mockRecipes } from "@/lib/nutrition-calculator"
 import { ConfidenceVisualization } from "./confidence-visualization"
 import { CitationsSection } from "./citations-section"
+import { AIChat } from "./ai-chat"
 import { cn } from "@/lib/utils"
 
 interface AIRecommendationCardProps {
@@ -263,6 +264,14 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
         {/* Scientific References */}
         {recommendation.citations && recommendation.citations.length > 0 && (
           <CitationsSection citations={recommendation.citations} />
+        )}
+
+        {/* AI Chat - Ask Questions */}
+        {dogProfile && (
+          <AIChat
+            dogProfile={dogProfile as MultiDogProfile}
+            recommendation={recommendation}
+          />
         )}
       </CardContent>
     </Card>

@@ -80,7 +80,7 @@ export async function generateLLMExplanation(
  * System prompt that defines Claude's personality and style
  */
 function getSystemPrompt(): string {
-  return \`You are a friendly, knowledgeable pet nutrition assistant helping dog owners choose the best meal plan for their pets. Your personality:
+  return `You are a friendly, knowledgeable pet nutrition assistant helping dog owners choose the best meal plan for their pets. Your personality:
 
 - Warm and encouraging (like a helpful neighbor who loves dogs)
 - Science-based but not overly technical
@@ -94,7 +94,7 @@ When explaining recommendations:
 - Lead with the dog's specific needs (age, activity, health goals)
 - Connect those needs to the recipe features
 - Build trust by being transparent about the reasoning
-- If confidence is lower, acknowledge what additional info would help\`
+- If confidence is lower, acknowledge what additional info would help`
 }
 
 /**
@@ -107,23 +107,23 @@ function buildConfidencePrompt(
   const topFactors = scoringBreakdown.factorsConsidered
     .filter(f => f.impact === 'high' || f.impact === 'medium')
     .slice(0, 3)
-    .map(f => \`- \${f.factor}: \${f.description}\`)
+    .map(f => `- ${f.factor}: ${f.description}`)
     .join('\n')
 
-  return \`Explain in a warm, personalized way why we have \${scoringBreakdown.confidence}% confidence in recommending \${scoringBreakdown.topRecipe} for \${dogProfile.name}.
+  return `Explain in a warm, personalized way why we have ${scoringBreakdown.confidence}% confidence in recommending ${scoringBreakdown.topRecipe} for ${dogProfile.name}.
 
 Dog Profile:
-- Name: \${dogProfile.name}
-- Age: \${dogProfile.age} \${dogProfile.ageUnit}
-- Weight: \${dogProfile.weight} \${dogProfile.weightUnit}
-- Activity: \${dogProfile.activity}
-\${dogProfile.bodyCondition ? \`- Body Condition: \${dogProfile.bodyCondition}/9\` : ''}
-\${dogProfile.healthGoals?.weightGoal ? \`- Weight Goal: \${dogProfile.healthGoals.weightGoal}\` : ''}
+- Name: ${dogProfile.name}
+- Age: ${dogProfile.age} ${dogProfile.ageUnit}
+- Weight: ${dogProfile.weight} ${dogProfile.weightUnit}
+- Activity: ${dogProfile.activity}
+${dogProfile.bodyCondition ? `- Body Condition: ${dogProfile.bodyCondition}/9` : ''}
+${dogProfile.healthGoals?.weightGoal ? `- Weight Goal: ${dogProfile.healthGoals.weightGoal}` : ''}
 
 Top Scoring Factors:
-\${topFactors}
+${topFactors}
 
-Write 2-3 sentences explaining why this confidence level makes sense for \${dogProfile.name}. Be warm and personal.\`
+Write 2-3 sentences explaining why this confidence level makes sense for ${dogProfile.name}. Be warm and personal.`
 }
 
 /**
@@ -139,20 +139,20 @@ function buildReasoningPrompt(
     .map(f => f.description)
     .join(', ')
 
-  return \`Write a personalized, warm explanation for why \${scoringBreakdown.topRecipe} is the best choice for \${dogProfile.name}.
+  return `Write a personalized, warm explanation for why ${scoringBreakdown.topRecipe} is the best choice for ${dogProfile.name}.
 
 Dog Profile:
-- Name: \${dogProfile.name}
-- Age: \${dogProfile.age} \${dogProfile.ageUnit}
-- Weight: \${dogProfile.weight} \${dogProfile.weightUnit}
-- Activity: \${dogProfile.activity}
-\${dogProfile.bodyCondition ? \`- Body Condition: \${dogProfile.bodyCondition}/9\` : ''}
-\${dogProfile.healthGoals?.weightGoal ? \`- Weight Goal: \${dogProfile.healthGoals.weightGoal}\` : ''}
-\${dogProfile.healthGoals?.concerns && dogProfile.healthGoals.concerns.length > 0 ? \`- Health Focus: \${dogProfile.healthGoals.concerns.join(', ')}\` : ''}
+- Name: ${dogProfile.name}
+- Age: ${dogProfile.age} ${dogProfile.ageUnit}
+- Weight: ${dogProfile.weight} ${dogProfile.weightUnit}
+- Activity: ${dogProfile.activity}
+${dogProfile.bodyCondition ? `- Body Condition: ${dogProfile.bodyCondition}/9` : ''}
+${dogProfile.healthGoals?.weightGoal ? `- Weight Goal: ${dogProfile.healthGoals.weightGoal}` : ''}
+${dogProfile.healthGoals?.concerns && dogProfile.healthGoals.concerns.length > 0 ? `- Health Focus: ${dogProfile.healthGoals.concerns.join(', ')}` : ''}
 
-Key Reasons: \${topFactors}
+Key Reasons: ${topFactors}
 
-Write 2-3 sentences that feel personal and specific to \${dogProfile.name}. Use their name and reference their specific needs.\`
+Write 2-3 sentences that feel personal and specific to ${dogProfile.name}. Use their name and reference their specific needs.`
 }
 
 /**
@@ -162,20 +162,20 @@ function buildStepGuidancePrompt(
   dogProfile: MultiDogProfile,
   scoringBreakdown: { topRecipe: string; confidence: number }
 ): string {
-  return \`Write a brief, encouraging message for a dog owner who just added information about \${dogProfile.name}.
+  return `Write a brief, encouraging message for a dog owner who just added information about ${dogProfile.name}.
 
 Current Info:
-- Name: \${dogProfile.name}
-\${dogProfile.age ? \`- Age: \${dogProfile.age} \${dogProfile.ageUnit}\` : ''}
-\${dogProfile.weight ? \`- Weight: \${dogProfile.weight} \${dogProfile.weightUnit}\` : ''}
-\${dogProfile.activity ? \`- Activity: \${dogProfile.activity}\` : ''}
+- Name: ${dogProfile.name}
+${dogProfile.age ? `- Age: ${dogProfile.age} ${dogProfile.ageUnit}` : ''}
+${dogProfile.weight ? `- Weight: ${dogProfile.weight} ${dogProfile.weightUnit}` : ''}
+${dogProfile.activity ? `- Activity: ${dogProfile.activity}` : ''}
 
 Write 1-2 sentences that:
 1. Acknowledge what they just shared
 2. Briefly mention what's coming next (if applicable)
 3. Make them feel they're on the right track
 
-Be warm and encouraging. Use \${dogProfile.name}'s name.\`
+Be warm and encouraging. Use ${dogProfile.name}'s name.`
 }
 
 /**
@@ -191,12 +191,12 @@ function getFallbackExplanation(request: LLMExplanationRequest): string {
       .map(f => f.description.toLowerCase())
       .join(' and ')
 
-    return \`Based on \${dogProfile.name}'s profile, this recipe is recommended because it provides \${factors}.\`
+    return `Based on ${dogProfile.name}'s profile, this recipe is recommended because it provides ${factors}.`
   }
 
   if (explanationType === "confidence") {
-    return \`I have \${scoringBreakdown.confidence}% confidence in this recommendation for \${dogProfile.name} based on the information provided.\`
+    return `I have ${scoringBreakdown.confidence}% confidence in this recommendation for ${dogProfile.name} based on the information provided.`
   }
 
-  return \`Great! Let's continue building \${dogProfile.name}'s perfect meal plan.\`
+  return `Great! Let's continue building ${dogProfile.name}'s perfect meal plan.`
 }

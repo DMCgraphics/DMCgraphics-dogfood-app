@@ -63,8 +63,8 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
       // Generate cache key
       const cacheKey = generateCacheKey(dogProfile, 'reasoning')
 
-      // Check cache first (checks session + localStorage)
-      const cachedExplanation = getCachedExplanation(cacheKey)
+      // Check cache first (checks session + localStorage + Supabase)
+      const cachedExplanation = await getCachedExplanation(cacheKey)
       if (cachedExplanation) {
         setLlmExplanation(cachedExplanation)
         trackExplanationGenerated({

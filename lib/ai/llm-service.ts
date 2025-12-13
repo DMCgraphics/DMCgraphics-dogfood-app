@@ -58,11 +58,18 @@ export async function generateLLMExplanation(
     })
 
     const explanation = message.content[0].type === "text" ? message.content[0].text : ""
+    const inputTokens = message.usage.input_tokens
+    const outputTokens = message.usage.output_tokens
+
+    // Track costs server-side (fire and forget)
+    trackCostsServerSide(inputTokens, outputTokens, explanationType).catch((err) => {
+      console.error("[LLM] Failed to track costs:", err)
+    })
 
     return {
       explanation,
       cached: false,
-      tokensUsed: message.usage.input_tokens + message.usage.output_tokens,
+      tokensUsed: inputTokens + outputTokens,
     }
   } catch (error) {
     console.error("[LLM Service] Error generating explanation:", error)
@@ -199,4 +206,46 @@ function getFallbackExplanation(request: LLMExplanationRequest): string {
   }
 
   return `Great! Let's continue building ${dogProfile.name}'s perfect meal plan.`
+}
+
+/**
+ * Track costs server-side by calling our tracking API
+ */
+async function trackCostsServerSide(
+  inputTokens: number,
+  outputTokens: number,
+  feature: string
+): Promise<void> {
+  // Calculate cost (Claude Haiku pricing)
+  const HAIKU_INPUT_PRICE_PER_1M = 0.25
+  const HAIKU_OUTPUT_PRICE_PER_1M = 1.25
+
+  const inputCost = (inputTokens / 1_000_000) * HAIKU_INPUT_PRICE_PER_1M
+  const outputCost = (outputTokens / 1_000_000) * HAIKU_OUTPUT_PRICE_PER_1M
+  const estimatedCost = inputCost + outputCost
+
+  // Only track in production (avoid dev noise)
+  if (process.env.NODE_ENV !== "production") {
+    return
+  }
+
+  try {
+    // Call internal API to track (server-side only)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    await fetch(`${baseUrl}/api/ai/track-cost`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        feature,
+        inputTokens,
+        outputTokens,
+        estimatedCost,
+        llmUsed: true,
+        cached: false,
+      }),
+    })
+  } catch (error) {
+    // Silently fail - don't block LLM response
+    console.error("[LLM] Cost tracking failed:", error)
+  }
 }

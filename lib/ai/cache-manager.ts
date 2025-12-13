@@ -133,7 +133,7 @@ function saveToLocalStorage(cacheKey: string, response: CachedResponse): void {
  * Get cached explanation (checks all layers)
  * Returns null if not found or expired
  */
-export function getCachedExplanation(cacheKey: string): string | null {
+export async function getCachedExplanation(cacheKey: string): Promise<string | null> {
   // Layer 1: Session cache (fastest)
   const sessionCached = getFromSessionCache(cacheKey)
   if (sessionCached) {
@@ -168,8 +168,29 @@ export function getCachedExplanation(cacheKey: string): string | null {
     return localCached.explanation
   }
 
-  // Layer 3: Global cache (Supabase) - future implementation
-  // TODO: Check Supabase cache for frequently requested profiles
+  // Layer 3: Global cache (Supabase)
+  if (typeof window !== "undefined") {
+    try {
+      const globalCached = await getFromGlobalCache(cacheKey)
+      if (globalCached) {
+        // Promote to session and localStorage
+        saveToSessionCache(cacheKey, globalCached)
+        saveToLocalStorage(cacheKey, globalCached)
+        stats.hits++
+        updateHitRate()
+
+        // Track cache hit
+        import("@/lib/analytics/ai-events").then(({ trackCacheHit }) => {
+          trackCacheHit({ cacheKey, cacheLayer: "supabase" })
+        })
+
+        return globalCached.explanation
+      }
+    } catch (error) {
+      // Silently fail - Layer 3 is optional
+      console.error("[Cache] Global cache error:", error)
+    }
+  }
 
   stats.misses++
   updateHitRate()
@@ -182,6 +203,73 @@ export function getCachedExplanation(cacheKey: string): string | null {
   }
 
   return null
+}
+
+/**
+ * Layer 3: Check Supabase global cache
+ */
+async function getFromGlobalCache(cacheKey: string): Promise<CachedResponse | null> {
+  if (typeof window === "undefined") return null
+
+  try {
+    // Dynamic import to avoid bundling issues
+    const { createClient } = await import("@/lib/supabase/client")
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from("ai_global_cache")
+      .select("*")
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .single()
+
+    if (error || !data) return null
+
+    // Update hit count (fire and forget)
+    supabase
+      .from("ai_global_cache")
+      .update({
+        hit_count: (data.hit_count || 0) + 1,
+        last_accessed_at: new Date().toISOString(),
+      })
+      .eq("cache_key", cacheKey)
+      .then()
+
+    return {
+      explanation: data.explanation,
+      timestamp: new Date(data.created_at).getTime(),
+      cacheKey: data.cache_key,
+    }
+  } catch (error) {
+    console.error("[Cache] Global cache read error:", error)
+    return null
+  }
+}
+
+/**
+ * Layer 3: Save to Supabase global cache
+ */
+async function saveToGlobalCache(cacheKey: string, response: CachedResponse): Promise<void> {
+  if (typeof window === "undefined") return
+
+  try {
+    const { createClient } = await import("@/lib/supabase/client")
+    const supabase = createClient()
+
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 30) // 30 days TTL
+
+    await supabase.from("ai_global_cache").upsert({
+      cache_key: cacheKey,
+      explanation: response.explanation,
+      explanation_type: "reasoning", // TODO: Pass explanation type
+      expires_at: expiresAt.toISOString(),
+      hit_count: 0,
+    })
+  } catch (error) {
+    console.error("[Cache] Global cache write error:", error)
+    // Silently fail - Layer 3 is optional
+  }
 }
 
 /**
@@ -199,12 +287,14 @@ export function cacheExplanation(
     tokensUsed,
   }
 
-  // Save to all layers
+  // Save to Layer 1 and 2 (synchronous)
   saveToSessionCache(cacheKey, response)
   saveToLocalStorage(cacheKey, response)
 
-  // Layer 3: Save to global cache if frequently requested
-  // TODO: Implement Supabase caching for popular profiles
+  // Layer 3: Save to global cache (asynchronous - fire and forget)
+  saveToGlobalCache(cacheKey, response).catch((err) => {
+    console.error("[Cache] Failed to save to global cache:", err)
+  })
 }
 
 /**

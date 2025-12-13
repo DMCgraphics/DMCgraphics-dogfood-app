@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Brain, TrendingUp, ChevronDown, ChevronUp, Info, AlertTriangle } from "lucide-react"
-import type { AIRecommendation } from "@/lib/multi-dog-types"
+import { Sparkles, Brain, TrendingUp, ChevronDown, ChevronUp, Info, AlertTriangle, Loader2 } from "lucide-react"
+import type { AIRecommendation, MultiDogProfile } from "@/lib/multi-dog-types"
 import { mockRecipes } from "@/lib/nutrition-calculator"
 import { ConfidenceVisualization } from "./confidence-visualization"
 import { CitationsSection } from "./citations-section"
@@ -15,11 +15,14 @@ interface AIRecommendationCardProps {
   recommendation: AIRecommendation
   onSelectRecipe: (recipeId: string) => void
   selectedRecipe: string | null
+  dogProfile?: Partial<MultiDogProfile>
 }
 
-export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedRecipe }: AIRecommendationCardProps) {
+export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedRecipe, dogProfile }: AIRecommendationCardProps) {
   const [showAlternatives, setShowAlternatives] = useState(false)
   const [showMissingData, setShowMissingData] = useState(true)
+  const [llmExplanation, setLlmExplanation] = useState<string | null>(null)
+  const [loadingLLM, setLoadingLLM] = useState(false)
 
   const recommendedRecipes = recommendation.recommendedRecipes
     .map((id) => mockRecipes.find((r) => r.id === id))
@@ -35,6 +38,48 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
   const hasAlternatives = alternativeRecipes && alternativeRecipes.length > 0
   const hasMissingData = recommendation.missingData && recommendation.missingData.length > 0
   const hasEdgeCases = recommendation.edgeCases && recommendation.edgeCases.length > 0
+
+  // Fetch LLM explanation on mount
+  useEffect(() => {
+    async function fetchLLMExplanation() {
+      // Only fetch if we have dog profile data
+      if (!dogProfile || !dogProfile.name || !dogProfile.weight) {
+        return
+      }
+
+      setLoadingLLM(true)
+
+      try {
+        const response = await fetch('/api/ai/generate-explanation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dogProfile: dogProfile,
+            scoringBreakdown: {
+              topRecipe: recommendedRecipes[0]?.name || 'Unknown',
+              confidence: recommendation.confidence,
+              factorsConsidered: recommendation.factorsConsidered,
+            },
+            explanationType: 'reasoning',
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.explanation) {
+            setLlmExplanation(data.explanation)
+          }
+        }
+      } catch (error) {
+        console.error('[AI Card] Failed to fetch LLM explanation:', error)
+        // Silently fail - will use template-based reasoning
+      } finally {
+        setLoadingLLM(false)
+      }
+    }
+
+    fetchLLMExplanation()
+  }, [dogProfile?.name, dogProfile?.weight, recommendation.confidence])
 
   return (
     <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
@@ -80,7 +125,16 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
               <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">
                 Why This Recommendation
               </div>
-              <p className="text-sm text-blue-800 dark:text-blue-200">{recommendation.reasoning}</p>
+              {loadingLLM ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Generating personalized explanation...</span>
+                </div>
+              ) : (
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  {llmExplanation || recommendation.reasoning}
+                </p>
+              )}
             </div>
           </div>
         </div>

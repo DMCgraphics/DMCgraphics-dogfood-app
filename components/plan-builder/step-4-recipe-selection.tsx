@@ -150,6 +150,7 @@ export function Step4RecipeSelection({
                 recommendation={aiRecommendation}
                 onSelectRecipe={onUpdate}
                 selectedRecipe={selectedRecipe}
+                dogProfile={dogProfile}
               />
 
               {/* What If Simulator */}

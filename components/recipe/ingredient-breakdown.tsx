@@ -23,6 +23,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Peas", percentage: 4, source: "Local & Regional Farms", benefits: ["Protein", "Fiber"] },
     { name: "Carrots", percentage: 4, source: "Local & Regional Farms", benefits: ["Beta-carotene", "Eye health"] },
     { name: "Custom Premix & supplements", percentage: 3, source: "NouriPet", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
   ],
   "lamb-pumpkin-feast": [
     { name: "Ground lamb", percentage: 47, source: "Mosner Family Brands", benefits: ["Highly bioavailable protein", "Rich in zinc"] },
@@ -32,14 +33,16 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Peas", percentage: 4, source: "Local & Regional Farms", benefits: ["Protein", "Fiber"] },
     { name: "Carrots", percentage: 4, source: "Local & Regional Farms", benefits: ["Beta-carotene", "Antioxidants"] },
     { name: "Custom Premix & supplements", percentage: 6, source: "NouriPet", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
   ],
   "low-fat-chicken-garden-veggie": [
     { name: "Skinless chicken breast", percentage: 55, source: "Mosner Family Brands", benefits: ["Ultra-lean protein for sensitive digestion"] },
     { name: "Egg whites", percentage: 10, source: "Certified", benefits: ["High-quality, fat-free protein"] },
     { name: "Quinoa", percentage: 15, source: "Organic Supplier", benefits: ["Digestible carb, complete amino acids"] },
-    { name: "Carrots (lightened with zucchini)", percentage: 8, source: "Local & Regional Farms", benefits: ["Fiber, beta-carotene"] },
+    { name: "Carrots", percentage: 8, source: "Local & Regional Farms", benefits: ["Fiber, beta-carotene"] },
     { name: "Spinach", percentage: 8, source: "Local & Regional Farms", benefits: ["Iron, folate"] },
     { name: "Custom Premix (Low Fat)", percentage: 3, source: "NouriPet", benefits: ["Essential vitamins/minerals for low-fat diets"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
   ],
   "turkey-brown-rice-comfort": [
     { name: "Lean ground turkey", percentage: 50, source: "Mosner Family Brands", benefits: ["Lean protein"] },
@@ -48,7 +51,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Zucchini", percentage: 10, source: "Local & Regional Farms", benefits: ["Hydration", "Fiber"] },
     { name: "Spinach", percentage: 10, source: "Local & Regional Farms", benefits: ["Iron", "Vitamins"] },
     { name: "Custom Premix", percentage: 1, source: "NouriPet", benefits: ["Complete micronutrients"] },
-    { name: "Fish oil", percentage: 1, source: "IFOS-certified", benefits: ["EPA/DHA"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
   ],
 }
 

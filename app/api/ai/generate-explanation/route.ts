@@ -24,12 +24,6 @@ export async function POST(request: NextRequest) {
     // Check if LLM is enabled (via env var) and has API key
     const llmEnabled = process.env.ENABLE_AI_LLM === "true" && process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "your_anthropic_api_key_here"
 
-    console.log('[AI Explanation] LLM enabled check:', {
-      ENABLE_AI_LLM: process.env.ENABLE_AI_LLM,
-      hasAPIKey: !!process.env.ANTHROPIC_API_KEY,
-      llmEnabled,
-    })
-
     if (!llmEnabled) {
       // Return template-based fallback
       return NextResponse.json({

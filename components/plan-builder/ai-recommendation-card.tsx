@@ -67,9 +67,18 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
 
         if (response.ok) {
           const data = await response.json()
+          console.log('[AI Card] API Response:', {
+            hasExplanation: !!data.explanation,
+            explanationLength: data.explanation?.length || 0,
+            llmUsed: data.llmUsed,
+            cached: data.cached,
+            explanation: data.explanation
+          })
           if (data.explanation) {
             setLlmExplanation(data.explanation)
           }
+        } else {
+          console.error('[AI Card] API error:', response.status, await response.text())
         }
       } catch (error) {
         console.error('[AI Card] Failed to fetch LLM explanation:', error)

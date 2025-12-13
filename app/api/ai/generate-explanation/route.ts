@@ -24,6 +24,12 @@ export async function POST(request: NextRequest) {
     // Check if LLM is enabled (via env var) and has API key
     const llmEnabled = process.env.ENABLE_AI_LLM === "true" && process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "your_anthropic_api_key_here"
 
+    console.log('[AI Explanation] LLM enabled check:', {
+      ENABLE_AI_LLM: process.env.ENABLE_AI_LLM,
+      hasAPIKey: !!process.env.ANTHROPIC_API_KEY,
+      llmEnabled,
+    })
+
     if (!llmEnabled) {
       // Return template-based fallback
       return NextResponse.json({
@@ -60,13 +66,19 @@ function getTemplateFallback(request: LLMExplanationRequest): string {
   const { dogProfile, scoringBreakdown, explanationType } = request
 
   if (explanationType === "reasoning") {
-    const factors = scoringBreakdown.factorsConsidered
+    const highImpactFactors = scoringBreakdown.factorsConsidered
       .filter(f => f.impact === 'high')
       .slice(0, 2)
-      .map(f => f.description.toLowerCase())
-      .join(' and ')
 
-    return `Based on ${dogProfile.name}'s profile (age, activity, and health goals), this recipe is recommended because it provides ${factors}.`
+    if (highImpactFactors.length > 0) {
+      const factors = highImpactFactors
+        .map(f => f.description.toLowerCase())
+        .join(' and ')
+      return `Based on ${dogProfile.name}'s profile (age, activity, and health goals), this recipe is recommended because it provides ${factors}.`
+    }
+
+    // Fallback if no high-impact factors
+    return `Based on ${dogProfile.name}'s profile (age, activity, and health goals), this recipe is a great match for their nutritional needs.`
   }
 
   if (explanationType === "confidence") {

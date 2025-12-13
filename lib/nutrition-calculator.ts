@@ -153,11 +153,7 @@ export const mockRecipes: Recipe[] = [
       "Green peas",
       "Cod liver oil",
       "Kelp",
-      "Dicalcium phosphate",
-      "Magnesium proteinate",
-      "Zinc proteinate",
-      "Manganese proteinate",
-      "Thiamine mononitrate",
+      "Vitamin & Mineral Premix",
     ],
     aafcoLifeStage: "adult",
     sourcing: [

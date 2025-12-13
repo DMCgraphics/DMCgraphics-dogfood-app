@@ -2,7 +2,7 @@ import { SimpleNavigation } from "@/components/simple-navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Leaf } from "lucide-react"
-import { mockRecipes } from "@/lib/nutrition-calculator"
+import { getAllRecipes } from "@/lib/recipes"
 
 export const metadata = {
   title: "Our Recipe Collection | NouriPet",
@@ -16,18 +16,20 @@ export const metadata = {
   },
 }
 
-export default function RecipesStandalonePage() {
-  const getRecipeImage = (recipeId: string) => {
+export default async function RecipesStandalonePage() {
+  const recipes = await getAllRecipes()
+
+  const getRecipeImage = (slug: string) => {
     const imageMap: Record<string, string> = {
       "beef-quinoa-harvest": "/images/recipes/beef-quinoa.png",
       "lamb-pumpkin-feast": "/images/recipes/lamb-pumpkin.png",
       "low-fat-chicken-garden-veggie": "/images/recipes/low-fat-chicken-garden-veggie.png",
       "turkey-brown-rice-comfort": "/images/recipes/turkey-brown-rice.png",
     }
-    return imageMap[recipeId] || "/placeholder.svg?height=300&width=400"
+    return imageMap[slug] || "/placeholder.svg?height=300&width=400"
   }
 
-  const sortedRecipes = [...mockRecipes].sort((a, b) => {
+  const sortedRecipes = [...recipes].sort((a, b) => {
     if (a.comingSoon && !b.comingSoon) return 1
     if (!a.comingSoon && b.comingSoon) return -1
     return 0
@@ -50,10 +52,10 @@ export default function RecipesStandalonePage() {
         {/* Recipes Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {sortedRecipes.map((recipe) => (
-            <Card key={recipe.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={recipe.slug} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="relative">
                 <img
-                  src={getRecipeImage(recipe.id) || "/placeholder.svg"}
+                  src={getRecipeImage(recipe.slug) || "/placeholder.svg"}
                   alt={recipe.name}
                   className="w-full h-48 object-cover"
                 />

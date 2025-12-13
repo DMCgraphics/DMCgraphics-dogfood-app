@@ -6,11 +6,15 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, ShoppingCart, Heart } from "lucide-react"
 import Link from "next/link"
-import { mockRecipes } from "@/lib/nutrition-calculator"
+import { getRecipeBySlug } from "@/lib/recipes"
+import { RecipeIngredientList } from "@/components/recipe-ingredient-list"
 import { NutrientTransparencyPanel } from "@/components/recipe/nutrient-transparency-panel"
 import { IngredientBreakdown } from "@/components/recipe/ingredient-breakdown"
 import { SourcingSustainability } from "@/components/recipe/sourcing-sustainability"
 import { getPackPortion } from "@/lib/pack-portioning"
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 interface RecipePageProps {
   params: {
@@ -18,21 +22,21 @@ interface RecipePageProps {
   }
 }
 
-export default function RecipePage({ params }: RecipePageProps) {
-  const recipe = mockRecipes.find((r) => r.id === params.id)
+export default async function RecipePage({ params }: RecipePageProps) {
+  const recipe = await getRecipeBySlug(params.id)
 
   if (!recipe) {
     notFound()
   }
 
-  const getRecipeImage = (recipeId: string) => {
+  const getRecipeImage = (slug: string) => {
     const imageMap: Record<string, string> = {
       "beef-quinoa-harvest": "/images/recipes/beef-quinoa.png",
       "lamb-pumpkin-feast": "/images/recipes/lamb-pumpkin.png",
       "low-fat-chicken-garden-veggie": "/images/recipes/low-fat-chicken-garden-veggie.png",
       "turkey-brown-rice-comfort": "/images/recipes/turkey-brown-rice.png",
     }
-    return imageMap[recipeId] || "/placeholder.svg?height=400&width=600"
+    return imageMap[slug] || "/placeholder.svg?height=400&width=600"
   }
 
   const sampleDailyGrams = 150 // Sample for medium dog
@@ -69,20 +73,24 @@ export default function RecipePage({ params }: RecipePageProps) {
                 )}
               </h1>
               <p className="text-lg text-muted-foreground">
-                {recipe.id === "low-fat-chicken-garden-veggie" ? (
+                {recipe.slug === "low-fat-chicken-garden-veggie" ? (
                   <>
-                    Specially formulated as a low-fat option for dogs prone to pancreatitis. 
-                    Protein comes from lean chicken breast and egg whites, with no added oils. 
-                    Balanced carbs and veggies support digestion and energy. Vacuum sealed packs made with {recipe.sourcing[0].split(",")[0]} ingredients.
+                    Specially formulated as a low-fat option for dogs prone to pancreatitis.
+                    Protein comes from lean chicken breast and egg whites, with no added oils.
+                    Balanced carbs and veggies support digestion and energy. Vacuum sealed packs made with {recipe.sourcing[0]?.split(",")[0] || "premium"} ingredients.
+                  </>
+                ) : recipe.description ? (
+                  <>
+                    {recipe.description} Vacuum sealed packs made with {recipe.sourcing[0]?.split(",")[0] || "premium"} ingredients. Nutritionally complete and
+                    balanced for {recipe.aafcoLifeStage === "all" ? "all life stages" : recipe.aafcoLifeStage} dogs.
                   </>
                 ) : (
                   <>
-                    Vacuum sealed packs made with {recipe.sourcing[0].split(",")[0]} ingredients. Nutritionally complete and
+                    Vacuum sealed packs made with {recipe.sourcing[0]?.split(",")[0] || "premium"} ingredients. Nutritionally complete and
                     balanced for {recipe.aafcoLifeStage === "all" ? "all life stages" : recipe.aafcoLifeStage} dogs.
                   </>
                 )}
-              </p>
-            </div>
+              </p>            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
@@ -134,7 +142,7 @@ export default function RecipePage({ params }: RecipePageProps) {
 
           <div className="relative">
             <img
-              src={getRecipeImage(recipe.id) || "/placeholder.svg?height=400&width=600"}
+              src={getRecipeImage(recipe.slug) || "/placeholder.svg?height=400&width=600"}
               alt={recipe.name}
               className="w-full h-96 object-cover rounded-2xl"
             />
@@ -145,33 +153,43 @@ export default function RecipePage({ params }: RecipePageProps) {
           </div>
         </div>
 
-        {/* Allergen Information */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold mb-2">Contains:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {recipe.allergens.map((allergen) => (
-                    <Badge key={allergen} variant="outline" className="capitalize">
-                      {allergen}
-                    </Badge>
-                  ))}
+        {/* Allergen and Ingredients Information */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="font-semibold mb-2">Contains:</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {recipe.allergens.map((allergen) => (
+                  <Badge key={allergen} variant="outline" className="capitalize">
+                    {allergen}
+                  </Badge>
+                ))}
+              </div>
+              <div className="pt-4 border-t">
+                <div className="text-sm font-medium mb-2">Free from:</div>
+                <div className="text-xs text-muted-foreground">
+                  Corn, wheat, soy, artificial preservatives
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-medium">Free from:</div>
-                <div className="text-xs text-muted-foreground">Corn, wheat, soy, artificial preservatives</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="font-semibold mb-3">Ingredients:</h3>
+              <RecipeIngredientList
+                ingredients={recipe.ingredients}
+                premixDetails={recipe.premixDetails}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <NutrientTransparencyPanel recipe={recipe} dailyAmount={150} />
-            <IngredientBreakdown recipeId={recipe.id} />
+            <IngredientBreakdown recipeId={recipe.slug} />
           </div>
 
           <div className="space-y-8">

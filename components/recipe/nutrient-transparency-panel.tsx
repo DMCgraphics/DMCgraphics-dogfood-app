@@ -7,7 +7,7 @@ import { Calculator, Info } from "lucide-react"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { aafcoStandards, getAAFCOCompliance, getComplianceColor, getComplianceBarColor } from "@/lib/aafco-standards"
-import type { Recipe } from "@/lib/nutrition-calculator"
+import type { Recipe } from "@/lib/recipes"
 
 interface NutrientTransparencyPanelProps {
   recipe: Recipe

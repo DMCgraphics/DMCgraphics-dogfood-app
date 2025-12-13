@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import type { MultiDogProfile, AIRecommendation } from "@/lib/multi-dog-types"
+import { mockRecipes } from "@/lib/nutrition-calculator"
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -114,6 +115,21 @@ function buildContext(dogProfile: MultiDogProfile, recommendation: AIRecommendat
   parts.push(`Confidence: ${recommendation.confidence}%`)
   parts.push(`Nutritional Focus: ${recommendation.nutritionalFocus.join(", ")}`)
   parts.push(`Reasoning: ${recommendation.reasoning}`)
+
+  // Look up the actual recipe to get ingredients
+  const recipeName = recommendation.recommendedRecipes[0]
+  const recipe = mockRecipes.find(r => r.name === recipeName)
+
+  if (recipe) {
+    parts.push(``)
+    parts.push(`Recipe Details for ${recipe.name}:`)
+    parts.push(`- Ingredients: ${recipe.ingredients.join(", ")}`)
+    parts.push(`- Calories: ${recipe.kcalPer100g} kcal per 100g`)
+    parts.push(`- Protein: ${recipe.protein}%`)
+    parts.push(`- Fat: ${recipe.fat}%`)
+    parts.push(`- Carbs: ${recipe.carbs}%`)
+    parts.push(`- Fiber: ${recipe.fiber}%`)
+  }
 
   return parts.join('\n')
 }

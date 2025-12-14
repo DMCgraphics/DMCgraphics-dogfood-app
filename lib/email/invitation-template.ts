@@ -87,7 +87,7 @@ export function generateInvitationEmailHTML(data: {
     <div class="divider"></div>
 
     <div class="footer">
-      If you didn't request this email or have questions, please contact us at <a href="mailto:support@nouripet.net">support@nouripet.net</a> or text <b>‪(475) 208-3769‬</b>.<br><br>
+      If you didn't request this email or have questions, please contact us at <a href="mailto:support@nouripet.net">support@nouripet.net</a> or text <b>‪(203) 208-6186‬</b>.<br><br>
       NouriPet • Fresh, local meals for happier dogs 🐶
     </div>
   </div>
@@ -124,7 +124,7 @@ What you'll get with your account:
 
 IMPORTANT: This invitation link expires on ${expirationDate}. Please set up your account before then to ensure uninterrupted access.
 
-If you didn't request this email or have questions, please contact us at support@nouripet.net or text (475) 208-3769.
+If you didn't request this email or have questions, please contact us at support@nouripet.net or text (203) 208-6186.
 
 NouriPet • Fresh, local meals for happier dogs 🐶`
 }

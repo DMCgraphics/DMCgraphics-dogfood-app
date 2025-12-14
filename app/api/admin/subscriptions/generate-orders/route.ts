@@ -104,10 +104,47 @@ export async function POST(req: Request) {
 
         // Get plan details and recipes
         const plan = subscription.plans as any
-        const snapshot = plan?.snapshot || {}
-        const recipes = snapshot.recipes || []
+        let snapshot = plan?.snapshot || {}
+        let recipes = snapshot.recipes || []
+        let totalCents = snapshot.total_cents || 0
+
+        // If pricing is missing, fetch from Stripe
+        if (!totalCents || totalCents === 0) {
+          try {
+            const { stripe } = await import("@/lib/stripe")
+            const stripeSub = await stripe.subscriptions.retrieve(
+              subscription.stripe_subscription_id
+            )
+            totalCents = stripeSub.items.data[0].price.unit_amount || 0
+            console.log(`[generate-orders] Fetched pricing from Stripe: $${totalCents / 100}`)
+          } catch (error) {
+            console.error('[generate-orders] Failed to fetch pricing from Stripe:', error)
+            // Fallback to default pricing
+            totalCents = 5000 // $50 default
+          }
+        }
+
+        // If recipes missing, fetch from plan_items
+        if (!recipes || recipes.length === 0) {
+          const { data: planItems } = await supabaseAdmin
+            .from("plan_items")
+            .select("qty, recipes(id, name, slug)")
+            .eq("plan_id", plan.id)
+
+          if (planItems && planItems.length > 0) {
+            recipes = planItems.map((item: any) => ({
+              recipe_id: item.recipes.id,
+              recipe_name: item.recipes.name,
+              name: item.recipes.name,
+              slug: item.recipes.slug,
+              quantity: item.qty || 1
+            }))
+            console.log(`[generate-orders] Fetched ${recipes.length} recipes from plan_items`)
+          }
+        }
+
         const recipeName = recipes.length > 0
-          ? recipes.map((r: any) => r.name).join(', ')
+          ? recipes.map((r: any) => r.name || r.recipe_name).join(', ')
           : 'Fresh Food Pack'
 
         // Calculate total quantity
@@ -127,12 +164,13 @@ export async function POST(req: Request) {
           delivery_zipcode: plan?.delivery_zipcode || '06902',
           estimated_delivery_date: targetDate.toISOString().split('T')[0],
           estimated_delivery_window: '9:00 AM - 5:00 PM',
-          total: snapshot.total_cents ? snapshot.total_cents / 100 : 50.00,
-          total_cents: snapshot.total_cents || 5000,
+          total: totalCents / 100,
+          total_cents: totalCents,
           recipes: recipes,
           recipe_name: recipeName,
           quantity: quantity || 14,
           is_subscription_order: true,
+          stripe_subscription_id: subscription.stripe_subscription_id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }

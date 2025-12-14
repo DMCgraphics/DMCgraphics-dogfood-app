@@ -157,6 +157,235 @@ export async function POST(req: Request) {
       )
     }
 
+    // Fetch Stripe subscription to get pricing
+    const { stripe } = await import("@/lib/stripe")
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      invitation.stripe_subscription_id,
+      { expand: ['items.data.price.product'] }
+    )
+
+    const stripePriceId = stripeSubscription.items.data[0].price.id
+    const totalCents = stripeSubscription.items.data[0].price.unit_amount || 0
+
+    // Check if user already has a plan with plan_items (from completing profile/plan builder)
+    const { data: existingPlans } = await supabase
+      .from("plans")
+      .select("id, status")
+      .eq("user_id", userId)
+      .in("status", ["draft", "checkout_in_progress"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+
+    let plan: any = null
+    let recipeData: any[] = []
+
+    if (existingPlans && existingPlans.length > 0) {
+      const existingPlan = existingPlans[0]
+
+      // Fetch plan_items with recipe data
+      const { data: existingPlanItems } = await supabase
+        .from("plan_items")
+        .select(`
+          id,
+          recipe_id,
+          qty,
+          meta,
+          recipes (id, name, slug)
+        `)
+        .eq("plan_id", existingPlan.id)
+
+      if (existingPlanItems && existingPlanItems.length > 0) {
+        // Extract recipes from plan_items.meta.recipe_variety
+        const firstItem = existingPlanItems[0]
+        const recipeVariety = firstItem.meta?.recipe_variety || []
+
+        if (recipeVariety.length > 0) {
+          // User completed plan builder - use their selected recipes
+          recipeData = recipeVariety
+          console.log(`[invitations] Found ${recipeData.length} recipes from plan builder`)
+        }
+
+        // Update the existing plan to active with pricing and subscription
+        const { data: updatedPlan } = await supabase
+          .from("plans")
+          .update({
+            status: "active",
+            total_cents: totalCents,
+            delivery_zipcode: invitation.metadata?.zipcode || null,
+            stripe_subscription_id: invitation.stripe_subscription_id,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingPlan.id)
+          .select()
+          .single()
+
+        plan = updatedPlan
+
+        // Update plan_items with pricing
+        if (recipeData.length > 0) {
+          const unitPrice = Math.floor(totalCents / recipeData.length)
+          for (const item of existingPlanItems) {
+            await supabase
+              .from("plan_items")
+              .update({
+                unit_price_cents: unitPrice,
+                stripe_price_id: stripePriceId,
+                billing_interval: stripeSubscription.items.data[0].price.recurring.interval
+              })
+              .eq("id", item.id)
+          }
+        }
+      }
+    }
+
+    // If no plan from plan builder, create new plan
+    if (!plan) {
+      console.log("[invitations] No existing plan found, creating new plan")
+
+      const { data: newPlan, error: planError } = await supabase
+        .from("plans")
+        .insert({
+          user_id: userId,
+          status: "active",
+          total_cents: totalCents,
+          delivery_zipcode: invitation.metadata?.zipcode || null,
+          stripe_subscription_id: invitation.stripe_subscription_id,
+          snapshot: {
+            total_cents: totalCents,
+            recipes: [],
+            billing_cycle: subscriptionData.billing_cycle
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (planError) {
+        console.error("[invitations] Error creating plan:", planError)
+      } else {
+        plan = newPlan
+
+        // Try to get recipes from invitation metadata or Stripe
+        const recipeMetadata = invitation.metadata?.recipes ||
+          stripeSubscription.items.data[0].price.product.metadata?.recipes
+
+        if (recipeMetadata) {
+          let recipeNames: string[] = []
+
+          if (typeof recipeMetadata === 'string') {
+            try {
+              const parsed = JSON.parse(recipeMetadata)
+              recipeNames = Array.isArray(parsed) ? parsed.map(r => r.name || r) : [parsed]
+            } catch {
+              recipeNames = [recipeMetadata]
+            }
+          } else if (Array.isArray(recipeMetadata)) {
+            recipeNames = recipeMetadata.map(r => r.name || r)
+          }
+
+          if (recipeNames.length > 0) {
+            // Fetch recipe IDs from names
+            const { data: recipes } = await supabase
+              .from("recipes")
+              .select("id, name, slug")
+              .in("name", recipeNames)
+
+            if (recipes && recipes.length > 0) {
+              recipeData = recipes
+
+              // Create plan_items for each recipe
+              const unitPrice = Math.floor(totalCents / recipes.length)
+              const planItems = recipes.map((recipe: any) => ({
+                plan_id: plan.id,
+                recipe_id: recipe.id,
+                qty: 1,
+                unit_price_cents: unitPrice,
+                stripe_price_id: stripePriceId,
+                billing_interval: stripeSubscription.items.data[0].price.recurring.interval,
+                meta: {
+                  recipe_variety: recipes.map(r => ({
+                    id: r.id,
+                    name: r.name,
+                    slug: r.slug
+                  }))
+                }
+              }))
+
+              await supabase.from("plan_items").insert(planItems)
+              console.log(`[invitations] Created ${planItems.length} plan items from metadata`)
+            }
+          }
+        }
+      }
+    }
+
+    if (plan) {
+      // Link subscription to plan
+      await supabase
+        .from("subscriptions")
+        .update({
+          plan_id: plan.id,
+          current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString()
+        })
+        .eq("id", subscription.id)
+
+      console.log(`[invitations] Linked subscription ${subscription.id} to plan ${plan.id}`)
+
+      // Create initial order with recipe data
+      const deliveryDate = new Date()
+      deliveryDate.setDate(deliveryDate.getDate() + 1) // Tomorrow
+
+      const recipesForOrder = recipeData.map((r: any) => ({
+        recipe_id: r.id,
+        recipe_name: r.name,
+        name: r.name,
+        slug: r.slug,
+        quantity: 1
+      }))
+
+      const { data: order } = await supabase
+        .from("orders")
+        .insert({
+          user_id: userId,
+          order_number: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+          order_type: 'subscription',
+          status: 'paid',
+          fulfillment_status: 'looking_for_driver',
+          delivery_method: 'local_delivery',
+          delivery_zipcode: invitation.metadata?.zipcode || plan.delivery_zipcode || '06902',
+          estimated_delivery_date: deliveryDate.toISOString().split('T')[0],
+          estimated_delivery_window: '9:00 AM - 5:00 PM',
+          total_cents: totalCents,
+          total: totalCents / 100,
+          recipes: recipesForOrder,
+          recipe_name: recipesForOrder.map(r => r.name).join(', '),
+          is_subscription_order: true,
+          stripe_subscription_id: invitation.stripe_subscription_id,
+          tracking_token: crypto.randomUUID().replace(/-/g, ''),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (order) {
+        // Create tracking event
+        await supabase.from('delivery_tracking_events').insert({
+          order_id: order.id,
+          event_type: 'looking_for_driver',
+          description: 'Subscription order received. Looking for an available driver.',
+          metadata: {
+            subscription_id: subscription.id,
+            stripe_subscription_id: invitation.stripe_subscription_id
+          },
+          created_at: new Date().toISOString()
+        })
+        console.log(`[invitations] Created order ${order.order_number} for subscription`)
+      }
+    }
+
     // Mark invitation as claimed
     const { error: updateError } = await supabase
       .from("subscription_invitations")

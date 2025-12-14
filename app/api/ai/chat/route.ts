@@ -76,9 +76,30 @@ CRITICAL: When discussing recipe ingredients, you MUST ONLY mention ingredients 
 
     const answer = message.content[0].type === "text" ? message.content[0].text : ""
 
+    // Track AI costs
+    const inputTokens = message.usage.input_tokens
+    const outputTokens = message.usage.output_tokens
+    // Claude Haiku pricing: $0.25 per MTok input, $1.25 per MTok output
+    const estimatedCost = (inputTokens / 1_000_000) * 0.25 + (outputTokens / 1_000_000) * 1.25
+
+    // Save cost tracking to database
+    try {
+      await supabaseAdmin.from("ai_token_usage").insert({
+        feature: "ai_chat",
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        estimated_cost: estimatedCost,
+        llm_used: true,
+        cached: false,
+      })
+    } catch (trackError) {
+      console.error("[AI Chat] Failed to track cost:", trackError)
+      // Don't fail the request if tracking fails
+    }
+
     return NextResponse.json({
       answer,
-      tokensUsed: message.usage.input_tokens + message.usage.output_tokens,
+      tokensUsed: inputTokens + outputTokens,
     })
   } catch (error) {
     console.error("[AI Chat] Error:", error)

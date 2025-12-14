@@ -37,10 +37,10 @@ export async function PUT(
       return NextResponse.json({ error: "At least one recipe required" }, { status: 400 })
     }
 
-    // Get plan details
+    // Get plan details including snapshot
     const { data: plan } = await supabaseAdmin
       .from("plans")
-      .select("total_cents, stripe_subscription_id")
+      .select("total_cents, stripe_subscription_id, snapshot")
       .eq("id", planId)
       .single()
 
@@ -48,15 +48,36 @@ export async function PUT(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 })
     }
 
-    // Get existing plan item for Stripe info
-    const { data: existingItem } = await supabaseAdmin
-      .from("plan_items")
-      .select("stripe_price_id, billing_interval")
-      .eq("plan_id", planId)
-      .limit(1)
-      .maybeSingle()
+    // Get correct total_cents (prefer snapshot if top-level is 0)
+    let totalCents = plan.total_cents || 0
+    if (totalCents === 0 && plan.snapshot?.total_cents) {
+      totalCents = plan.snapshot.total_cents
+    }
 
-    // Delete existing plan_items
+    // Get Stripe price ID from subscription (not from plan_items that we're about to delete!)
+    let stripePriceId: string | null = null
+    let billingInterval = 'week'
+
+    if (plan.stripe_subscription_id) {
+      try {
+        const { stripe } = await import("@/lib/stripe")
+        const stripeSub = await stripe.subscriptions.retrieve(plan.stripe_subscription_id)
+        stripePriceId = stripeSub.items.data[0].price.id
+        billingInterval = stripeSub.items.data[0].price.recurring?.interval || 'week'
+
+        // If still no totalCents, get it from Stripe
+        if (totalCents === 0) {
+          totalCents = stripeSub.items.data[0].price.unit_amount || 0
+        }
+      } catch (error) {
+        console.error("Failed to fetch Stripe subscription:", error)
+        if (totalCents === 0) {
+          return NextResponse.json({ error: "Could not determine plan pricing" }, { status: 500 })
+        }
+      }
+    }
+
+    // Delete existing plan_items (after we have stripe_price_id!)
     await supabaseAdmin
       .from("plan_items")
       .delete()
@@ -72,15 +93,15 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid recipe IDs" }, { status: 400 })
     }
 
-    // Create new plan_items
-    const unitPrice = Math.floor((plan.total_cents || 0) / recipes.length)
+    // Calculate unit price using CORRECT total_cents
+    const unitPrice = Math.floor(totalCents / recipes.length)
     const newPlanItems = recipes.map(recipe => ({
       plan_id: planId,
       recipe_id: recipe.id,
       qty: 1,
       unit_price_cents: unitPrice,
-      stripe_price_id: existingItem?.stripe_price_id || null,
-      billing_interval: existingItem?.billing_interval || 'week',
+      stripe_price_id: stripePriceId,
+      billing_interval: billingInterval,
       meta: {
         recipe_variety: recipes.map(r => ({
           id: r.id,
@@ -99,13 +120,13 @@ export async function PUT(
       return NextResponse.json({ error: "Failed to update recipes" }, { status: 500 })
     }
 
-    // Update plan with snapshot and ensure total_cents is preserved
+    // Update plan with snapshot and PRESERVE correct total_cents
     await supabaseAdmin
       .from("plans")
       .update({
-        total_cents: plan.total_cents, // Preserve the total_cents at top level
+        total_cents: totalCents, // Use the CORRECT value we determined above!
         snapshot: {
-          total_cents: plan.total_cents,
+          total_cents: totalCents,
           billing_cycle: 'every_2_weeks',
           recipes: recipes.map(r => ({
             id: r.id,

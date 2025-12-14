@@ -296,14 +296,31 @@ export function OrdersTable({ orders }: OrdersTableProps) {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {isIndividualPack
-                        ? dog?.name
-                          ? `${order.product_type === '3-packs' ? '3-Pack' : 'Individual Pack'} Purchase for ${dog.name}`
-                          : `${order.product_type === '3-packs' ? '3-Pack' : 'Individual Pack'} Purchase`
-                        : isTopper
-                          ? `Topper Subscription for ${dog?.name || "Unknown Dog"}`
-                          : `Full Meal Plan for ${dog?.name || "Unknown Dog"}`}
+                    <CardTitle className="flex items-center gap-2 flex-wrap">
+                      <span className="text-lg font-medium">
+                        {isIndividualPack
+                          ? dog?.name
+                            ? `${order.product_type === '3-packs' ? '3-Pack' : 'Individual Pack'} Purchase for ${dog.name}`
+                            : `${order.product_type === '3-packs' ? '3-Pack' : 'Individual Pack'} Purchase`
+                          : isTopper
+                            ? `Topper Subscription for ${dog?.name || "Unknown Dog"}`
+                            : `Subscription for ${dog?.name || "Unknown Dog"}`}
+                      </span>
+                      {!isIndividualPack && !isTopper && (
+                        <Badge className="bg-green-100 text-green-800">
+                          Full Meal Plan
+                        </Badge>
+                      )}
+                      {isTopper && (
+                        <Badge className="bg-purple-100 text-purple-800">
+                          {order.topper_level}% Topper
+                        </Badge>
+                      )}
+                      {isIndividualPack && (
+                        <Badge className="bg-blue-100 text-blue-800">
+                          One-Time Purchase
+                        </Badge>
+                      )}
                       <Badge
                         className={
                           order.status === "active"
@@ -317,16 +334,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                       >
                         {order.status}
                       </Badge>
-                      {isTopper && (
-                        <Badge className="bg-purple-100 text-purple-800">
-                          {order.topper_level}% Topper
-                        </Badge>
-                      )}
-                      {isIndividualPack && (
-                        <Badge className="bg-blue-100 text-blue-800">
-                          One-Time Purchase
-                        </Badge>
-                      )}
                     </CardTitle>
                     <CardDescription>
                       Customer: {profile?.full_name || "Unknown"}
@@ -337,27 +344,30 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                     </CardDescription>
                   </div>
                   <div className="text-right">
-                    {!isTopper && !isIndividualPack && (
-                      <>
-                        <div className="text-2xl font-bold">
-                          ${((order.total_cents || 0) / 100).toFixed(2)}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {order.snapshot?.billing_cycle === 'every_2_weeks' ? 'every 2 weeks' : 'per week'}
-                        </div>
-                      </>
-                    )}
-                    {isTopper && (
-                      <Badge className="bg-purple-50 text-purple-700 text-sm">
-                        Bi-weekly Subscription
-                      </Badge>
-                    )}
-                    {isIndividualPack && (
+                    {isIndividualPack ? (
                       <>
                         <div className="text-2xl font-bold">
                           ${((order.total_cents || 0) / 100).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-600">one-time</div>
+                      </>
+                    ) : isTopper ? (
+                      <>
+                        <div className="text-2xl font-bold text-purple-600">
+                          ${((order.total_cents || 0) / 100).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {order.billing_interval === 'week' ? 'weekly' : 'every 2 weeks'}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold">
+                          ${((order.total_cents || order.snapshot?.total_cents || 0) / 100).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {order.snapshot?.billing_cycle === 'every_2_weeks' ? 'every 2 weeks' : 'per week'}
+                        </div>
                       </>
                     )}
                   </div>

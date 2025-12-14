@@ -37,6 +37,29 @@ async function getOrders() {
   console.log("[ADMIN ORDERS] Fetched topper subscriptions:", topperSubscriptions?.length || 0)
   console.log("[ADMIN ORDERS] Topper data:", JSON.stringify(topperSubscriptions, null, 2))
 
+  // Enrich topper subscriptions with pricing from Stripe
+  const enrichedTopperSubscriptions = await Promise.all(
+    (topperSubscriptions || []).map(async (sub) => {
+      try {
+        const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id)
+        const totalCents = stripeSub.items.data[0].price.unit_amount || 0
+
+        return {
+          ...sub,
+          total_cents: totalCents,
+          billing_interval: stripeSub.items.data[0].price.recurring?.interval || 'week'
+        }
+      } catch (error) {
+        console.error(`Failed to fetch Stripe data for ${sub.stripe_subscription_id}:`, error)
+        return {
+          ...sub,
+          total_cents: 0,
+          billing_interval: 'week'
+        }
+      }
+    })
+  )
+
   // Collect all dog IDs and user IDs
   const dogIds = new Set<string>()
   const userIds = new Set<string>()
@@ -46,7 +69,7 @@ async function getOrders() {
     if (plan.user_id) userIds.add(plan.user_id)
   })
 
-  topperSubscriptions?.forEach(sub => {
+  enrichedTopperSubscriptions?.forEach(sub => {
     if (sub.metadata?.dog_id) dogIds.add(sub.metadata.dog_id)
     if (sub.user_id) userIds.add(sub.user_id)
   })
@@ -135,7 +158,7 @@ async function getOrders() {
   }))
 
   // Combine topper-based orders
-  const topperOrders = (topperSubscriptions || []).map(sub => {
+  const topperOrders = (enrichedTopperSubscriptions || []).map(sub => {
     const dogId = sub.metadata?.dog_id
     const dog = dogs?.find(d => d.id === dogId) || null
     const profile = profiles?.find(p => p.id === sub.user_id) || null
@@ -152,7 +175,8 @@ async function getOrders() {
       dog_id: dogId,
       topper_level: sub.metadata?.product_type?.replace("topper-", "") || "25",
       delivery_zipcode: deliveryZipcode,
-      total_cents: null, // Will be calculated from Stripe
+      total_cents: sub.total_cents,
+      billing_interval: sub.billing_interval,
       plan_items: [],
       dogs: dog,
       subscriptions: [sub],

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { Package, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
+import { Package, Calendar, ChevronLeft, ChevronRight, Edit } from "lucide-react"
+import { EditSubscriptionRecipesDialog } from "@/components/admin/edit-subscription-recipes-dialog"
 
 interface OrdersTableProps {
   orders: any[]
@@ -15,6 +16,8 @@ interface OrdersTableProps {
 
 export function OrdersTable({ orders }: OrdersTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [editRecipesOpen, setEditRecipesOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<any>(null)
   const [filters, setFilters] = useState({
     zipcode: "",
     breed: "all",
@@ -430,7 +433,21 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                   {/* Recipe Details - only for plans */}
                   {!isTopper && planItems.length > 0 && (
                     <div className="border-t pt-4">
-                      <div className="text-sm font-medium mb-2">Recipes:</div>
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="text-sm font-medium">Recipes:</div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPlan(order)
+                            setEditRecipesOpen(true)
+                          }}
+                          className="h-7"
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
                       <div className="space-y-1">
                         {planItems.map((item: any) => {
                           // Check if this plan item has multiple recipes in metadata
@@ -440,27 +457,18 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                           return (
                             <div key={item.id} className="text-sm text-gray-600">
                               {hasVariety ? (
-                                // Multiple recipes - show all from metadata
+                                // Multiple recipes - show all from metadata (no pricing for subscriptions)
                                 <div>
-                                  <div className="flex justify-between mb-1">
-                                    <span className="font-medium">Recipe Variety:</span>
-                                    <span className="font-medium">
-                                      ${((item.unit_price_cents || 0) / 100).toFixed(2)} × {item.qty}
-                                    </span>
-                                  </div>
                                   {recipeVariety.map((recipe: any, idx: number) => (
-                                    <div key={idx} className="ml-4">
+                                    <div key={idx}>
                                       • {recipe.name}
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                // Single recipe - show normally
-                                <div className="flex justify-between">
-                                  <span>• {item.recipes?.name || "Unknown recipe"}</span>
-                                  <span className="font-medium">
-                                    ${((item.unit_price_cents || 0) / 100).toFixed(2)} × {item.qty}
-                                  </span>
+                                // Single recipe - show without pricing for subscriptions
+                                <div>
+                                  • {item.recipes?.name || "Unknown recipe"}
                                 </div>
                               )}
                             </div>
@@ -564,6 +572,23 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             <p className="text-gray-600">No orders found matching your filters</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Edit Recipes Dialog */}
+      {selectedPlan && (
+        <EditSubscriptionRecipesDialog
+          open={editRecipesOpen}
+          onOpenChange={setEditRecipesOpen}
+          planId={selectedPlan.id}
+          userId={selectedPlan.user_id}
+          currentRecipes={selectedPlan.plan_items
+            ?.map((item: any) => item.recipes)
+            .filter(Boolean) || []}
+          onSuccess={() => {
+            // Refresh the page to show updated recipes
+            window.location.reload()
+          }}
+        />
       )}
     </div>
   )

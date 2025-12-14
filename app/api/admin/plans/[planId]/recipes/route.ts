@@ -105,6 +105,7 @@ export async function PUT(
       .update({
         snapshot: {
           total_cents: plan.total_cents,
+          billing_cycle: 'every_2_weeks',
           recipes: recipes.map(r => ({
             id: r.id,
             name: r.name,

@@ -242,10 +242,29 @@ export async function POST(req: Request) {
     if (!plan) {
       console.log("[invitations] No existing plan found, creating new plan")
 
+      // Get user's dog_id
+      const { data: dog } = await supabase
+        .from("dogs")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle()
+
+      if (!dog) {
+        console.error(`[invitations] No dog found for user ${userId}`)
+        return NextResponse.json(
+          { error: "No dog profile found. Please complete your dog's profile first." },
+          { status: 400 }
+        )
+      }
+
+      console.log(`[invitations] Found dog ${dog.id} for user ${userId}`)
+
       const { data: newPlan, error: planError } = await supabase
         .from("plans")
         .insert({
           user_id: userId,
+          dog_id: dog.id,
           status: "active",
           total_cents: totalCents,
           delivery_zipcode: invitation.metadata?.zipcode || null,

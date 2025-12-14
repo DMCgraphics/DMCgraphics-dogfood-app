@@ -67,11 +67,32 @@ export async function POST(req: Request) {
 
         const totalCents = stripeSub.items.data[0].price.unit_amount || 0
 
+        // Get user's dog_id
+        const { data: dog } = await supabaseAdmin
+          .from("dogs")
+          .select("id")
+          .eq("user_id", sub.user_id)
+          .limit(1)
+          .maybeSingle()
+
+        if (!dog) {
+          console.error(`[backfill] No dog found for user ${sub.user_id}`)
+          results.failed++
+          results.errors.push({
+            subscription_id: sub.id,
+            error: `No dog found for user ${sub.user_id}`
+          })
+          continue
+        }
+
+        console.log(`[backfill] Found dog ${dog.id} for user ${sub.user_id}`)
+
         // Create plan
         const { data: plan, error: planError } = await supabaseAdmin
           .from("plans")
           .insert({
             user_id: sub.user_id,
+            dog_id: dog.id,
             status: sub.status === 'active' ? 'active' : 'inactive',
             total_cents: totalCents,
             delivery_zipcode: sub.metadata?.zipcode || null,

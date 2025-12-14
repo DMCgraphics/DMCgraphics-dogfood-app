@@ -38,11 +38,27 @@ async function backfillClaimedSubscriptions() {
 
       const totalCents = stripeSub.items.data[0].price.unit_amount || 0
 
+      // Get user's dog_id
+      const { data: dog } = await supabase
+        .from("dogs")
+        .select("id")
+        .eq("user_id", sub.user_id)
+        .limit(1)
+        .maybeSingle()
+
+      if (!dog) {
+        console.error(`[backfill] No dog found for user ${sub.user_id}`)
+        continue
+      }
+
+      console.log(`[backfill] Found dog ${dog.id} for user ${sub.user_id}`)
+
       // Create plan
       const { data: plan, error: planError } = await supabase
         .from("plans")
         .insert({
           user_id: sub.user_id,
+          dog_id: dog.id,
           status: sub.status === 'active' ? 'active' : 'inactive',
           total_cents: totalCents,
           delivery_zipcode: sub.metadata?.zipcode || null,

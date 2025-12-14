@@ -339,7 +339,9 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         <div className="text-2xl font-bold">
                           ${((order.total_cents || 0) / 100).toFixed(2)}
                         </div>
-                        <div className="text-sm text-gray-600">per week</div>
+                        <div className="text-sm text-gray-600">
+                          {order.snapshot?.billing_cycle === 'every_2_weeks' ? 'every 2 weeks' : 'per week'}
+                        </div>
                       </>
                     )}
                     {isTopper && (

@@ -99,10 +99,11 @@ export async function PUT(
       return NextResponse.json({ error: "Failed to update recipes" }, { status: 500 })
     }
 
-    // Update plan snapshot
+    // Update plan with snapshot and ensure total_cents is preserved
     await supabaseAdmin
       .from("plans")
       .update({
+        total_cents: plan.total_cents, // Preserve the total_cents at top level
         snapshot: {
           total_cents: plan.total_cents,
           billing_cycle: 'every_2_weeks',

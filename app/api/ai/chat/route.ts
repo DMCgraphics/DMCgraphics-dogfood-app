@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import type { MultiDogProfile, AIRecommendation } from "@/lib/multi-dog-types"
-import { mockRecipes } from "@/lib/nutrition-calculator"
+import { supabaseAdmin } from "@/lib/supabase/server"
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build context about the dog and recommendation
-    const context = buildContext(dogProfile, recommendation)
+    const context = await buildContext(dogProfile, recommendation)
 
     // Convert messages to Anthropic format
     const anthropicMessages: any[] = []
@@ -68,7 +68,9 @@ Guidelines:
 - Focus on practical, helpful advice
 - Reference specific details from their dog's profile when relevant
 - If asked about medical concerns, remind them to consult their vet
-- Stay positive and encouraging!`,
+- Stay positive and encouraging!
+
+CRITICAL: When discussing recipe ingredients, you MUST ONLY mention ingredients that are explicitly listed in the "Recipe Details" section above. DO NOT mention, suggest, or imply the presence of any ingredients that are not in the provided list. If asked about ingredients not in the list, clearly state they are not included in this recipe.`,
       messages: anthropicMessages,
     })
 
@@ -91,7 +93,7 @@ Guidelines:
   }
 }
 
-function buildContext(dogProfile: MultiDogProfile, recommendation: AIRecommendation): string {
+async function buildContext(dogProfile: MultiDogProfile, recommendation: AIRecommendation): Promise<string> {
   const parts = [
     `Dog Profile:`,
     `- Name: ${dogProfile.name}`,
@@ -116,19 +118,21 @@ function buildContext(dogProfile: MultiDogProfile, recommendation: AIRecommendat
   parts.push(`Nutritional Focus: ${recommendation.nutritionalFocus.join(", ")}`)
   parts.push(`Reasoning: ${recommendation.reasoning}`)
 
-  // Look up the actual recipe to get ingredients
+  // Fetch the actual recipe from the database
   const recipeName = recommendation.recommendedRecipes[0]
-  const recipe = mockRecipes.find(r => r.name === recipeName)
+  const { data: recipe } = await supabaseAdmin
+    .from("recipes")
+    .select("*")
+    .eq("name", recipeName)
+    .single()
 
   if (recipe) {
     parts.push(``)
     parts.push(`Recipe Details for ${recipe.name}:`)
     parts.push(`- Ingredients: ${recipe.ingredients.join(", ")}`)
-    parts.push(`- Calories: ${recipe.kcalPer100g} kcal per 100g`)
-    parts.push(`- Protein: ${recipe.protein}%`)
-    parts.push(`- Fat: ${recipe.fat}%`)
-    parts.push(`- Carbs: ${recipe.carbs}%`)
-    parts.push(`- Fiber: ${recipe.fiber}%`)
+    parts.push(`- Protein: ${recipe.macros.protein}%`)
+    parts.push(`- Fat: ${recipe.macros.fat}%`)
+    parts.push(`- Carbs: ${recipe.macros.carbs}%`)
   }
 
   return parts.join('\n')

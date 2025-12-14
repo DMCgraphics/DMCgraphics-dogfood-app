@@ -148,7 +148,7 @@ export function AIChat({ dogProfile, recommendation }: AIChatProps) {
         </form>
 
         <p className="text-xs text-muted-foreground italic">
-          I'm here to answer questions about ingredients, portion sizes, and nutrition for {dogProfile.name}!
+          I'm Nouri! Ask me about any of our recipes, ingredients, portion sizes, and nutrition for {dogProfile.name}!
         </p>
       </CardContent>
     </Card>

@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       model: "claude-3-haiku-20240307",
       max_tokens: 400,
       temperature: 0.7,
-      system: `You are a friendly, knowledgeable pet nutrition assistant. You're having a conversation with a dog owner about their dog's meal plan.
+      system: `You are Nouri, a friendly and knowledgeable pet nutrition assistant from NouriPet. You're having a conversation with a dog owner about their dog's meal plan and nutrition.
 
 ${context}
 
@@ -67,10 +67,12 @@ Guidelines:
 - Keep answers to 2-3 sentences
 - Focus on practical, helpful advice
 - Reference specific details from their dog's profile when relevant
+- You can answer questions about ANY of the recipes listed above, not just the recommended one
+- If asked to compare recipes, reference the specific ingredients and macros provided
 - If asked about medical concerns, remind them to consult their vet
 - Stay positive and encouraging!
 
-CRITICAL: When discussing recipe ingredients, you MUST ONLY mention ingredients that are explicitly listed in the "Recipe Details" section above. DO NOT mention, suggest, or imply the presence of any ingredients that are not in the provided list. If asked about ingredients not in the list, clearly state they are not included in this recipe.`,
+CRITICAL: When discussing recipe ingredients, you MUST ONLY mention ingredients that are explicitly listed in the "Available Recipes" section above. DO NOT mention, suggest, or imply the presence of any ingredients that are not in the provided lists. If asked about ingredients not in the list, clearly state they are not included in that recipe.`,
       messages: anthropicMessages,
     })
 
@@ -139,21 +141,25 @@ async function buildContext(dogProfile: MultiDogProfile, recommendation: AIRecom
   parts.push(`Nutritional Focus: ${recommendation.nutritionalFocus.join(", ")}`)
   parts.push(`Reasoning: ${recommendation.reasoning}`)
 
-  // Fetch the actual recipe from the database
-  const recipeName = recommendation.recommendedRecipes[0]
-  const { data: recipe } = await supabaseAdmin
+  // Fetch ALL recipes from the database so AI can answer questions about any recipe
+  const { data: allRecipes } = await supabaseAdmin
     .from("recipes")
     .select("*")
-    .eq("name", recipeName)
-    .single()
+    .eq("is_active", true)
+    .order("name")
 
-  if (recipe) {
+  if (allRecipes && allRecipes.length > 0) {
     parts.push(``)
-    parts.push(`Recipe Details for ${recipe.name}:`)
-    parts.push(`- Ingredients: ${recipe.ingredients.join(", ")}`)
-    parts.push(`- Protein: ${recipe.macros.protein}%`)
-    parts.push(`- Fat: ${recipe.macros.fat}%`)
-    parts.push(`- Carbs: ${recipe.macros.carbs}%`)
+    parts.push(`Available Recipes:`)
+
+    allRecipes.forEach(recipe => {
+      parts.push(``)
+      parts.push(`${recipe.name}${recipe.name === recommendation.recommendedRecipes[0] ? ' (RECOMMENDED for this dog)' : ''}:`)
+      parts.push(`- Ingredients: ${recipe.ingredients.join(", ")}`)
+      parts.push(`- Protein: ${recipe.macros.protein}%`)
+      parts.push(`- Fat: ${recipe.macros.fat}%`)
+      parts.push(`- Carbs: ${recipe.macros.carbs}%`)
+    })
   }
 
   return parts.join('\n')

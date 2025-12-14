@@ -30,7 +30,7 @@ export function EditSubscriptionRecipesDialog({
   onSuccess
 }: EditSubscriptionRecipesDialogProps) {
   const [selectedRecipes, setSelectedRecipes] = useState<string[]>(
-    currentRecipes.map(r => r.id)
+    currentRecipes.map(r => r.id).filter(Boolean)
   )
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(false)

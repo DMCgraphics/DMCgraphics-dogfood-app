@@ -459,31 +459,34 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         </Button>
                       </div>
                       <div className="space-y-1">
-                        {planItems.map((item: any) => {
-                          // Check if this plan item has multiple recipes in metadata
-                          const recipeVariety = item.meta?.recipe_variety
-                          const hasVariety = recipeVariety && recipeVariety.length > 1
+                        {(() => {
+                          // Get unique recipes from plan items
+                          const firstItem = planItems[0]
+                          const recipeVariety = firstItem?.meta?.recipe_variety
 
-                          return (
-                            <div key={item.id} className="text-sm text-gray-600">
-                              {hasVariety ? (
-                                // Multiple recipes - show all from metadata (no pricing for subscriptions)
-                                <div>
-                                  {recipeVariety.map((recipe: any, idx: number) => (
-                                    <div key={idx}>
-                                      • {recipe.name}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                // Single recipe - show without pricing for subscriptions
-                                <div>
-                                  • {item.recipes?.name || "Unknown recipe"}
-                                </div>
-                              )}
+                          // If recipe_variety exists, use it (contains all recipes)
+                          if (recipeVariety && recipeVariety.length > 0) {
+                            return recipeVariety.map((recipe: any, idx: number) => (
+                              <div key={idx} className="text-sm text-gray-600">
+                                • {recipe.name}
+                              </div>
+                            ))
+                          }
+
+                          // Otherwise, get unique recipes from individual plan items
+                          const uniqueRecipes = new Map()
+                          planItems.forEach((item: any) => {
+                            if (item.recipes?.id) {
+                              uniqueRecipes.set(item.recipes.id, item.recipes.name)
+                            }
+                          })
+
+                          return Array.from(uniqueRecipes.values()).map((name: string, idx: number) => (
+                            <div key={idx} className="text-sm text-gray-600">
+                              • {name}
                             </div>
-                          )
-                        })}
+                          ))
+                        })()}
                       </div>
                     </div>
                   )}

@@ -131,7 +131,7 @@ export const mockRecipes: Recipe[] = [
   {
     id: "beef-quinoa-harvest",
     name: "Beef & Quinoa Harvest",
-    kcalPer100g: 157,
+    kcalPer100g: 138.5, // 39.27 kcal/oz × 28.35g/oz = 1113 kcal/kg = 111.3 kcal/100g (cooked ~138.5)
     protein: 35,
     fat: 18,
     carbs: 21,
@@ -166,7 +166,7 @@ export const mockRecipes: Recipe[] = [
   {
     id: "lamb-pumpkin-feast",
     name: "Lamb & Pumpkin Feast",
-    kcalPer100g: 152,
+    kcalPer100g: 130, // 36.85 kcal/oz × 28.35g/oz = 1045 kcal/kg = 104.5 kcal/100g (cooked ~130)
     protein: 33,
     fat: 16,
     carbs: 21,

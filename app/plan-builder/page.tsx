@@ -1744,17 +1744,22 @@ function PlanBuilderContent() {
           lifeStage: dogData.dogProfile.lifeStage || "adult" as const
         }
         const der = calculateDERFromProfile(dogProfile)
-        const caloriesPer100g = 175 // Realistic calories per 100g of fresh dog food
+
+        // Use actual recipe calories from database (nutritionist-approved values)
+        const caloriesPer100g = primaryRecipeData.kcal_per_100g || 130
         const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
 
-        // Calculate monthly grams (30 days)
+        // Calculate biweekly grams (14 days) - this is our delivery period
+        const biweeklyGrams = dailyGrams * 14
         const monthlyGrams = dailyGrams * 30
 
-        // Round up to nearest 100g pack size for shipping efficiency
-        const sizeG = Math.ceil(monthlyGrams / 100) * 100
+        // Round up to nearest 8oz (227g) pack for standard packaging
+        const packSizeGrams = 227 // 8oz standard pack size
+        const packsNeeded = Math.ceil(biweeklyGrams / packSizeGrams)
+        const sizeG = packsNeeded * packSizeGrams
 
         console.log(
-          `[v0] Calculated portions for ${dogData.dogProfile.name}: ${dailyGrams}g/day, ${monthlyGrams}g/month, ${sizeG}g package size`,
+          `[v0] Calculated portions for ${dogData.dogProfile.name}: ${dailyGrams.toFixed(1)}g/day (${der.toFixed(0)} kcal), biweekly: ${biweeklyGrams.toFixed(0)}g (${packsNeeded} × 8oz packs = ${sizeG}g total)`,
         )
 
         console.log(`[v0] Creating plan item for dog ${i + 1} with primary recipe ${primaryRecipeId}...`)
@@ -1767,7 +1772,7 @@ function PlanBuilderContent() {
             dog_id: dogDbData.id,
             recipe_id: primaryRecipeData.id, // Use primary recipe UUID
             qty: 1,
-            size_g: sizeG * 2, // Double the size for biweekly delivery
+            size_g: sizeG, // Already calculated for biweekly (14-day) delivery in 8oz packs
             billing_interval: "week",
             stripe_price_id: stripePricing?.priceId,
             unit_price_cents: stripePricing?.amountCents || 5800,
@@ -1778,10 +1783,13 @@ function PlanBuilderContent() {
               weight_unit: weightUnit,
               daily_grams: dailyGrams,
               monthly_grams: monthlyGrams,
-              biweekly_grams: monthlyGrams / 30 * 14, // 2 weeks worth
+              biweekly_grams: biweeklyGrams,
+              packs_needed: packsNeeded,
+              pack_size_grams: packSizeGrams,
               billing_interval_count: 2, // Biweekly = every 2 weeks
               activity_level: dogData.dogProfile.activity,
               calculated_calories: Math.round(der),
+              recipe_kcal_per_100g: caloriesPer100g,
               stripe_product_name: stripePricing?.productName,
               // Store ALL selected recipes as variety options
               recipe_variety: allRecipeData.map(r => ({

@@ -6,7 +6,10 @@ export const revalidate = 0
 
 async function getIncompleteOrders() {
   // Get incomplete orders: checkout_in_progress OR missing delivery details
-  const { data: orders, error } = await supabaseAdmin
+  // Using two separate queries and merging to avoid PostgREST syntax issues
+
+  // Query 1: checkout_in_progress orders
+  const { data: checkoutOrders, error: checkoutError } = await supabaseAdmin
     .from("orders")
     .select(`
       *,
@@ -16,16 +19,44 @@ async function getIncompleteOrders() {
         email
       )
     `)
-    .or(`status.eq.checkout_in_progress,and(stripe_subscription_id.not.is.null,delivery_zipcode.is.null)`)
+    .eq("status", "checkout_in_progress")
     .not("fulfillment_status", "in", '("delivered","cancelled","failed")')
     .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching incomplete orders:", error)
-    return []
+  if (checkoutError) {
+    console.error("Error fetching checkout orders:", checkoutError)
   }
 
-  return orders || []
+  // Query 2: orders with subscriptions but missing delivery info
+  const { data: missingDeliveryOrders, error: deliveryError } = await supabaseAdmin
+    .from("orders")
+    .select(`
+      *,
+      profiles:user_id (
+        id,
+        full_name,
+        email
+      )
+    `)
+    .not("stripe_subscription_id", "is", null)
+    .is("delivery_zipcode", null)
+    .not("fulfillment_status", "in", '("delivered","cancelled","failed")')
+    .order("created_at", { ascending: false })
+
+  if (deliveryError) {
+    console.error("Error fetching missing delivery orders:", deliveryError)
+  }
+
+  // Merge and deduplicate by order ID
+  const allOrders = [...(checkoutOrders || []), ...(missingDeliveryOrders || [])]
+  const uniqueOrders = Array.from(
+    new Map(allOrders.map(order => [order.id, order])).values()
+  )
+
+  // Sort by created_at descending
+  uniqueOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+  return uniqueOrders
 }
 
 export default async function IncompleteOrdersPage() {

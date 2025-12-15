@@ -99,13 +99,26 @@ export function IncompleteOrdersTable({ orders }: IncompleteOrdersTableProps) {
             <CardContent>
               <div className="space-y-3">
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                  <p className="text-sm font-medium text-yellow-800 mb-1">
-                    ⚠️ Missing Delivery Information
-                  </p>
-                  <p className="text-xs text-yellow-700">
-                    Customer has an active subscription but hasn't provided delivery address.
-                    Contact them to collect: name, address, city, state, and ZIP code.
-                  </p>
+                  {order.status === 'checkout_in_progress' ? (
+                    <>
+                      <p className="text-sm font-medium text-yellow-800 mb-1">
+                        🛒 Checkout In Progress
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Customer started checkout but hasn't completed it yet. Follow up to help them finish their order.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-yellow-800 mb-1">
+                        ⚠️ Missing Delivery Information
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Customer has an active subscription but hasn't provided delivery address.
+                        Contact them to collect: name, address, city, state, and ZIP code.
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">

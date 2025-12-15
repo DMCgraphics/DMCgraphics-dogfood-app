@@ -55,8 +55,13 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   // Filter orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
-      // Hide incomplete orders filter (missing delivery info)
+      // Hide incomplete orders filter (missing delivery info or checkout in progress)
       if (filters.hideIncomplete) {
+        // Hide checkout_in_progress orders
+        if (order.status === 'checkout_in_progress') {
+          return false
+        }
+        // Hide orders missing payment info or delivery info
         const hasPaymentInfo = order.stripe_payment_intent_id || order.stripe_session_id || order.stripe_subscription_id
         const hasDeliveryInfo = order.delivery_zipcode
         if (!hasPaymentInfo || !hasDeliveryInfo) {
@@ -268,7 +273,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 className="h-4 w-4 rounded border-gray-300"
               />
               <Label htmlFor="hideIncomplete" className="cursor-pointer">
-                Hide incomplete orders (missing delivery info)
+                Hide incomplete orders (checkout in progress or missing delivery info)
               </Label>
             </div>
             <Button variant="outline" onClick={handleClearFilters}>

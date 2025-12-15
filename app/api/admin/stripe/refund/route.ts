@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAdminUser } from "@/lib/admin/auth"
-import { createServerSupabase } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/server"
 import { stripe } from "@/lib/stripe"
 
 export const runtime = "nodejs"
@@ -21,10 +21,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Subscription ID required" }, { status: 400 })
     }
 
-    const supabase = createServerSupabase()
-
+    // Use admin client for database operations to bypass RLS
     // Get subscription from database
-    const { data: subscription, error: subError } = await supabase
+    const { data: subscription, error: subError } = await supabaseAdmin
       .from("subscriptions")
       .select("*")
       .eq("stripe_subscription_id", subscription_id)

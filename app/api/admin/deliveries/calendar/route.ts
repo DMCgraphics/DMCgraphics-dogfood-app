@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServerSupabase } from "@/lib/supabase/server"
+import { createServerSupabase, supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -18,6 +18,7 @@ const DRIVER_COLORS = [
 
 export async function GET(req: Request) {
   try {
+    // Use regular client for authentication
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -54,8 +55,9 @@ export async function GET(req: Request) {
     const startDate = start || defaultStart
     const endDate = end || defaultEnd
 
+    // Use admin client for database operations to bypass RLS
     // Fetch orders in date range with delivery-related statuses
-    const { data: orders, error } = await supabase
+    const { data: orders, error } = await supabaseAdmin
       .from('orders')
       .select('*')
       .gte('estimated_delivery_date', startDate)

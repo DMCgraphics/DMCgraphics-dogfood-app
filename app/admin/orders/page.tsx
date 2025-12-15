@@ -25,7 +25,7 @@ async function getOrders() {
   // Get topper subscriptions (plan_id is NULL, dog_id in metadata)
   const { data: topperSubscriptions, error: topperError } = await supabase
     .from("subscriptions")
-    .select("id, user_id, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end, metadata, created_at")
+    .select("id, user_id, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end, metadata, created_at, customer_name, delivery_address_line1, delivery_address_line2, delivery_city, delivery_state, delivery_zipcode")
     .is("plan_id", null)
     .in("status", ["active", "paused"])
     .order("created_at", { ascending: false })
@@ -180,7 +180,13 @@ async function getOrders() {
       plan_items: [],
       dogs: dog,
       subscriptions: [sub],
-      profiles: profile
+      profiles: profile,
+      // Include address fields from subscription
+      customer_name: sub.customer_name,
+      delivery_address_line1: sub.delivery_address_line1,
+      delivery_address_line2: sub.delivery_address_line2,
+      delivery_city: sub.delivery_city,
+      delivery_state: sub.delivery_state,
     }
   })
 

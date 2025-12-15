@@ -29,18 +29,23 @@ export async function GET(req: Request) {
     const endDate = end || defaultEnd
 
     // Get driver ID from drivers table
-    const { data: driver } = await supabase
+    const { data: driver, error: driverError } = await supabase
       .from('drivers')
       .select('id')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single()
 
+    console.log('[DRIVER CALENDAR API] Driver lookup:', { user_id: user.id, driver, error: driverError })
+
     if (!driver) {
+      console.error('[DRIVER CALENDAR API] Driver not found for user:', user.id)
       return NextResponse.json(
         { error: "Driver not found" },
         { status: 404 }
       )
     }
+
+    console.log('[DRIVER CALENDAR API] Querying orders for driver:', driver.id, 'between', startDate, 'and', endDate)
 
     // Fetch driver's assigned orders in date range
     const { data: orders, error } = await supabase
@@ -60,9 +65,13 @@ export async function GET(req: Request) {
     // Group orders by date
     const ordersByDate: Record<string, any> = {}
 
+    console.log('[DRIVER CALENDAR API] Found orders:', orders?.length || 0)
+
     orders?.forEach((order) => {
       const date = order.estimated_delivery_date
       if (!date) return
+
+      console.log('[DRIVER CALENDAR API] Processing order:', order.id, 'for date:', date)
 
       if (!ordersByDate[date]) {
         ordersByDate[date] = {
@@ -83,6 +92,8 @@ export async function GET(req: Request) {
 
       ordersByDate[date].orders.push(order)
     })
+
+    console.log('[DRIVER CALENDAR API] Grouped orders by date:', JSON.stringify(ordersByDate, null, 2))
 
     return NextResponse.json(ordersByDate)
   } catch (error: any) {

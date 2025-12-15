@@ -1,0 +1,115 @@
+import { NextResponse } from "next/server"
+import { createServerSupabase } from "@/lib/supabase/server"
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ orderId: string }> }
+) {
+  try {
+    const supabase = await createServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    // Check if user is admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_admin) {
+      return NextResponse.json(
+        { error: "Forbidden - Admin access required" },
+        { status: 403 }
+      )
+    }
+
+    const { orderId } = await params
+    const body = await req.json()
+
+    const {
+      customer_name,
+      delivery_address_line1,
+      delivery_address_line2,
+      delivery_city,
+      delivery_state,
+      delivery_zipcode,
+    } = body
+
+    // Validate required fields
+    if (!delivery_address_line1 || !delivery_zipcode) {
+      return NextResponse.json(
+        { error: "Address line 1 and ZIP code are required" },
+        { status: 400 }
+      )
+    }
+
+    // Try to update orders table first
+    const { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .update({
+        customer_name,
+        delivery_address_line1,
+        delivery_address_line2,
+        delivery_city,
+        delivery_state,
+        delivery_zipcode,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .select()
+      .maybeSingle()
+
+    // If found in orders table, return success
+    if (orderData) {
+      return NextResponse.json({
+        success: true,
+        order: orderData,
+      })
+    }
+
+    // If not found in orders, try subscriptions table (for topper subscriptions)
+    const { data: subscriptionData, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .update({
+        customer_name,
+        delivery_address_line1,
+        delivery_address_line2,
+        delivery_city,
+        delivery_state,
+        delivery_zipcode,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .select()
+      .maybeSingle()
+
+    // If found in subscriptions table, return success
+    if (subscriptionData) {
+      return NextResponse.json({
+        success: true,
+        order: subscriptionData,
+      })
+    }
+
+    // If not found in either table, return error
+    const error = subscriptionError || orderError
+    console.error('[ADDRESS UPDATE API] Error updating address:', error)
+    throw new Error('Order or subscription not found')
+  } catch (error: any) {
+    console.error('[ADDRESS UPDATE API] Error:', error)
+    return NextResponse.json(
+      { error: error.message || "Failed to update address" },
+      { status: 500 }
+    )
+  }
+}

@@ -102,6 +102,21 @@ export function RouteOverviewCard({
                     <div className="font-semibold text-sm truncate">
                       Order #{currentStop.order_number}
                     </div>
+                    {/* Address with Google Maps link */}
+                    {currentStop.delivery_address_line1 && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          `${currentStop.delivery_address_line1}${currentStop.delivery_address_line2 ? ' ' + currentStop.delivery_address_line2 : ''}, ${currentStop.delivery_city || ''} ${currentStop.delivery_state || ''} ${currentStop.delivery_zipcode || ''}`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline truncate block"
+                      >
+                        {currentStop.delivery_address_line1}
+                        {currentStop.delivery_address_line2 && `, ${currentStop.delivery_address_line2}`}
+                        {currentStop.delivery_city && `, ${currentStop.delivery_city}`} {currentStop.delivery_zipcode}
+                      </a>
+                    )}
                   </div>
                   {nextStopDistance && nextStopEta && (
                     <div className="flex items-center gap-1 text-sm font-medium text-blue-600">

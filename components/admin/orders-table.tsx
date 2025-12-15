@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { Package, Calendar, ChevronLeft, ChevronRight, Edit } from "lucide-react"
 import { EditSubscriptionRecipesDialog } from "@/components/admin/edit-subscription-recipes-dialog"
+import { EditOrderAddressDialog } from "@/components/admin/edit-order-address-dialog"
 
 interface OrdersTableProps {
   orders: any[]
@@ -18,6 +19,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [editRecipesOpen, setEditRecipesOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<any>(null)
+  const [editAddressOpen, setEditAddressOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [filters, setFilters] = useState({
     zipcode: "",
     breed: "all",
@@ -440,6 +443,50 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                     </div>
                   </div>
 
+                  {/* Delivery Address Section - Show for all order types */}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-sm font-medium">Delivery Address:</div>
+                      {/* Only show edit button for orders with database UUIDs (plan and topper subscriptions) */}
+                      {order.order_type !== 'individual-pack' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7"
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setEditAddressOpen(true)
+                          }}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          {order.delivery_address_line1 ? 'Edit' : 'Add'} Address
+                        </Button>
+                      )}
+                    </div>
+                    {order.delivery_address_line1 ? (
+                      <div className="text-sm text-gray-700 space-y-1">
+                        {order.customer_name && <div className="font-medium">{order.customer_name}</div>}
+                        <div>{order.delivery_address_line1}</div>
+                        {order.delivery_address_line2 && <div>{order.delivery_address_line2}</div>}
+                        <div>
+                          {order.delivery_city && `${order.delivery_city}, `}
+                          {order.delivery_state && `${order.delivery_state} `}
+                          {order.delivery_zipcode}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        No delivery address on file
+                        {order.delivery_zipcode && ` (ZIP: ${order.delivery_zipcode})`}
+                        {order.order_type === 'individual-pack' && (
+                          <div className="text-xs mt-1">
+                            Individual pack orders from Stripe cannot be edited yet
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Recipe Details - only for plans */}
                   {!isTopper && planItems.length > 0 && (
                     <div className="border-t pt-4">
@@ -599,6 +646,27 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             .filter(Boolean) || []}
           onSuccess={() => {
             // Refresh the page to show updated recipes
+            window.location.reload()
+          }}
+        />
+      )}
+
+      {/* Edit Address Dialog */}
+      {selectedOrder && (
+        <EditOrderAddressDialog
+          open={editAddressOpen}
+          onOpenChange={setEditAddressOpen}
+          orderId={selectedOrder.id}
+          currentAddress={{
+            customer_name: selectedOrder.customer_name,
+            delivery_address_line1: selectedOrder.delivery_address_line1,
+            delivery_address_line2: selectedOrder.delivery_address_line2,
+            delivery_city: selectedOrder.delivery_city,
+            delivery_state: selectedOrder.delivery_state,
+            delivery_zipcode: selectedOrder.delivery_zipcode,
+          }}
+          onSuccess={() => {
+            // Refresh the page to show updated address
             window.location.reload()
           }}
         />

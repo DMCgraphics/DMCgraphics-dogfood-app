@@ -37,12 +37,15 @@ export async function GET(req: Request) {
     const date = searchParams.get("date") // YYYY-MM-DD format
 
     // First, fetch orders for this driver (assigned to them OR unassigned)
+    // Exclude incomplete orders: must have payment info AND delivery zipcode for routing
     let allOrdersQuery = supabaseAdmin
       .from("orders")
       .select(`
         *
       `)
       .or(`driver_id.eq.${user.id},driver_id.is.null`)
+      .or(`stripe_payment_intent_id.not.is.null,stripe_session_id.not.is.null,stripe_subscription_id.not.is.null`)
+      .not("delivery_zipcode", "is", null)
       .order("estimated_delivery_date", { ascending: true })
 
     // Filter by date if specified

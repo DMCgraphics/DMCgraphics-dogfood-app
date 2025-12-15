@@ -28,7 +28,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     recipe: "all",
     orderType: "all",
     dateFrom: "",
-    dateTo: ""
+    dateTo: "",
+    hideIncomplete: true
   })
 
   const itemsPerPage = 10
@@ -54,6 +55,15 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   // Filter orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Hide incomplete orders filter (missing delivery info)
+      if (filters.hideIncomplete) {
+        const hasPaymentInfo = order.stripe_payment_intent_id || order.stripe_session_id || order.stripe_subscription_id
+        const hasDeliveryInfo = order.delivery_zipcode
+        if (!hasPaymentInfo || !hasDeliveryInfo) {
+          return false
+        }
+      }
+
       // Order type filter
       if (filters.orderType !== "all") {
         if (filters.orderType === "plan" && order.order_type !== "plan") {
@@ -123,8 +133,12 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   )
 
   // Reset to page 1 when filters change
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
+  const handleFilterChange = (key: string, value: string | boolean) => {
+    // Convert string "true"/"false" to boolean for hideIncomplete
+    const processedValue = key === "hideIncomplete" && typeof value === "string"
+      ? value === "true"
+      : value
+    setFilters(prev => ({ ...prev, [key]: processedValue }))
     setCurrentPage(1)
   }
 
@@ -136,7 +150,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       recipe: "all",
       orderType: "all",
       dateFrom: "",
-      dateTo: ""
+      dateTo: "",
+      hideIncomplete: true
     })
     setCurrentPage(1)
   }
@@ -243,7 +258,19 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="hideIncomplete"
+                checked={filters.hideIncomplete}
+                onChange={(e) => handleFilterChange("hideIncomplete", e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="hideIncomplete" className="cursor-pointer">
+                Hide incomplete orders (missing delivery info)
+              </Label>
+            </div>
             <Button variant="outline" onClick={handleClearFilters}>
               Clear Filters
             </Button>

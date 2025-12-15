@@ -88,42 +88,58 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/ai/track-cost
+ * GET /api/ai/track-cost?date=YYYY-MM-DD
  *
- * Get cost summary for current day/month
+ * Get cost summary for specified day/month (defaults to today)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Get today's costs
-    const today = new Date().toISOString().split('T')[0]
-    const { data: todayCosts } = await supabase
+    // Get date from query params or default to today
+    const { searchParams } = new URL(request.url)
+    const dateParam = searchParams.get('date')
+    const targetDate = dateParam || new Date().toISOString().split('T')[0]
+
+    // Get costs for target date
+    const { data: dayCosts } = await supabase
       .from("ai_daily_costs")
       .select("*")
-      .eq("date", today)
+      .eq("date", targetDate)
       .single()
 
-    // Get current month's costs
-    const firstDayOfMonth = new Date()
-    firstDayOfMonth.setDate(1)
+    // Get current month's costs (based on target date's month)
+    const targetDateObj = new Date(targetDate)
+    const firstDayOfMonth = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth(), 1)
+    const lastDayOfMonth = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth() + 1, 0)
+
     const { data: monthCosts } = await supabase
       .from("ai_daily_costs")
       .select("total_cost")
       .gte("date", firstDayOfMonth.toISOString().split('T')[0])
+      .lte("date", lastDayOfMonth.toISOString().split('T')[0])
 
     const monthlyCost = monthCosts?.reduce((sum, day) => sum + parseFloat(day.total_cost || "0"), 0) || 0
 
+    // Get all available dates for date picker
+    const { data: allDates } = await supabase
+      .from("ai_daily_costs")
+      .select("date")
+      .order("date", { ascending: false })
+      .limit(90) // Last 90 days
+
     return NextResponse.json({
       daily: {
-        cost: parseFloat(todayCosts?.total_cost || "0"),
-        requests: todayCosts?.total_requests || 0,
-        tokens: todayCosts?.total_tokens || 0,
-        cacheHitRate: parseFloat(todayCosts?.cache_hit_rate || "0"),
+        cost: parseFloat(dayCosts?.total_cost || "0"),
+        requests: dayCosts?.total_requests || 0,
+        tokens: dayCosts?.total_tokens || 0,
+        cacheHitRate: parseFloat(dayCosts?.cache_hit_rate || "0"),
       },
       monthly: {
         cost: monthlyCost,
       },
+      availableDates: allDates?.map(d => d.date) || [],
+      selectedDate: targetDate,
     })
   } catch (error) {
     console.error("[Track Cost] GET error:", error)

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   AlertTriangle,
   DollarSign,
@@ -12,7 +13,8 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Calendar
 } from "lucide-react"
 
 interface CostStats {
@@ -25,25 +27,32 @@ interface CostStats {
   monthly: {
     cost: number
   }
+  availableDates: string[]
+  selectedDate: string
 }
 
 export default function AIMonitoringPage() {
   const [stats, setStats] = useState<CostStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
 
   // Budget configuration from env
   const dailyBudget = parseFloat(process.env.NEXT_PUBLIC_AI_DAILY_BUDGET || "5.00")
   const monthlyBudget = parseFloat(process.env.NEXT_PUBLIC_AI_MONTHLY_BUDGET || "100.00")
 
-  const fetchStats = async () => {
+  const fetchStats = async (date?: string) => {
     setLoading(true)
     try {
-      const response = await fetch("/api/ai/track-cost")
+      const dateParam = date || selectedDate
+      const response = await fetch(`/api/ai/track-cost${dateParam ? `?date=${dateParam}` : ''}`)
       if (response.ok) {
         const data = await response.json()
         setStats(data)
         setLastUpdated(new Date())
+        if (data.selectedDate) {
+          setSelectedDate(data.selectedDate)
+        }
       }
     } catch (error) {
       console.error("Failed to fetch AI stats:", error)
@@ -56,9 +65,14 @@ export default function AIMonitoringPage() {
     fetchStats()
 
     // Auto-refresh every minute
-    const interval = setInterval(fetchStats, 60000)
+    const interval = setInterval(() => fetchStats(), 60000)
     return () => clearInterval(interval)
   }, [])
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date)
+    fetchStats(date)
+  }
 
   const getBudgetStatus = (cost: number, limit: number) => {
     const percentage = (cost / limit) * 100
@@ -82,10 +96,20 @@ export default function AIMonitoringPage() {
           <p className="text-muted-foreground">Track LLM usage, costs, and performance</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="w-40"
+              max={new Date().toISOString().split('T')[0]}
+            />
+          </div>
           <div className="text-sm text-muted-foreground">
             Last updated: {lastUpdated.toLocaleTimeString()}
           </div>
-          <Button onClick={fetchStats} disabled={loading} variant="outline" size="sm">
+          <Button onClick={() => fetchStats()} disabled={loading} variant="outline" size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>

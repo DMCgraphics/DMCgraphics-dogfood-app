@@ -12,7 +12,8 @@ import {
   Mail,
   ClipboardList,
   UserCircle,
-  Brain
+  Brain,
+  TrendingUp
 } from "lucide-react"
 
 export default async function AdminLayout({
@@ -78,6 +79,13 @@ export default async function AdminLayout({
               >
                 <Package className="h-5 w-5" />
                 <span className="font-medium">Orders</span>
+              </Link>
+              <Link
+                href="/admin/sales/incomplete-orders"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <TrendingUp className="h-5 w-5" />
+                <span className="font-medium">Sales</span>
               </Link>
               <Link
                 href="/admin/fulfillment"

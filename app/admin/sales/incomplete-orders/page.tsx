@@ -11,14 +11,7 @@ async function getIncompleteOrders() {
   // Query 1: checkout_in_progress orders
   const { data: checkoutOrders, error: checkoutError } = await supabaseAdmin
     .from("orders")
-    .select(`
-      *,
-      profiles:user_id (
-        id,
-        full_name,
-        email
-      )
-    `)
+    .select("*")
     .eq("status", "checkout_in_progress")
     .not("fulfillment_status", "in", '("delivered","cancelled","failed")')
     .order("created_at", { ascending: false })
@@ -30,14 +23,7 @@ async function getIncompleteOrders() {
   // Query 2: orders with subscriptions but missing delivery info
   const { data: missingDeliveryOrders, error: deliveryError } = await supabaseAdmin
     .from("orders")
-    .select(`
-      *,
-      profiles:user_id (
-        id,
-        full_name,
-        email
-      )
-    `)
+    .select("*")
     .not("stripe_subscription_id", "is", null)
     .is("delivery_zipcode", null)
     .not("fulfillment_status", "in", '("delivered","cancelled","failed")')

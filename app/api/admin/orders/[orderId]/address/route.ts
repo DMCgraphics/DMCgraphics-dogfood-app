@@ -101,10 +101,34 @@ export async function PATCH(
       })
     }
 
-    // If not found in either table, return error
-    const error = subscriptionError || orderError
+    // If not found in subscriptions, try plans table (for plan-based subscriptions)
+    const { data: planData, error: planError } = await supabase
+      .from('plans')
+      .update({
+        customer_name,
+        delivery_address_line1,
+        delivery_address_line2,
+        delivery_city,
+        delivery_state,
+        delivery_zipcode,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId)
+      .select()
+      .maybeSingle()
+
+    // If found in plans table, return success
+    if (planData) {
+      return NextResponse.json({
+        success: true,
+        order: planData,
+      })
+    }
+
+    // If not found in any table, return error
+    const error = planError || subscriptionError || orderError
     console.error('[ADDRESS UPDATE API] Error updating address:', error)
-    throw new Error('Order or subscription not found')
+    throw new Error('Order, subscription, or plan not found')
   } catch (error: any) {
     console.error('[ADDRESS UPDATE API] Error:', error)
     return NextResponse.json(

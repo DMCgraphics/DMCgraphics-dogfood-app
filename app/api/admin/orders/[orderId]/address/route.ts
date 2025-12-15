@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServerSupabase } from "@/lib/supabase/server"
+import { createServerSupabase, supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -9,6 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
+    // Use regular client for authentication
     const supabase = await createServerSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -53,8 +54,9 @@ export async function PATCH(
       )
     }
 
+    // Use admin client for database operations to bypass RLS
     // Try to update orders table first
-    const { data: orderData, error: orderError } = await supabase
+    const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
       .update({
         customer_name,
@@ -78,7 +80,7 @@ export async function PATCH(
     }
 
     // If not found in orders, try subscriptions table (for topper subscriptions)
-    const { data: subscriptionData, error: subscriptionError } = await supabase
+    const { data: subscriptionData, error: subscriptionError } = await supabaseAdmin
       .from('subscriptions')
       .update({
         customer_name,
@@ -102,7 +104,7 @@ export async function PATCH(
     }
 
     // If not found in subscriptions, try plans table (for plan-based subscriptions)
-    const { data: planData, error: planError } = await supabase
+    const { data: planData, error: planError } = await supabaseAdmin
       .from('plans')
       .update({
         customer_name,

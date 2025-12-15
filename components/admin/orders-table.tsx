@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { Package, Calendar, ChevronLeft, ChevronRight, Edit } from "lucide-react"
+import { Package, Calendar, ChevronLeft, ChevronRight, Edit, Search } from "lucide-react"
 import { EditSubscriptionRecipesDialog } from "@/components/admin/edit-subscription-recipes-dialog"
 import { EditOrderAddressDialog } from "@/components/admin/edit-order-address-dialog"
 
@@ -22,6 +22,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [editAddressOpen, setEditAddressOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [filters, setFilters] = useState({
+    search: "",
     zipcode: "",
     breed: "all",
     subscriptionStatus: "all",
@@ -55,6 +56,24 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   // Filter orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Search filter - search across customer name, email, dog name, order ID, zipcode, recipes
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase()
+        const customerName = order.profiles?.full_name?.toLowerCase() || ""
+        const customerEmail = order.profiles?.email?.toLowerCase() || ""
+        const dogName = order.dogs?.name?.toLowerCase() || ""
+        const orderId = order.id?.toLowerCase() || ""
+        const zipcode = order.delivery_zipcode?.toLowerCase() || ""
+        const recipeNames = order.plan_items?.map((item: any) => item.recipes?.name?.toLowerCase()).join(" ") || ""
+        const breed = order.dogs?.breed?.toLowerCase() || ""
+
+        const searchableText = `${customerName} ${customerEmail} ${dogName} ${orderId} ${zipcode} ${recipeNames} ${breed}`
+
+        if (!searchableText.includes(searchLower)) {
+          return false
+        }
+      }
+
       // Hide incomplete orders filter (missing delivery info or checkout in progress)
       if (filters.hideIncomplete) {
         // Hide checkout_in_progress orders
@@ -149,6 +168,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
   const handleClearFilters = () => {
     setFilters({
+      search: "",
       zipcode: "",
       breed: "all",
       subscriptionStatus: "all",
@@ -170,6 +190,21 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           <CardDescription>Filter orders by criteria</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Search field - full width at top */}
+          <div className="mb-6">
+            <Label htmlFor="search">Search</Label>
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="search"
+                placeholder="Search by customer name, email, dog name, order ID, ZIP code, breed, or recipe..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="zipcode">ZIP Code</Label>

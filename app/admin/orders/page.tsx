@@ -27,7 +27,7 @@ async function getOrders() {
     .from("subscriptions")
     .select("id, user_id, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end, metadata, created_at, customer_name, delivery_address_line1, delivery_address_line2, delivery_city, delivery_state, delivery_zipcode")
     .is("plan_id", null)
-    .in("status", ["active", "paused"])
+    .in("status", ["active", "paused", "canceled"])
     .order("created_at", { ascending: false })
 
   if (topperError) {

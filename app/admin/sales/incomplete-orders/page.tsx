@@ -7,11 +7,18 @@ export const revalidate = 0
 async function getIncompleteOrders() {
   // Get incomplete orders: checkout_in_progress OR missing delivery details
   // Using two separate queries and merging to avoid PostgREST syntax issues
+  // Include user email by joining with profiles table
 
   // Query 1: checkout_in_progress orders
   const { data: checkoutOrders, error: checkoutError } = await supabaseAdmin
     .from("orders")
-    .select("*")
+    .select(`
+      *,
+      profiles:user_id (
+        email,
+        full_name
+      )
+    `)
     .eq("status", "checkout_in_progress")
     .not("fulfillment_status", "in", '("delivered","cancelled","failed")')
     .order("created_at", { ascending: false })
@@ -23,7 +30,13 @@ async function getIncompleteOrders() {
   // Query 2: orders with subscriptions but missing delivery info
   const { data: missingDeliveryOrders, error: deliveryError } = await supabaseAdmin
     .from("orders")
-    .select("*")
+    .select(`
+      *,
+      profiles:user_id (
+        email,
+        full_name
+      )
+    `)
     .not("stripe_subscription_id", "is", null)
     .is("delivery_zipcode", null)
     .not("fulfillment_status", "in", '("delivered","cancelled","failed")')

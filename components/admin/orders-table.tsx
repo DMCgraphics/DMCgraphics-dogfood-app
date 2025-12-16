@@ -361,6 +361,10 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           const isTopper = order.order_type === "topper"
           const isIndividualPack = order.order_type === "individual-pack"
 
+          // Determine billing cycle from multiple sources
+          const billingIntervalCount = planItems[0]?.meta?.billing_interval_count || 1
+          const isBiweekly = order.snapshot?.billing_cycle === 'every_2_weeks' || billingIntervalCount === 2
+
           return (
             <Card key={order.id}>
               <CardHeader>
@@ -440,7 +444,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                           ${((order.total_cents || order.snapshot?.total_cents || 0) / 100).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {order.snapshot?.billing_cycle === 'every_2_weeks' ? 'every 2 weeks' : 'per week'}
+                          {isBiweekly ? 'every 2 weeks' : 'per week'}
                         </div>
                       </>
                     )}

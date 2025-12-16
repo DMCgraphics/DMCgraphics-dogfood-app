@@ -81,7 +81,7 @@ export default async function AdminLayout({
                 <span className="font-medium">Orders</span>
               </Link>
               <Link
-                href="/admin/sales/incomplete-orders"
+                href="/admin/sales"
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <TrendingUp className="h-5 w-5" />

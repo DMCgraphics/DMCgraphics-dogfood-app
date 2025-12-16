@@ -25,7 +25,7 @@ function IndividualPacksContent() {
   const { user } = useAuth()
 
   const [selectedQuantity, setSelectedQuantity] = useState<1 | 3 | null>(null)
-  const [selectedRecipes, setSelectedRecipes] = useState<string[]>([])
+  const [selectedRecipes, setSelectedRecipes] = useState<Record<string, number>>({}) // Track quantities per recipe
   const [isLoading, setIsLoading] = useState(false)
   const [inventory, setInventory] = useState<Record<string, number>>({})
   const [inventoryLoading, setInventoryLoading] = useState(true)
@@ -148,14 +148,14 @@ function IndividualPacksContent() {
 
   const handleQuantitySelection = (quantity: 1 | 3) => {
     setSelectedQuantity(quantity)
-    setSelectedRecipes([]) // Reset recipe selection when changing quantity
+    setSelectedRecipes({}) // Reset recipe selection when changing quantity
   }
 
-  const handleRecipeToggle = (recipeId: string) => {
+  const handleRecipeToggle = (recipeId: string, increment: boolean = true) => {
     if (!selectedQuantity) return
 
     // Prevent selecting out-of-stock recipes
-    if (!isRecipeInStock(recipeId)) {
+    if (!isRecipeInStock(recipeId) && increment) {
       toast({
         title: "Out of Stock",
         description: "This recipe is currently out of stock. Please choose another.",
@@ -164,22 +164,36 @@ function IndividualPacksContent() {
       return
     }
 
-    const maxRecipes = selectedQuantity === 1 ? 1 : 3
-    const isSelected = selectedRecipes.includes(recipeId)
+    const maxPacks = selectedQuantity
+    const currentTotal = Object.values(selectedRecipes).reduce((sum, qty) => sum + qty, 0)
+    const currentQty = selectedRecipes[recipeId] || 0
 
-    if (isSelected) {
-      // Remove from selection
-      setSelectedRecipes(prev => prev.filter(id => id !== recipeId))
-    } else {
-      // Add to selection if not at max
-      if (selectedRecipes.length < maxRecipes) {
+    if (increment) {
+      // Add one more pack of this recipe
+      if (currentTotal < maxPacks) {
         if (selectedQuantity === 1) {
           // For single pack, replace the selection
-          setSelectedRecipes([recipeId])
+          setSelectedRecipes({ [recipeId]: 1 })
         } else {
-          // For 3-pack, add to selection
-          setSelectedRecipes(prev => [...prev, recipeId])
+          // For 3-pack, increment this recipe
+          setSelectedRecipes(prev => ({
+            ...prev,
+            [recipeId]: (prev[recipeId] || 0) + 1
+          }))
         }
+      }
+    } else {
+      // Decrement
+      if (currentQty > 0) {
+        setSelectedRecipes(prev => {
+          const newRecipes = { ...prev }
+          if (newRecipes[recipeId] === 1) {
+            delete newRecipes[recipeId]
+          } else {
+            newRecipes[recipeId] = newRecipes[recipeId] - 1
+          }
+          return newRecipes
+        })
       }
     }
   }
@@ -187,16 +201,17 @@ function IndividualPacksContent() {
   const handleAddToCart = () => {
     if (!selectedQuantity) return
 
-    const requiredRecipes = selectedQuantity === 1 ? 1 : 3
-    if (selectedRecipes.length !== requiredRecipes) return
+    const totalPacks = Object.values(selectedRecipes).reduce((sum, qty) => sum + qty, 0)
+    if (totalPacks !== selectedQuantity) return
 
     const selectedPackOption = packOptions.find(o => o.quantity === selectedQuantity)
     if (!selectedPackOption) return
 
-    // Build recipes array
-    const recipesData = selectedRecipes.map(recipeId => {
+    // Build recipes array with quantities
+    const recipesData = Object.entries(selectedRecipes).flatMap(([recipeId, qty]) => {
       const recipe = recipes.find(r => r.id === recipeId)
-      return { id: recipe?.id || recipeId, name: recipe?.name || recipeId }
+      // Repeat recipe for each quantity
+      return Array(qty).fill({ id: recipe?.id || recipeId, name: recipe?.name || recipeId })
     })
 
     addItem({
@@ -208,19 +223,19 @@ function IndividualPacksContent() {
 
     toast({
       title: "Added to cart",
-      description: `${selectedPackOption.name} with ${selectedQuantity === 1 ? "1 recipe" : "3 recipes"} added to your cart.`,
+      description: `${selectedPackOption.name} with ${selectedQuantity} ${selectedQuantity === 1 ? "pack" : "packs"} added to your cart.`,
     })
 
     // Reset selection after adding to cart
     setSelectedQuantity(null)
-    setSelectedRecipes([])
+    setSelectedRecipes({})
   }
 
   const handleCheckout = async () => {
     if (!selectedQuantity) return
 
-    const requiredRecipes = selectedQuantity === 1 ? 1 : 3
-    if (selectedRecipes.length !== requiredRecipes) return
+    const totalPacks = Object.values(selectedRecipes).reduce((sum, qty) => sum + qty, 0)
+    if (totalPacks !== selectedQuantity) return
 
     // Require authentication
     if (!user) {
@@ -242,10 +257,11 @@ function IndividualPacksContent() {
     setIsLoading(true)
 
     try {
-      // Build recipes array
-      const recipesData = selectedRecipes.map(recipeId => {
+      // Build recipes array with quantities
+      const recipesData = Object.entries(selectedRecipes).flatMap(([recipeId, qty]) => {
         const recipe = recipes.find(r => r.id === recipeId)
-        return { id: recipe?.id || recipeId, name: recipe?.name || recipeId }
+        // Repeat recipe for each quantity
+        return Array(qty).fill({ id: recipe?.id || recipeId, name: recipe?.name || recipeId })
       })
 
       const response = await fetch('/api/topper-checkout', {
@@ -284,7 +300,8 @@ function IndividualPacksContent() {
     }
   }
 
-  const canCheckout = selectedQuantity && selectedRecipes.length === (selectedQuantity === 1 ? 1 : 3)
+  const totalSelectedPacks = Object.values(selectedRecipes).reduce((sum, qty) => sum + qty, 0)
+  const canCheckout = selectedQuantity && totalSelectedPacks === selectedQuantity
   const selectedPackOption = packOptions.find(o => o.quantity === selectedQuantity)
 
   return (
@@ -389,20 +406,20 @@ function IndividualPacksContent() {
             <div className="space-y-4">
               <div>
                 <h2 className="text-xl font-semibold">
-                  Step 2: Choose Your {selectedQuantity === 1 ? "Recipe" : "3 Recipes"}
+                  Step 2: Choose Your {selectedQuantity === 1 ? "Recipe" : "Recipes"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {selectedQuantity === 1
                     ? "Select the recipe you'd like to try"
-                    : `Select 3 different recipes for your 3-pack (${selectedRecipes.length}/3 selected)`
+                    : `Select recipes for your 3-pack (${totalSelectedPacks}/3 selected)`
                   }
                 </p>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 {recipes.map((recipe) => {
-                  const isSelected = selectedRecipes.includes(recipe.id)
-                  const maxRecipes = selectedQuantity === 1 ? 1 : 3
-                  const canSelect = selectedRecipes.length < maxRecipes || isSelected
+                  const currentQty = selectedRecipes[recipe.id] || 0
+                  const isSelected = currentQty > 0
+                  const canAddMore = totalSelectedPacks < selectedQuantity
                   const inStock = isRecipeInStock(recipe.id)
 
                   return (
@@ -412,26 +429,12 @@ function IndividualPacksContent() {
                         !inStock
                           ? "opacity-40 cursor-not-allowed bg-gray-50"
                           : isSelected
-                          ? "ring-2 ring-primary ring-offset-2 cursor-pointer"
-                          : !canSelect
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:shadow-lg cursor-pointer"
+                          ? "ring-2 ring-primary ring-offset-2"
+                          : "hover:shadow-lg"
                       }`}
-                      onClick={() => inStock && handleRecipeToggle(recipe.id)}
                     >
                       <CardHeader>
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              isSelected
-                                ? "border-primary bg-primary"
-                                : "border-muted-foreground"
-                            }`}
-                          >
-                            {isSelected && (
-                              <Check className="h-3 w-3 text-primary-foreground" />
-                            )}
-                          </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <CardTitle className="text-lg">{recipe.name}</CardTitle>
@@ -444,6 +447,44 @@ function IndividualPacksContent() {
                             <CardDescription className="text-sm mt-1">
                               {recipe.description}
                             </CardDescription>
+
+                            {selectedQuantity === 3 && (
+                              <div className="flex items-center gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRecipeToggle(recipe.id, false)}
+                                  disabled={!inStock || currentQty === 0}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  -
+                                </Button>
+                                <span className="text-sm font-medium min-w-[2rem] text-center">
+                                  {currentQty}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRecipeToggle(recipe.id, true)}
+                                  disabled={!inStock || !canAddMore}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  +
+                                </Button>
+                              </div>
+                            )}
+
+                            {selectedQuantity === 1 && (
+                              <Button
+                                size="sm"
+                                variant={isSelected ? "default" : "outline"}
+                                onClick={() => handleRecipeToggle(recipe.id, true)}
+                                disabled={!inStock}
+                                className="mt-3"
+                              >
+                                {isSelected ? "Selected" : "Select"}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -451,10 +492,10 @@ function IndividualPacksContent() {
                   )
                 })}
               </div>
-              {selectedQuantity === 3 && selectedRecipes.length === 3 && (
+              {selectedQuantity === 3 && totalSelectedPacks === 3 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm text-green-800 font-medium">
-                    Perfect! You've selected 3 recipes for your 3-pack bundle.
+                    Perfect! You've selected 3 packs for your 3-pack bundle.
                   </p>
                 </div>
               )}
@@ -538,7 +579,7 @@ function IndividualPacksContent() {
                   : canCheckout
                     ? `Buy Now - $${selectedPackOption?.price.toFixed(2) || 0}`
                     : selectedQuantity
-                      ? `Select ${selectedQuantity === 1 ? "Recipe" : "3 Recipes"}`
+                      ? `Select ${selectedQuantity} ${selectedQuantity === 1 ? "Pack" : "Packs"}`
                       : "Select Quantity & Recipes"}
               </Button>
             </div>
@@ -546,7 +587,7 @@ function IndividualPacksContent() {
               <p className="text-sm text-muted-foreground text-center">
                 {!selectedQuantity
                   ? "Choose a quantity and recipes to continue"
-                  : `Select ${selectedQuantity === 1 ? "1 recipe" : "3 recipes"} to continue`
+                  : `Select ${selectedQuantity} ${selectedQuantity === 1 ? "pack" : "packs"} to continue (${totalSelectedPacks}/${selectedQuantity})`
                 }
               </p>
             )}

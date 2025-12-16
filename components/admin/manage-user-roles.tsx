@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Shield, Truck } from "lucide-react"
+import { Shield, Truck, TrendingUp, Phone, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -25,7 +25,10 @@ interface ManageUserRolesProps {
 
 const AVAILABLE_ROLES = [
   { id: 'admin', label: 'Admin', icon: Shield, description: 'Full access to admin panel' },
+  { id: 'sales_manager', label: 'Sales Manager', icon: TrendingUp, description: 'Manage sales team and all leads' },
+  { id: 'sales_rep', label: 'Sales Rep', icon: Phone, description: 'Manage assigned leads and customer outreach' },
   { id: 'delivery_driver', label: 'Delivery Driver', icon: Truck, description: 'Access to delivery management' },
+  { id: 'operations', label: 'Operations', icon: Package, description: 'Manage inventory and production batching' },
 ]
 
 export function ManageUserRoles({ userId, currentRoles, userName }: ManageUserRolesProps) {
@@ -80,12 +83,17 @@ export function ManageUserRoles({ userId, currentRoles, userName }: ManageUserRo
     if (!role) return null
 
     const Icon = role.icon
+
+    const colorClass = {
+      admin: 'bg-purple-100 text-purple-800',
+      sales_manager: 'bg-green-100 text-green-800',
+      sales_rep: 'bg-emerald-100 text-emerald-800',
+      delivery_driver: 'bg-blue-100 text-blue-800',
+      operations: 'bg-orange-100 text-orange-800',
+    }[roleId] || 'bg-gray-100 text-gray-800'
+
     return (
-      <Badge key={roleId} variant="secondary" className={
-        roleId === 'admin'
-          ? 'bg-purple-100 text-purple-800'
-          : 'bg-blue-100 text-blue-800'
-      }>
+      <Badge key={roleId} variant="secondary" className={colorClass}>
         <Icon className="h-3 w-3 mr-1" />
         {role.label}
       </Badge>

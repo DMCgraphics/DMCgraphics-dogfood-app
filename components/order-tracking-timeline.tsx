@@ -140,12 +140,13 @@ export function OrderTrackingTimeline({
                 className={cn(
                   "relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all",
                   isCompleted && "bg-green-500 border-green-500 text-white",
-                  isCurrent &&
+                  isCurrent && stage.key === "delivered" && "bg-green-500 border-green-500 text-white",
+                  isCurrent && stage.key !== "delivered" &&
                     "bg-blue-500 border-blue-500 text-white animate-pulse shadow-lg shadow-blue-500/50",
                   isPending && "bg-white border-gray-300 text-gray-400"
                 )}
               >
-                {isCurrent && !isCompleted ? (
+                {isCurrent && !isCompleted && stage.key !== "delivered" ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <Icon className="h-5 w-5" />
@@ -158,7 +159,8 @@ export function OrderTrackingTimeline({
                   className={cn(
                     "font-semibold text-lg mb-1",
                     isCompleted && "text-green-700",
-                    isCurrent && "text-blue-700",
+                    isCurrent && stage.key === "delivered" && "text-green-700",
+                    isCurrent && stage.key !== "delivered" && "text-blue-700",
                     isPending && "text-gray-400"
                   )}
                 >
@@ -169,7 +171,8 @@ export function OrderTrackingTimeline({
                   className={cn(
                     "text-sm mb-2",
                     isCompleted && "text-green-600/80",
-                    isCurrent && "text-blue-600/80",
+                    isCurrent && stage.key === "delivered" && "text-green-600/80",
+                    isCurrent && stage.key !== "delivered" && "text-blue-600/80",
                     isPending && "text-gray-400"
                   )}
                 >

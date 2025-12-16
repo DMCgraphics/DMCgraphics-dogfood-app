@@ -8,7 +8,6 @@ import { Footer } from "@/components/footer"
 import { DogCard } from "@/components/dashboard/dog-card"
 import { WeightTracker } from "@/components/dashboard/weight-tracker"
 import { StoolLog } from "@/components/dashboard/stool-log"
-import { SubscriptionControls } from "@/components/dashboard/subscription-controls"
 import { Recommendations } from "@/components/dashboard/recommendations"
 import { PrescriptionStatusCard } from "@/components/dashboard/prescription-status-card"
 import { MedicalConditionTracker } from "@/components/dashboard/medical-condition-tracker"
@@ -26,31 +25,10 @@ import { SubscriptionManagementModal } from "@/components/modals/subscription-ma
 import { EditDogModal } from "@/components/modals/edit-dog-modal"
 import { AddDogProfileModal } from "@/components/modals/add-dog-profile-modal"
 import { TopperOrdersManager } from "@/components/dashboard/topper-orders-manager"
+import { OrdersDeliveries } from "@/components/dashboard/orders-deliveries"
 
 // SWR fetcher function
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
-
-const mockDeliveries = [
-  {
-    id: "1",
-    date: "2024-12-15",
-    status: "upcoming" as const,
-    items: ["Chicken & Greens (2 weeks)", "Fish Oil"],
-  },
-  {
-    id: "2",
-    date: "2024-12-01",
-    status: "delivered" as const,
-    items: ["Chicken & Greens (2 weeks)", "Fish Oil"],
-  },
-  {
-    id: "3",
-    date: "2024-11-17",
-    status: "delivered" as const,
-    items: ["Chicken & Greens (2 weeks)"],
-  },
-]
-
 
 const mockMedicalConditions = [
   {
@@ -78,8 +56,6 @@ export default function DashboardPage() {
   const [weightEntries, setWeightEntries] = useState([])
   const [stoolEntries, setStoolEntries] = useState([])
   const [isStoolLoading, setIsStoolLoading] = useState(false)
-  const [deliveries, setDeliveries] = useState(mockDeliveries)
-  const [subscriptionStatus, setSubscriptionStatus] = useState<"active" | "paused" | "cancelled">("active")
   const [planStatus, setPlanStatus] = useState<"none" | "draft" | "saved" | "checkout" | "active">("none")
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
   const [selectedDogId, setSelectedDogId] = useState<string | null>(null)
@@ -737,54 +713,8 @@ export default function DashboardPage() {
       }
     }
 
-    const fetchDeliveries = async () => {
-      if (!selectedDogId || !user) return
-
-      try {
-        // Fetch orders for this specific dog
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select(`
-            *,
-            plan:plans (
-              *,
-              plan_items (
-                *,
-                recipes (name)
-              )
-            )
-          `)
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-
-        if (ordersData) {
-          // Filter orders that include this specific dog
-          const dogOrders = ordersData.filter((order: any) => {
-            return order.plan?.plan_items?.some((item: any) => item.dog_id === selectedDogId)
-          })
-
-          const formattedDeliveries = dogOrders.map((order: any) => ({
-            id: order.id,
-            date: order.created_at,
-            status: order.status === "completed" ? "delivered" : "upcoming",
-            items: order.plan?.plan_items
-              ?.filter((item: any) => item.dog_id === selectedDogId)
-              ?.map((item: any) => 
-                item.recipes ? `${item.recipes.name} (${item.qty || 1} weeks)` : item.name
-              ) || [],
-          }))
-
-          setDeliveries(formattedDeliveries.length > 0 ? formattedDeliveries : mockDeliveries)
-          console.log("[v0] Loaded deliveries from database for dog:", selectedDogId, formattedDeliveries)
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching deliveries:", error)
-      }
-    }
-
     fetchWeightEntries()
     fetchStoolEntries()
-    fetchDeliveries()
   }, [selectedDogId, user])
 
   const handleEditDog = (dogId: string) => {
@@ -909,18 +839,6 @@ export default function DashboardPage() {
     } finally {
       setIsStoolLoading(false)
     }
-  }
-
-  const handlePauseResume = () => {
-    setSubscriptionStatus(subscriptionStatus === "active" ? "paused" : "active")
-  }
-
-  const handleSkipDelivery = (deliveryId: string) => {
-    alert(`Skip delivery ${deliveryId} - this would update the delivery schedule`)
-  }
-
-  const handleManageSubscription = () => {
-    setShowSubscriptionModal(true)
   }
 
   const handleTakeAction = (recommendationId: string) => {
@@ -1324,6 +1242,8 @@ export default function DashboardPage() {
           {selectedDog && (
             <div className="grid lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
+                <OrdersDeliveries />
+
                 <WeightTracker
                   dogName={selectedDog.name}
                   currentWeight={selectedDog.weight}
@@ -1366,15 +1286,6 @@ export default function DashboardPage() {
                     onRenewPrescription={handleRenewPrescription}
                   />
                 )}
-
-                <SubscriptionControls
-                  subscriptionStatus={subscriptionStatus}
-                  nextDelivery={selectedDog.nextDelivery}
-                  deliveries={deliveries}
-                  onPauseResume={handlePauseResume}
-                  onSkipDelivery={handleSkipDelivery}
-                  onManageSubscription={handleManageSubscription}
-                />
 
                 <TopperOrdersManager />
 

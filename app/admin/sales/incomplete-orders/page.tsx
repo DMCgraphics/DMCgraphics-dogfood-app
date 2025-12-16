@@ -20,7 +20,7 @@ async function getIncompleteOrders() {
       )
     `)
     .eq("status", "checkout_in_progress")
-    .not("fulfillment_status", "in", '("delivered","cancelled","failed")')
+    .not("fulfillment_status", "in", "(delivered,cancelled,failed)")
     .order("created_at", { ascending: false })
 
   if (checkoutError) {
@@ -39,7 +39,7 @@ async function getIncompleteOrders() {
     `)
     .not("stripe_subscription_id", "is", null)
     .is("delivery_zipcode", null)
-    .not("fulfillment_status", "in", '("delivered","cancelled","failed")')
+    .not("fulfillment_status", "in", "(delivered,cancelled,failed)")
     .order("created_at", { ascending: false })
 
   if (deliveryError) {

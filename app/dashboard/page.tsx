@@ -26,6 +26,7 @@ import { EditDogModal } from "@/components/modals/edit-dog-modal"
 import { AddDogProfileModal } from "@/components/modals/add-dog-profile-modal"
 import { TopperOrdersManager } from "@/components/dashboard/topper-orders-manager"
 import { OrdersDeliveries } from "@/components/dashboard/orders-deliveries"
+import { SubscriptionInfo } from "@/components/dashboard/subscription-info"
 
 // SWR fetcher function
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then(r => r.json())
@@ -1286,6 +1287,8 @@ export default function DashboardPage() {
                     onRenewPrescription={handleRenewPrescription}
                   />
                 )}
+
+                <SubscriptionInfo />
 
                 <TopperOrdersManager />
 

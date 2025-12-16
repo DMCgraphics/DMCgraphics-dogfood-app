@@ -85,12 +85,18 @@ How We Work:
 1. Customers use our Plan Builder to input their dog's profile (age, weight, activity, health goals)
 2. Our AI recommends optimal recipes based on nutritional needs
 3. Customers can choose subscriptions or one-time purchases
-4. Fresh meals are delivered on a flexible schedule
+4. Fresh meals are delivered locally on a flexible schedule
+
+Delivery:
+- We offer LOCAL DELIVERY only (no shipping)
+- Individual/one-time pack orders: Can arrive same day, within hours if in stock
+- Subscription orders: Delivered bi-weekly with the right amount calculated for each dog
+- All deliveries are fresh and handled with care by our local delivery team
 
 Pricing:
 - Individual 8 oz packs: varies by recipe (~$15-25 per pack)
 - 3-pack bundles (24 oz total): discounted pricing
-- Subscriptions: recurring delivery with flexibility to pause, skip, or cancel
+- Subscriptions: recurring bi-weekly delivery with flexibility to pause, skip, or cancel
 
 Support Contact:
 - Email: support@nouripet.com
@@ -133,7 +139,7 @@ export function getFallbackAnswer(question: string): string {
   }
 
   if (/order|delivery|track|ship/i.test(lowerQ)) {
-    return "You can track your order status in your dashboard at nouripet.com/dashboard. For specific delivery questions, please contact our support team at support@nouripet.com or call (555) 123-4567."
+    return "We offer local delivery! Individual orders can arrive same day if in stock. Subscriptions are delivered bi-weekly. You can track your order status in your dashboard at nouripet.com/dashboard. For specific delivery questions, contact support@nouripet.com or call (555) 123-4567."
   }
 
   if (/subscription|billing|cancel|pause|skip/i.test(lowerQ)) {

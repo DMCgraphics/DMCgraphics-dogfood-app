@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { MessageCircle, Send, Bot, User, Phone, Mail, X, Maximize2, Minimize2 } from "lucide-react"
+import { MessageCircle, Send, Bot, User, X, Maximize2, Minimize2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 
 interface ChatMessage {
@@ -242,16 +242,6 @@ export function AIChatFAB() {
             <Button onClick={handleSendMessage} disabled={!inputMessage.trim() || isTyping}>
               <Send className="h-4 w-4" />
             </Button>
-          </div>
-          <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              (555) 123-4567
-            </div>
-            <div className="flex items-center gap-1">
-              <Mail className="h-3 w-3" />
-              support@nouripet.com
-            </div>
           </div>
         </div>
       </DialogContent>

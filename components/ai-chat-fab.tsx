@@ -96,13 +96,13 @@ export function AIChatFAB() {
       setMessages((prev) => [...prev, botResponse])
     } catch (err) {
       console.error("AI Chat error:", err)
-      setError("Sorry, I'm having trouble responding right now. Please try again or contact support@nouripet.com.")
+      setError("Sorry, I'm having trouble responding right now. Please try again or contact support@nouripet.net or call (203) 208-6186.")
 
       // Add error message to chat
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I'm having trouble connecting right now. Please try again in a moment or reach out to our support team at support@nouripet.com for immediate assistance.",
+        content: "I'm having trouble connecting right now. Please try again in a moment or reach out to our support team at support@nouripet.net or call (203) 208-6186 for immediate assistance.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])

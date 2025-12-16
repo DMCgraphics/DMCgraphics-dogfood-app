@@ -35,7 +35,7 @@ Guidelines:
 - Keep responses concise and actionable
 - Be encouraging and positive
 - If asked about medical conditions, always recommend consulting a veterinarian
-- For complex account issues, offer to connect them with human support at support@nouripet.com or (555) 123-4567
+- For complex account issues, offer to connect them with human support at support@nouripet.net or (203) 208-6186
 - NEVER make up order/subscription information - only use data provided in context below`
 }
 
@@ -99,8 +99,8 @@ Pricing:
 - Subscriptions: recurring bi-weekly delivery with flexibility to pause, skip, or cancel
 
 Support Contact:
-- Email: support@nouripet.com
-- Phone: (555) 123-4567
+- Email: support@nouripet.net
+- Phone: (203) 208-6186
 - Available 9 AM - 6 PM EST, Monday-Friday`
 }
 
@@ -130,7 +130,7 @@ export function getFallbackAnswer(question: string): string {
 
   // Error fallback
   if (question === "error") {
-    return "I'm having trouble connecting right now. Please try again in a moment or reach out to our support team at support@nouripet.com for immediate assistance. We're here Monday-Friday, 9 AM - 6 PM EST."
+    return "I'm having trouble connecting right now. Please try again in a moment or reach out to our support team at support@nouripet.net or call (203) 208-6186 for immediate assistance. We're here Monday-Friday, 9 AM - 6 PM EST."
   }
 
   // Pattern matching for common questions
@@ -139,7 +139,7 @@ export function getFallbackAnswer(question: string): string {
   }
 
   if (/order|delivery|track|ship/i.test(lowerQ)) {
-    return "We offer local delivery! Individual orders can arrive same day if in stock. Subscriptions are delivered bi-weekly. You can track your order status in your dashboard at nouripet.com/dashboard. For specific delivery questions, contact support@nouripet.com or call (555) 123-4567."
+    return "We offer local delivery! Individual orders can arrive same day if in stock. Subscriptions are delivered bi-weekly. You can track your order status in your dashboard at nouripet.com/dashboard. For specific delivery questions, contact support@nouripet.net or call (203) 208-6186."
   }
 
   if (/subscription|billing|cancel|pause|skip/i.test(lowerQ)) {
@@ -147,7 +147,7 @@ export function getFallbackAnswer(question: string): string {
   }
 
   if (/nutrition|health|vet|medical|sick|disease/i.test(lowerQ)) {
-    return "For specific health or nutrition questions about your dog, we recommend consulting with your veterinarian. Our team can provide general nutrition information at support@nouripet.com."
+    return "For specific health or nutrition questions about your dog, we recommend consulting with your veterinarian. Our team can provide general nutrition information at support@nouripet.net or (203) 208-6186."
   }
 
   if (/price|cost|payment|discount/i.test(lowerQ)) {
@@ -159,5 +159,5 @@ export function getFallbackAnswer(question: string): string {
   }
 
   // Default fallback
-  return "Thanks for reaching out! I'm here to help with questions about our recipes, nutrition, orders, and subscriptions. For personalized assistance, please email support@nouripet.com or call (555) 123-4567. Our team is available Monday-Friday, 9 AM - 6 PM EST."
+  return "Thanks for reaching out! I'm here to help with questions about our recipes, nutrition, orders, and subscriptions. For personalized assistance, please email support@nouripet.net or call (203) 208-6186. Our team is available Monday-Friday, 9 AM - 6 PM EST."
 }

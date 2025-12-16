@@ -8,7 +8,16 @@ export async function buildSystemPrompt(isAuthenticated: boolean): Promise<strin
   const companyKnowledge = await getCompanyKnowledge()
   const userSpecificGuidance = isAuthenticated ? getUserSpecificGuidance() : ""
 
-  return `${basePrompt}\n\n${companyKnowledge}${userSpecificGuidance}`
+  // Include current date so LLM knows what "today" is
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+  const dateContext = `\n\nCurrent Date: ${currentDate}\n(Use this as "today" when answering questions about deliveries, orders, or timing)`
+
+  return `${basePrompt}\n\n${companyKnowledge}${userSpecificGuidance}${dateContext}`
 }
 
 /**

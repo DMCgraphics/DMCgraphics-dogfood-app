@@ -522,21 +522,19 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-2">
                       <div className="text-sm font-medium">Delivery Address:</div>
-                      {/* Only show edit button for orders with database UUIDs (plan and topper subscriptions) */}
-                      {order.order_type !== 'individual-pack' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => {
-                            setSelectedOrder(order)
-                            setEditAddressOpen(true)
-                          }}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          {order.delivery_address_line1 ? 'Edit' : 'Add'} Address
-                        </Button>
-                      )}
+                      {/* Show edit button for all order types */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7"
+                        onClick={() => {
+                          setSelectedOrder(order)
+                          setEditAddressOpen(true)
+                        }}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        {order.delivery_address_line1 ? 'Edit' : 'Add'} Address
+                      </Button>
                     </div>
                     {order.delivery_address_line1 ? (
                       <div className="text-sm text-gray-700 space-y-1">
@@ -553,11 +551,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                       <div className="text-sm text-gray-500 italic">
                         No delivery address on file
                         {order.delivery_zipcode && ` (ZIP: ${order.delivery_zipcode})`}
-                        {order.order_type === 'individual-pack' && (
-                          <div className="text-xs mt-1">
-                            Individual pack orders from Stripe cannot be edited yet
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>

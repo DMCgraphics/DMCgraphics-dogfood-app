@@ -55,7 +55,7 @@ export async function PATCH(
     }
 
     // Use admin client for database operations to bypass RLS
-    // Try to update orders table first
+    // Try to update orders table first by ID
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
       .update({
@@ -71,12 +71,73 @@ export async function PATCH(
       .select()
       .maybeSingle()
 
-    // If found in orders table, return success
+    // If found in orders table by ID, return success
     if (orderData) {
       return NextResponse.json({
         success: true,
         order: orderData,
       })
+    }
+
+    // Extract payment intent ID from composite IDs (e.g., "pi_xxx-item-0")
+    const paymentIntentId = orderId.includes('-item-')
+      ? orderId.split('-item-')[0]
+      : orderId
+
+    // If not found by ID, try to find by stripe_payment_intent_id (for individual pack purchases)
+    const { data: paymentIntentOrder, error: piError } = await supabaseAdmin
+      .from('orders')
+      .update({
+        customer_name,
+        delivery_address_line1,
+        delivery_address_line2,
+        delivery_city,
+        delivery_state,
+        delivery_zipcode,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .select()
+      .maybeSingle()
+
+    // If found by payment intent ID, return success
+    if (paymentIntentOrder) {
+      return NextResponse.json({
+        success: true,
+        order: paymentIntentOrder,
+      })
+    }
+
+    // If still not found, check if this looks like a payment intent ID (starts with 'pi_')
+    // If so, create a new orders record for tracking
+    if (paymentIntentId.startsWith('pi_')) {
+      const { data: newOrder, error: insertError } = await supabaseAdmin
+        .from('orders')
+        .insert({
+          stripe_payment_intent_id: paymentIntentId,
+          customer_name,
+          delivery_address_line1,
+          delivery_address_line2,
+          delivery_city,
+          delivery_state,
+          delivery_zipcode,
+          order_type: 'individual',
+          status: 'paid',
+          total: 0, // Will be updated from Stripe data if needed
+        })
+        .select()
+        .single()
+
+      if (newOrder) {
+        return NextResponse.json({
+          success: true,
+          order: newOrder,
+        })
+      }
+
+      if (insertError) {
+        console.error('[ADDRESS UPDATE API] Error creating order record:', insertError)
+      }
     }
 
     // If not found in orders, try subscriptions table (for topper subscriptions)

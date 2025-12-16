@@ -101,6 +101,11 @@ export default async function CheckoutPage() {
     const intervalCount = li.meta?.billing_interval_count || 1
     const isBiweekly = li.billing_interval === "week" && intervalCount === 2
 
+    // Check if this is a topper plan
+    const planType = li.meta?.plan_type
+    const topperLevel = li.meta?.topper_level
+    const isTopperPlan = planType === "topper" && topperLevel
+
     // Check if this plan item has multiple recipes in metadata
     const recipeVariety = li.meta?.recipe_variety
     const hasVariety = recipeVariety && Array.isArray(recipeVariety) && recipeVariety.length > 1
@@ -115,15 +120,25 @@ export default async function CheckoutPage() {
       recipes = [li.recipes.name]
     }
 
+    // Build appropriate description
+    let description = "Custom Recipe"
+    if (isTopperPlan) {
+      description = `${topperLevel}% Fresh Food Topper`
+    } else if (hasVariety) {
+      description = "Recipe Variety"
+    } else if (li.recipes?.name) {
+      description = li.recipes.name
+    }
+
     return {
       id: li.id,
       name: `${li.dogs?.name || 'Dog'}'s Plan`,
-      description: hasVariety ? "Recipe Variety" : (li.recipes?.name || "Custom Recipe"),
+      description,
       price: (li.unit_price_cents || 0) / 100,
       quantity: li.qty || 1,
       frequency: isBiweekly ? "Every 2 weeks" : (li.billing_interval === "week" ? "Weekly delivery" : li.billing_interval || "Weekly delivery"),
-      dogWeight: undefined,
-      dogActivity: undefined,
+      dogWeight: li.meta?.dog_weight,
+      dogActivity: li.meta?.activity_level,
       foodCostPerWeek: (li.unit_price_cents || 0) / 100,
       addOnsCostPerWeek: 0,
       totalWeeklyCost: (li.unit_price_cents || 0) / 100,

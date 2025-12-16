@@ -1722,12 +1722,38 @@ function PlanBuilderContent() {
           .filter(Boolean)
 
         const weightLbs = weightUnit === "kg" ? weight * 2.20462 : weight
-        const stripePricing = getStripePricingBiweeklyForDog(primaryRecipeData.slug, weightLbs)
 
-        if (!stripePricing) {
-          console.error(`[v0] No Stripe pricing found for recipe ${primaryRecipeId}`)
-          alert(`No Stripe pricing found for recipe ${primaryRecipeId}`)
-          continue
+        // Check if this is a topper plan and use topper pricing instead of full meal pricing
+        let stripePricing
+        if (planType === "topper" && topperLevel) {
+          const dogSizeCategory = getDogSizeCategory(weightLbs)
+          const topperPricing = getTopperPrices()[dogSizeCategory]?.[topperLevel]
+
+          console.log(`[v0] Using topper pricing for ${topperLevel}% ${dogSizeCategory} dog:`, topperPricing)
+
+          if (!topperPricing) {
+            console.error(`[v0] No topper pricing found for ${topperLevel}% ${dogSizeCategory}`)
+            alert(`No topper pricing found for ${topperLevel}% ${dogSizeCategory}`)
+            continue
+          }
+
+          // Convert topper pricing to stripePricing format
+          stripePricing = {
+            priceId: topperPricing.priceId,
+            productName: `${topperLevel}% Fresh Food Topper - ${dogSizeCategory}`,
+            amountCents: topperPricing.price * 100, // Convert to cents
+            interval: "week",
+            intervalCount: 2
+          }
+        } else {
+          // Full meal plan pricing
+          stripePricing = getStripePricingBiweeklyForDog(primaryRecipeData.slug, weightLbs)
+
+          if (!stripePricing) {
+            console.error(`[v0] No Stripe pricing found for recipe ${primaryRecipeId}`)
+            alert(`No Stripe pricing found for recipe ${primaryRecipeId}`)
+            continue
+          }
         }
 
         // Calculate DER using canonical formula
@@ -1747,7 +1773,14 @@ function PlanBuilderContent() {
 
         // Use actual recipe calories from database (nutritionist-approved values)
         const caloriesPer100g = primaryRecipeData.kcal_per_100g || 130
-        const dailyGrams = calculateDailyGrams(der, caloriesPer100g)
+        let dailyGrams = calculateDailyGrams(der, caloriesPer100g)
+
+        // Adjust for topper plans (only deliver the topper percentage)
+        if (planType === "topper" && topperLevel) {
+          const topperPercentage = parseInt(topperLevel) / 100
+          dailyGrams = dailyGrams * topperPercentage
+          console.log(`[v0] Adjusted daily grams for ${topperLevel}% topper: ${dailyGrams.toFixed(1)}g/day`)
+        }
 
         // Calculate biweekly grams (14 days) - this is our delivery period
         const biweeklyGrams = dailyGrams * 14
@@ -1791,6 +1824,8 @@ function PlanBuilderContent() {
               calculated_calories: Math.round(der),
               recipe_kcal_per_100g: caloriesPer100g,
               stripe_product_name: stripePricing?.productName,
+              plan_type: planType, // "full" or "topper"
+              topper_level: planType === "topper" ? topperLevel : null, // "25", "50", "75", or null
               // Store ALL selected recipes as variety options
               recipe_variety: allRecipeData.map(r => ({
                 id: r.id,

@@ -5,8 +5,48 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { MessageCircle, Send, Bot, User, X, Maximize2, Minimize2 } from "lucide-react"
+import { MessageCircle, Send, Bot, User, X, Maximize2, Minimize2, ExternalLink } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+
+// Parse markdown links and convert to JSX
+function parseMarkdownLinks(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = []
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+  let lastIndex = 0
+  let match
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index))
+    }
+
+    // Add the link
+    const linkText = match[1]
+    const linkUrl = match[2]
+    parts.push(
+      <a
+        key={match.index}
+        href={linkUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium inline-flex items-center gap-1"
+      >
+        {linkText}
+        <ExternalLink className="h-3 w-3" />
+      </a>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : [text]
+}
 
 interface ChatMessage {
   id: string
@@ -189,7 +229,9 @@ export function AIChatFAB() {
                       message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <div className="text-sm whitespace-pre-wrap">
+                      {parseMarkdownLinks(message.content)}
+                    </div>
                     <p className="text-xs opacity-70 mt-1">
                       {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>

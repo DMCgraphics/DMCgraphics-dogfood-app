@@ -62,7 +62,7 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
     // Fetch recent orders (last 5)
     const { data: orders } = await supabase
       .from("orders")
-      .select("id, created_at, status, fulfillment_status, estimated_delivery_date, order_number")
+      .select("id, created_at, status, fulfillment_status, estimated_delivery_date, order_number, tracking_url, tracking_token")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5)
@@ -71,9 +71,17 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
       contextParts.push("\nUser Orders:")
       orders.forEach((order) => {
         const orderDate = new Date(order.created_at).toLocaleDateString()
-        contextParts.push(
-          `- Order #${order.order_number}: Status: ${order.fulfillment_status || order.status}, Ordered: ${orderDate}, Delivery: ${order.estimated_delivery_date || "TBD"}`
-        )
+        let orderInfo = `- Order #${order.order_number}: Status: ${order.fulfillment_status || order.status}, Ordered: ${orderDate}, Delivery: ${order.estimated_delivery_date || "TBD"}`
+
+        // Add tracking URL if available
+        if (order.tracking_url) {
+          orderInfo += `, Tracking: ${order.tracking_url}`
+        } else if (order.tracking_token) {
+          // Generate internal tracking URL from token
+          orderInfo += `, Tracking: /track/${order.tracking_token}`
+        }
+
+        contextParts.push(orderInfo)
       })
     } else {
       contextParts.push("\nUser Orders: No orders found")

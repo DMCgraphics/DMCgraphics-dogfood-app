@@ -99,13 +99,22 @@ export function IncompleteOrdersTable({ orders }: IncompleteOrdersTableProps) {
             <CardContent>
               <div className="space-y-3">
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                  {order.status === 'checkout_in_progress' ? (
+                  {order.is_plan && order.status === 'draft' ? (
+                    <>
+                      <p className="text-sm font-medium text-yellow-800 mb-1">
+                        📋 Plan Created - Checkout Not Started
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Customer built their plan but hasn't started checkout yet. Follow up to help them complete their purchase.
+                      </p>
+                    </>
+                  ) : order.status === 'checkout_in_progress' ? (
                     <>
                       <p className="text-sm font-medium text-yellow-800 mb-1">
                         🛒 Checkout In Progress
                       </p>
                       <p className="text-xs text-yellow-700">
-                        Customer started checkout but hasn't completed it yet. Follow up to help them finish their order.
+                        Customer started checkout but hasn't completed payment. Follow up to help them finish their order.
                       </p>
                     </>
                   ) : (
@@ -123,15 +132,19 @@ export function IncompleteOrdersTable({ orders }: IncompleteOrdersTableProps) {
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-500">Subscription ID:</span>
+                    <span className="text-gray-500">
+                      {order.is_plan ? "Plan ID:" : "Subscription ID:"}
+                    </span>
                     <p className="font-mono text-xs mt-1 break-all">
-                      {order.stripe_subscription_id}
+                      {order.is_plan ? order.id : order.stripe_subscription_id}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-500">Status:</span>
                     <p className="mt-1">
-                      <Badge variant="secondary">{order.fulfillment_status}</Badge>
+                      <Badge variant="secondary">
+                        {order.is_plan ? order.status : order.fulfillment_status}
+                      </Badge>
                     </p>
                   </div>
                 </div>
@@ -145,20 +158,22 @@ export function IncompleteOrdersTable({ orders }: IncompleteOrdersTableProps) {
                     <Mail className="h-4 w-4 mr-2" />
                     Copy Email
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    asChild
-                  >
-                    <a
-                      href={`https://dashboard.stripe.com/subscriptions/${order.stripe_subscription_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {!order.is_plan && order.stripe_subscription_id && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      asChild
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View in Stripe
-                    </a>
-                  </Button>
+                      <a
+                        href={`https://dashboard.stripe.com/subscriptions/${order.stripe_subscription_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View in Stripe
+                      </a>
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

@@ -74,6 +74,13 @@ Key Differentiators:
 
 Available Recipes:${recipeSummaries || "\n  Loading recipe information..."}
 
+Pack Sizes & Portions:
+- Standard pack size: 8 oz (227g) per pack
+- Individual packs available for one-time purchase contain 8 oz
+- 3-pack bundles contain three 8 oz packs at a discounted price
+- Subscription plans deliver 8 oz packs on your chosen schedule (weekly or biweekly)
+- The number of packs you need depends on your dog's weight, activity level, and caloric needs
+
 How We Work:
 1. Customers use our Plan Builder to input their dog's profile (age, weight, activity, health goals)
 2. Our AI recommends optimal recipes based on nutritional needs
@@ -81,8 +88,8 @@ How We Work:
 4. Fresh meals are delivered on a flexible schedule
 
 Pricing:
-- Individual packs: varies by recipe (~$15-25 per pack)
-- 3-pack bundles: discounted pricing
+- Individual 8 oz packs: varies by recipe (~$15-25 per pack)
+- 3-pack bundles (24 oz total): discounted pricing
 - Subscriptions: recurring delivery with flexibility to pause, skip, or cancel
 
 Support Contact:

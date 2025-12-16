@@ -11,11 +11,11 @@ async function getOrders() {
   // Use admin client to bypass RLS
   const supabase = supabaseAdmin
 
-  // Get plans
+  // Get plans (including draft orders which show as incomplete)
   const { data: plans, error } = await supabase
     .from("plans")
     .select("*")
-    .in("status", ["active", "checkout_in_progress"])
+    .in("status", ["active", "checkout_in_progress", "draft"])
     .order("created_at", { ascending: false })
 
   if (error) {

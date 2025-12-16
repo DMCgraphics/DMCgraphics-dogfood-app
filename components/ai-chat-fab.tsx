@@ -132,7 +132,7 @@ export function AIChatFAB() {
         showCloseButton={false}
         className={`p-0 gap-0 flex flex-col ${
           isFullscreen
-            ? 'w-full h-[100dvh] max-w-none max-h-none fixed inset-0 rounded-none'
+            ? 'w-full h-[100dvh] max-w-none max-h-none !top-0 !left-0 !translate-x-0 !translate-y-0 rounded-none m-0'
             : 'sm:max-w-md h-[600px] max-h-[90vh]'
         }`}
       >

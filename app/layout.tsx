@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { CartProvider } from "@/contexts/cart-context"
 import { Toaster } from "@/components/ui/toaster"
+import { AIChatFAB } from "@/components/ai-chat-fab"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -97,6 +98,7 @@ export default function RootLayout({
             <CartProvider>
               {children}
               <Toaster />
+              <AIChatFAB />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

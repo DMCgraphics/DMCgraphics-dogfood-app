@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { Resend } from "resend"
 import { processMergeFields } from "@/lib/sales/email-template-processor"
 import { generateSalesEmailHTML, generateSalesEmailText } from "@/lib/sales/email-template-html"
+import { checkEmailRateLimits } from "@/lib/sales/email-rate-limit"
+import { validateEmail, validateSubject, validateEmailBody, sanitizeEmail } from "@/lib/sales/email-validator"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -51,6 +53,37 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Validate subject and body
+    const subjectValidation = validateSubject(subject)
+    if (!subjectValidation.valid) {
+      return NextResponse.json(
+        { error: subjectValidation.error },
+        { status: 400 }
+      )
+    }
+
+    const bodyValidation = validateEmailBody(htmlBody)
+    if (!bodyValidation.valid) {
+      return NextResponse.json(
+        { error: bodyValidation.error },
+        { status: 400 }
+      )
+    }
+
+    // Check rate limits
+    const rateLimitCheck = await checkEmailRateLimits(user.id, leadId)
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: rateLimitCheck.reason,
+          resetAt: rateLimitCheck.resetAt,
+          currentCount: rateLimitCheck.currentCount,
+          limit: rateLimitCheck.limit,
+        },
+        { status: 429 }
+      )
+    }
+
     // Get lead details
     const { data: lead, error: leadError } = await supabase
       .from("sales_leads")
@@ -61,6 +94,15 @@ export async function POST(req: NextRequest) {
     if (leadError || !lead) {
       console.error("Lead not found:", leadError)
       return NextResponse.json({ error: "Lead not found" }, { status: 404 })
+    }
+
+    // Validate lead email
+    const emailValidation = validateEmail(lead.email)
+    if (!emailValidation.valid) {
+      return NextResponse.json(
+        { error: `Invalid lead email: ${emailValidation.error}` },
+        { status: 400 }
+      )
     }
 
     // Build merge variables

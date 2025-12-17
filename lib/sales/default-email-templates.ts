@@ -26,7 +26,7 @@ export const DEFAULT_SALES_TEMPLATES: EmailTemplate[] = [
 
 <p>I'm {{rep_name}} from NouriPet, and I wanted to personally reach out about {{dog_name}}'s nutrition.</p>
 
-<p>We specialize in fresh, locally-prepared meals tailored specifically for your dog's needs. ${'{'}{{dog_breed ? `As a ${dog_breed} parent` : 'As a dog parent'}}${'}'}}, you know how important quality nutrition is for {{dog_name}}'s health and happiness.</p>
+<p>We specialize in fresh, locally-prepared meals tailored specifically for your dog's needs. As a dog parent, you know how important quality nutrition is for {{dog_name}}'s health and happiness.</p>
 
 <div class="highlight">
   <strong>Why NouriPet?</strong>

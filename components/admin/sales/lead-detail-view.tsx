@@ -8,6 +8,8 @@ import { AssignLeadDialog } from "./assign-lead-dialog"
 import { UpdateLeadStatusDialog } from "./update-lead-status-dialog"
 import { AddActivityDialog } from "./add-activity-dialog"
 import { EditLeadDialog } from "./edit-lead-dialog"
+import { SendEmailDialog } from "./send-email-dialog"
+import { EmailActivityItem } from "./email-activity-item"
 
 interface Lead {
   id: string
@@ -55,6 +57,13 @@ interface Activity {
       full_name: string | null
     } | null
   } | null
+  // Email-specific fields
+  email_status?: string | null
+  email_opened_at?: string | null
+  email_open_count?: number | null
+  email_clicked_at?: string | null
+  email_click_count?: number | null
+  email_subject?: string | null
 }
 
 interface SalesTeamMember {
@@ -318,9 +327,21 @@ export function LeadDetailView({ lead, activities, salesTeam }: LeadDetailViewPr
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Activity Timeline</CardTitle>
-              <AddActivityDialog leadId={lead.id}>
-                <Button size="sm">Add Activity</Button>
-              </AddActivityDialog>
+              <div className="flex gap-2">
+                <SendEmailDialog
+                  leadId={lead.id}
+                  leadEmail={lead.email}
+                  leadName={lead.full_name}
+                >
+                  <Button size="sm" variant="outline">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Email
+                  </Button>
+                </SendEmailDialog>
+                <AddActivityDialog leadId={lead.id}>
+                  <Button size="sm">Add Activity</Button>
+                </AddActivityDialog>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -368,6 +389,9 @@ export function LeadDetailView({ lead, activities, salesTeam }: LeadDetailViewPr
                           <Calendar className="h-3 w-3" />
                           Scheduled for: {new Date(activity.scheduled_for).toLocaleString()}
                         </div>
+                      )}
+                      {activity.activity_type === 'email' && (
+                        <EmailActivityItem activity={activity} />
                       )}
                     </div>
                   </div>

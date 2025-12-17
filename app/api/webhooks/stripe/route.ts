@@ -5,6 +5,7 @@ import { stripe } from "@/lib/stripe"
 import type Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
 import { isAllowedZip, normalizeZip } from "@/lib/allowed-zips"
+import { getAdminUserIds, notifyNewOrder, notifyPaymentFailed } from "@/lib/notifications/triggers"
 
 function reqEnv(name: string) {
   const v = process.env[name]
@@ -385,11 +386,34 @@ export async function POST(req: Request) {
               updated_at: new Date().toISOString(),
             }
 
-            const { error: orderError } = await getSupabaseAdmin().from("orders").insert(orderData)
+            const { data: createdOrder, error: orderError } = await getSupabaseAdmin()
+              .from("orders")
+              .insert(orderData)
+              .select()
+              .single()
+
             if (orderError) {
               console.error("[v0] Failed to create order:", orderError)
             } else {
               console.log("[v0] Order created successfully:", orderNumber)
+
+              // Notify admins of new subscription order
+              try {
+                const adminUserIds = await getAdminUserIds()
+                if (adminUserIds.length > 0) {
+                  await notifyNewOrder({
+                    orderId: createdOrder.id,
+                    orderNumber: orderNumber,
+                    customerName: s.customer_details?.name,
+                    totalCents: plan.total_cents || 0,
+                    adminUserIds,
+                  })
+                  console.log("[v0] Admin notifications sent for new subscription order")
+                }
+              } catch (notifError) {
+                console.error("[v0] Failed to send order notifications:", notifError)
+                // Don't fail the webhook if notifications fail
+              }
             }
           }
         }
@@ -505,6 +529,24 @@ export async function POST(req: Request) {
             console.error('[WEBHOOK] Order data that failed:', JSON.stringify(orderData, null, 2))
           } else {
             console.log('[WEBHOOK] Order created successfully:', order.id)
+
+            // Notify admins of new individual pack order
+            try {
+              const adminUserIds = await getAdminUserIds()
+              if (adminUserIds.length > 0) {
+                await notifyNewOrder({
+                  orderId: order.id,
+                  orderNumber: orderNumber,
+                  customerName: customerName,
+                  totalCents: s.amount_total || 0,
+                  adminUserIds,
+                })
+                console.log('[WEBHOOK] Admin notifications sent for new individual pack order')
+              }
+            } catch (notifError) {
+              console.error('[WEBHOOK] Failed to send order notifications:', notifError)
+              // Don't fail the webhook if notifications fail
+            }
 
             // Create initial tracking event
             try {
@@ -777,6 +819,56 @@ export async function POST(req: Request) {
         console.error("[v0] Failed to create delivery:", deliveryError)
       } else {
         console.log("[v0] Delivery created for subscription:", subscriptionId, "scheduled for:", scheduledDate.toISOString().split('T')[0])
+      }
+
+      return NextResponse.json({ received: true })
+    }
+
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice
+      console.log("[v0] Processing invoice.payment_failed:", invoice.id)
+
+      // Get customer details
+      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+      const customerEmail = invoice.customer_email || ''
+
+      if (!customerId || !customerEmail) {
+        console.log("[v0] Missing customer info for payment failure")
+        return NextResponse.json({ received: true })
+      }
+
+      // Get subscription ID if this is a subscription payment
+      const subscriptionId = invoice.subscription
+        ? typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription.id
+        : undefined
+
+      // Get customer name from Stripe
+      let customerName: string | undefined
+      try {
+        const customer = await stripe.customers.retrieve(customerId)
+        if (customer && !customer.deleted) {
+          customerName = customer.name || undefined
+        }
+      } catch (e) {
+        console.error("[v0] Failed to retrieve customer:", e)
+      }
+
+      // Notify admins of payment failure
+      try {
+        const adminUserIds = await getAdminUserIds()
+        if (adminUserIds.length > 0) {
+          await notifyPaymentFailed({
+            customerId,
+            customerEmail,
+            customerName,
+            subscriptionId,
+            amount: invoice.amount_due,
+            adminUserIds,
+          })
+          console.log("[v0] Admin notifications sent for payment failure")
+        }
+      } catch (notifError) {
+        console.error("[v0] Failed to send payment failure notifications:", notifError)
       }
 
       return NextResponse.json({ received: true })

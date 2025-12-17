@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/check-ai-costs",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/follow-up-reminders",
+      "schedule": "0 9 * * *"
     }
   ]
 }

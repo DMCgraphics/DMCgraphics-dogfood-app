@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase/server"
+import { notifyEmailOpened } from "@/lib/notifications/triggers"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -40,10 +41,20 @@ export async function POST(req: NextRequest) {
       console.error("[resend webhook] Failed to store event:", eventInsertError)
     }
 
-    // Find the corresponding activity
+    // Find the corresponding activity with lead information
     const { data: activity } = await supabaseAdmin
       .from("sales_activities")
-      .select("id, email_open_count, email_click_count")
+      .select(`
+        id,
+        email_open_count,
+        email_click_count,
+        email_subject,
+        lead_id,
+        sales_leads (
+          email,
+          assigned_to
+        )
+      `)
       .eq("email_message_id", emailId)
       .eq("activity_type", "email")
       .single()
@@ -102,6 +113,26 @@ export async function POST(req: NextRequest) {
         console.error("[resend webhook] Failed to update activity:", updateError)
       } else {
         console.log(`[resend webhook] Activity ${activity.id} updated:`, updates)
+
+        // Notify sales rep when email is opened for the first time
+        if (eventType === "email.opened" && (!activity.email_open_count || activity.email_open_count === 0)) {
+          try {
+            const lead = activity.sales_leads as any
+            if (lead && lead.assigned_to) {
+              await notifyEmailOpened({
+                activityId: activity.id,
+                leadId: activity.lead_id,
+                leadEmail: lead.email,
+                emailSubject: activity.email_subject || 'Email',
+                salesRepId: lead.assigned_to,
+              })
+              console.log(`[resend webhook] Notification sent to sales rep ${lead.assigned_to} for email open`)
+            }
+          } catch (notifError) {
+            console.error("[resend webhook] Failed to send email open notification:", notifError)
+            // Don't fail the webhook if notification fails
+          }
+        }
 
         // Mark event as processed
         await supabaseAdmin

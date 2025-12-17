@@ -4,6 +4,7 @@ import { TrendingUp, Users, Phone, Target, ArrowUpRight, Clock } from "lucide-re
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { getIncompleteOrdersCount } from "@/lib/admin/incomplete-orders"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -18,6 +19,7 @@ interface LeadStats {
   leads_by_status: { status: string; count: number }[]
   recent_leads: any[]
   pending_followups: number
+  incomplete_orders_count: number
 }
 
 async function getLeadStats(): Promise<LeadStats> {
@@ -39,6 +41,7 @@ async function getLeadStats(): Promise<LeadStats> {
       leads_by_status: [],
       recent_leads: [],
       pending_followups: 0,
+      incomplete_orders_count: 0,
     }
   }
 
@@ -88,11 +91,15 @@ async function getLeadStats(): Promise<LeadStats> {
   // Get recent leads (last 5)
   const recent_leads = leads.slice(0, 5)
 
+  // Get incomplete orders count
+  const incomplete_orders_count = await getIncompleteOrdersCount()
+
   return {
     ...stats,
     leads_by_source,
     leads_by_status,
     recent_leads,
+    incomplete_orders_count,
   }
 }
 
@@ -253,7 +260,7 @@ export default async function SalesDashboardPage() {
             <Button asChild variant="outline" className="w-full justify-start">
               <Link href="/admin/sales/incomplete-orders">
                 <ArrowUpRight className="h-4 w-4 mr-2" />
-                Incomplete Orders ({stats.leads_by_source.find(s => s.source === 'incomplete_checkout')?.count || 0})
+                Incomplete Orders ({stats.incomplete_orders_count})
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">

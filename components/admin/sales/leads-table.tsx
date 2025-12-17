@@ -50,6 +50,7 @@ interface Lead {
   last_contacted_at: string | null
   next_follow_up_at: string | null
   contact_count: number
+  conversion_probability: number
 }
 
 interface SalesTeamMember {
@@ -411,6 +412,7 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
                 <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Priority</TableHead>
+                <TableHead>Score</TableHead>
                 <TableHead>Assigned To</TableHead>
                 <TableHead>Last Contact</TableHead>
                 <TableHead>Actions</TableHead>
@@ -419,7 +421,7 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     No leads found matching your filters
                   </TableCell>
                 </TableRow>
@@ -476,6 +478,23 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
                       <Badge variant="secondary" className={getPriorityColor(lead.priority)}>
                         {lead.priority}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              lead.conversion_probability >= 70
+                                ? 'bg-green-500'
+                                : lead.conversion_probability >= 50
+                                ? 'bg-orange-500'
+                                : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${lead.conversion_probability}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8">{lead.conversion_probability}%</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <AssignLeadDialog

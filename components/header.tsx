@@ -149,6 +149,11 @@ export function Header() {
                 Delivery
               </Link>
             )}
+            {isAuthenticated && (user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep')) && (
+              <Link href="/sales" className="text-sm font-medium hover:text-primary transition-colors text-green-600">
+                Sales
+              </Link>
+            )}
             {isAuthenticated && user?.isAdmin && (
               <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors text-purple-600">
                 Admin
@@ -237,6 +242,11 @@ export function Header() {
               {isAuthenticated && user?.roles?.includes('delivery_driver') && (
                 <Link href="/delivery" className="block text-sm font-medium hover:text-primary transition-colors text-blue-600">
                   Delivery
+                </Link>
+              )}
+              {isAuthenticated && (user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep')) && (
+                <Link href="/sales" className="block text-sm font-medium hover:text-primary transition-colors text-green-600">
+                  Sales
                 </Link>
               )}
               {isAuthenticated && user?.isAdmin && (

@@ -162,7 +162,7 @@ export function AIChatFAB() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50 hover:scale-110 transition-transform"
+          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50"
           aria-label="Open AI chat assistant"
         >
           <MessageCircle className="h-6 w-6" />

@@ -198,11 +198,21 @@ export function AddressInput({ value, onChange, placeholder, className, required
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+
+      // Don't close if clicking inside a Radix portal
+      if (target instanceof Element) {
+        const isInRadixPortal = target.closest('[data-radix-dropdown-menu-content]') ||
+                               target.closest('[data-radix-dialog-content]') ||
+                               target.closest('[data-radix-popover-content]')
+        if (isInRadixPortal) return
+      }
+
       if (
         inputRef.current &&
         suggestionsRef.current &&
-        !inputRef.current.contains(event.target as Node) &&
-        !suggestionsRef.current.contains(event.target as Node)
+        !inputRef.current.contains(target) &&
+        !suggestionsRef.current.contains(target)
       ) {
         setShowSuggestions(false)
       }

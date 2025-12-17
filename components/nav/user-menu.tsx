@@ -13,7 +13,17 @@ export function UserMenu() {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+
+      // Don't close if clicking inside a Radix portal
+      if (target instanceof Element) {
+        const isInRadixPortal = target.closest('[data-radix-dropdown-menu-content]') ||
+                               target.closest('[data-radix-dialog-content]') ||
+                               target.closest('[data-radix-popover-content]')
+        if (isInRadixPortal) return
+      }
+
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setOpen(false)
       }
     }
@@ -65,7 +75,7 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg ring-1 ring-black/5 z-[1000] overflow-hidden">
+        <div className="absolute right-0 mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg ring-1 ring-black/5 overflow-hidden">
           <div className="py-2">
             <Link
               href="/dashboard"

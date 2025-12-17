@@ -1,20 +1,10 @@
 import { redirect } from "next/navigation"
 import { getAdminUser } from "@/lib/admin/auth"
 import Link from "next/link"
-import {
-  LayoutDashboard,
-  Users,
-  Package,
-  Truck,
-  CreditCard,
-  Settings,
-  LogOut,
-  Mail,
-  ClipboardList,
-  UserCircle,
-  Brain,
-  TrendingUp
-} from "lucide-react"
+import { LayoutDashboard, LogOut } from "lucide-react"
+import { NotificationBell } from "@/components/notifications/notification-bell"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs"
 
 export default async function AdminLayout({
   children,
@@ -29,18 +19,19 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin Header */}
-      <header className="bg-gray-900 text-white shadow-lg">
+      {/* Admin Header - NOT STICKY */}
+      <header className="bg-gray-900 text-white shadow-lg border-b border-gray-800">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <LayoutDashboard className="h-8 w-8" />
+              <LayoutDashboard className="h-8 w-8 text-purple-400" />
               <div>
                 <h1 className="text-2xl font-bold">NouriPet Admin</h1>
                 <p className="text-sm text-gray-400">Management Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <NotificationBell portalType="admin" />
               <span className="text-sm text-gray-400">{adminUser.email}</span>
               <Link
                 href="/"
@@ -55,85 +46,15 @@ export default async function AdminLayout({
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Sidebar Navigation */}
-          <aside className="col-span-12 lg:col-span-3">
-            <nav className="bg-white rounded-lg shadow-md p-4 space-y-2">
-              <Link
-                href="/admin"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <LayoutDashboard className="h-5 w-5" />
-                <span className="font-medium">Dashboard</span>
-              </Link>
-              <Link
-                href="/admin/users"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Users className="h-5 w-5" />
-                <span className="font-medium">Users</span>
-              </Link>
-              <Link
-                href="/admin/orders"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Package className="h-5 w-5" />
-                <span className="font-medium">Orders</span>
-              </Link>
-              <Link
-                href="/admin/sales"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <TrendingUp className="h-5 w-5" />
-                <span className="font-medium">Sales</span>
-              </Link>
-              <Link
-                href="/admin/fulfillment"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <ClipboardList className="h-5 w-5" />
-                <span className="font-medium">Fulfillment</span>
-              </Link>
-              <Link
-                href="/admin/deliveries"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Truck className="h-5 w-5" />
-                <span className="font-medium">Deliveries</span>
-              </Link>
-              <Link
-                href="/admin/drivers"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <UserCircle className="h-5 w-5" />
-                <span className="font-medium">Drivers</span>
-              </Link>
-              <Link
-                href="/admin/stripe"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <CreditCard className="h-5 w-5" />
-                <span className="font-medium">Stripe Actions</span>
-              </Link>
-              <Link
-                href="/admin/invitations"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Mail className="h-5 w-5" />
-                <span className="font-medium">Invitations</span>
-              </Link>
-              <Link
-                href="/admin/ai-monitoring"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Brain className="h-5 w-5" />
-                <span className="font-medium">AI Monitoring</span>
-              </Link>
-            </nav>
-          </aside>
+        <div className="flex gap-6">
+          {/* Collapsible Sidebar */}
+          <AdminSidebar />
 
           {/* Main Content */}
-          <main className="col-span-12 lg:col-span-9">{children}</main>
+          <main className="flex-1 min-w-0">
+            <AdminBreadcrumbs />
+            {children}
+          </main>
         </div>
       </div>
     </div>

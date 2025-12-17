@@ -1,0 +1,20 @@
+# Git-secrets allowed patterns
+# These are test/dev keys that are safe to commit
+
+# Dev Supabase service key (not production)
+sb_secret_BrHc5r2vkNjLL7axDt-cng_YWCktFBz
+
+# Test Supabase service key from ENV_SETUP.md documentation
+sb_secret_7uPMGe-czJ6cPMzmOLOzUw_L30sZOy2
+
+# Test Stripe key (sk_test_ prefix indicates test mode)
+sk_test_51S8z8R0R4BbWwBbfpWwmiV3o
+
+# Allow environment variable references (these don't contain actual secrets)
+process\.env\.SUPABASE_SERVICE_ROLE_KEY
+process\.env\.STRIPE_SECRET_KEY
+SUPABASE_SERVICE_ROLE_KEY.*=.*\.\.\.
+
+# Allow documentation examples with placeholder values
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_SECRET_KEY=sk_live_xxx

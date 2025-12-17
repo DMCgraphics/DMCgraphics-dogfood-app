@@ -122,15 +122,16 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
   }
 
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn("relative text-white hover:text-gray-200", className)}
+        <button
+          className={cn(
+            "relative inline-flex items-center justify-center rounded-md text-white hover:text-gray-200 hover:bg-gray-800 p-2 transition-colors",
+            className
+          )}
           aria-label={`${unreadCount} unread notifications`}
         >
-          <Bell className="h-5 w-5 text-white" />
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
@@ -139,15 +140,13 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         side="bottom"
-        className="w-80 !bg-white !text-gray-900 !border !border-gray-200 shadow-xl"
+        className="w-80 bg-white text-gray-900"
         sideOffset={8}
-        collisionPadding={8}
-        avoidCollisions={true}
       >
         <div className="flex items-center justify-between px-4 py-2 bg-white">
           <h3 className="font-semibold text-gray-900">Notifications</h3>

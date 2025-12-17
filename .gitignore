@@ -34,3 +34,8 @@ next-env.d.ts
 
 # MCP
 .mcp.json
+
+# Scripts with potential secrets
+scripts/fix-*.ts
+scripts/*-production.ts
+scripts/*-prod.ts

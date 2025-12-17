@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, Calendar, Shield, Dog, CreditCard, Package } from "luc
 import { notFound } from "next/navigation"
 import { ManageUserRoles } from "@/components/admin/manage-user-roles"
 import { DeleteUserButton } from "@/components/admin/delete-user-button"
+import { EditUserDialog } from "@/components/admin/edit-user-dialog"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -91,7 +92,14 @@ export default async function UserDetailsPage({ params }: { params: { id: string
             </p>
           </div>
         </div>
-        <DeleteUserButton userId={profile.id} userName={profile.full_name || profile.id} />
+        <div className="flex gap-2">
+          <EditUserDialog
+            userId={profile.id}
+            currentFullName={profile.full_name}
+            currentEmail={profile.email}
+          />
+          <DeleteUserButton userId={profile.id} userName={profile.full_name || profile.id} />
+        </div>
       </div>
 
       {/* Profile Info */}

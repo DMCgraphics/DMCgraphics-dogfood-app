@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-import { ExternalLink, Mail, Calendar, Shield, ChevronLeft, ChevronRight, Users, Truck } from "lucide-react"
+import { ExternalLink, Mail, Calendar, Shield, ChevronLeft, ChevronRight, Users, Truck, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface UsersTableProps {
   users: any[]
 }
 
 export function UsersTable({ users }: UsersTableProps) {
+  const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
+  const [deleting, setDeleting] = useState(false)
   const [filters, setFilters] = useState({
     role: "all",
     status: "all",
@@ -90,6 +95,85 @@ export function UsersTable({ users }: UsersTableProps) {
       search: ""
     })
     setCurrentPage(1)
+  }
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === paginatedUsers.length) {
+      setSelectedUsers([])
+    } else {
+      setSelectedUsers(paginatedUsers.map(u => u.id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) return
+
+    if (!confirm(`Are you sure you want to delete ${selectedUsers.length} user(s)? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(true)
+
+    try {
+      const response = await fetch('/api/admin/users/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userIds: selectedUsers }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete users')
+      }
+
+      const result = await response.json()
+      alert(result.message)
+
+      // Clear selection and refresh
+      setSelectedUsers([])
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting users:', error)
+      alert(error instanceof Error ? error.message : 'Failed to delete users')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleDeleteSingle = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(true)
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete user')
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      alert(error instanceof Error ? error.message : 'Failed to delete user')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -170,12 +254,56 @@ export function UsersTable({ users }: UsersTableProps) {
         </CardContent>
       </Card>
 
+      {/* Bulk actions */}
+      {selectedUsers.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <p className="text-sm font-medium">
+                  {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedUsers([])}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={deleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {deleting ? 'Deleting...' : `Delete Selected (${selectedUsers.length})`}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results summary */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          Showing {paginatedUsers.length} of {filteredUsers.length} users
-          {filteredUsers.length !== users.length && ` (filtered from ${users.length} total)`}
-        </p>
+        <div className="flex items-center gap-4">
+          {paginatedUsers.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+                onCheckedChange={toggleSelectAll}
+              />
+              <Label className="text-sm text-gray-600 cursor-pointer" onClick={toggleSelectAll}>
+                Select all on page
+              </Label>
+            </div>
+          )}
+          <p className="text-sm text-gray-600">
+            Showing {paginatedUsers.length} of {filteredUsers.length} users
+            {filteredUsers.length !== users.length && ` (filtered from ${users.length} total)`}
+          </p>
+        </div>
 
         {/* Pagination controls */}
         {totalPages > 1 && (
@@ -213,12 +341,18 @@ export function UsersTable({ users }: UsersTableProps) {
           const totalDogs = user.dogs?.length || 0
 
           return (
-            <Card key={user.id}>
+            <Card key={user.id} className={selectedUsers.includes(user.id) ? 'border-blue-500 bg-blue-50/50' : ''}>
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2 flex-wrap">
-                      {user.full_name || "No name"}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <Checkbox
+                      checked={selectedUsers.includes(user.id)}
+                      onCheckedChange={() => toggleUserSelection(user.id)}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <CardTitle className="flex items-center gap-2 flex-wrap">
+                        {user.full_name || "No name"}
                       {user.roles && user.roles.length > 0 ? (
                         user.roles.map((role: string) => (
                           role === 'admin' ? (
@@ -251,6 +385,8 @@ export function UsersTable({ users }: UsersTableProps) {
                       </span>
                     </CardDescription>
                   </div>
+                </div>
+                <div className="flex gap-2">
                   <Link
                     href={`/admin/users/${user.id}`}
                     className="inline-flex"
@@ -260,7 +396,17 @@ export function UsersTable({ users }: UsersTableProps) {
                       View Details
                     </Button>
                   </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteSingle(user.id, user.full_name || user.id)}
+                    disabled={deleting}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4">

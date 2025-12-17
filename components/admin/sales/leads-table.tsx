@@ -20,10 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Mail, Phone, Calendar, User, Filter, Search } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Mail, Phone, Calendar, User, Filter, Search, Sparkles, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { AssignLeadDialog } from "./assign-lead-dialog"
 import { UpdateLeadStatusDialog } from "./update-lead-status-dialog"
+import { useRouter } from "next/navigation"
 
 interface Lead {
   id: string
@@ -112,11 +114,14 @@ function getPriorityColor(priority: string): string {
 }
 
 export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [sourceFilter, setSourceFilter] = useState<string>("all")
   const [assignedFilter, setAssignedFilter] = useState<string>("all")
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([])
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -147,6 +152,83 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
 
   // Get unique sources for filter
   const uniqueSources = Array.from(new Set(leads.map(l => l.source)))
+
+  // Bulk action handlers
+  const handleSelectAll = () => {
+    if (selectedLeads.length === filteredLeads.length) {
+      setSelectedLeads([])
+    } else {
+      setSelectedLeads(filteredLeads.map(l => l.id))
+    }
+  }
+
+  const handleSelectLead = (leadId: string) => {
+    setSelectedLeads(prev =>
+      prev.includes(leadId)
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    )
+  }
+
+  const handleAutoAssign = async (strategy: 'round-robin' | 'workload' = 'round-robin') => {
+    if (selectedLeads.length === 0) return
+
+    setIsProcessing(true)
+    try {
+      const response = await fetch('/api/admin/sales/auto-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadIds: selectedLeads,
+          strategy,
+          excludeManagers: false,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(`Successfully assigned ${data.stats.success} leads using ${strategy} strategy`)
+        setSelectedLeads([])
+        router.refresh()
+      } else {
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Auto-assign error:', error)
+      alert('Failed to auto-assign leads')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleRescore = async () => {
+    if (selectedLeads.length === 0) return
+
+    setIsProcessing(true)
+    try {
+      const response = await fetch('/api/admin/sales/rescore-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: selectedLeads }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(`Successfully rescored ${data.stats.updated} leads`)
+        setSelectedLeads([])
+        router.refresh()
+      } else {
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Rescore error:', error)
+      alert('Failed to rescore leads')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -259,6 +341,55 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
         </CardContent>
       </Card>
 
+      {/* Bulk Actions */}
+      {selectedLeads.length > 0 && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">
+                {selectedLeads.length} lead{selectedLeads.length !== 1 ? 's' : ''} selected
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAutoAssign('round-robin')}
+                  disabled={isProcessing}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Auto-Assign (Round Robin)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAutoAssign('workload')}
+                  disabled={isProcessing}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Auto-Assign (Balance Workload)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRescore}
+                  disabled={isProcessing}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Rescore
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedLeads([])}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results Count */}
       <div className="text-sm text-muted-foreground">
         Showing {filteredLeads.length} of {leads.length} leads
@@ -270,6 +401,12 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
@@ -282,13 +419,19 @@ export function LeadsTable({ leads, salesTeam }: LeadsTableProps) {
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No leads found matching your filters
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredLeads.map((lead) => (
                   <TableRow key={lead.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedLeads.includes(lead.id)}
+                        onCheckedChange={() => handleSelectLead(lead.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <div className="font-medium">

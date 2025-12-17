@@ -7,6 +7,7 @@ import { Mail, Phone, MapPin, Calendar, User, TrendingUp, ExternalLink } from "l
 import { AssignLeadDialog } from "./assign-lead-dialog"
 import { UpdateLeadStatusDialog } from "./update-lead-status-dialog"
 import { AddActivityDialog } from "./add-activity-dialog"
+import { EditLeadDialog } from "./edit-lead-dialog"
 
 interface Lead {
   id: string
@@ -143,9 +144,16 @@ export function LeadDetailView({ lead, activities, salesTeam }: LeadDetailViewPr
         {/* Contact Info */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">
-              {lead.full_name || lead.email}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl">
+                {lead.full_name || lead.email}
+              </CardTitle>
+              <EditLeadDialog lead={lead}>
+                <Button variant="outline" size="sm">
+                  Edit Lead
+                </Button>
+              </EditLeadDialog>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2 text-sm">
@@ -185,6 +193,32 @@ export function LeadDetailView({ lead, activities, salesTeam }: LeadDetailViewPr
               <Badge variant="secondary" className={getPriorityColor(lead.priority)}>
                 {lead.priority}
               </Badge>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Conversion Score</div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      lead.conversion_probability >= 70
+                        ? 'bg-green-500'
+                        : lead.conversion_probability >= 50
+                        ? 'bg-orange-500'
+                        : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${lead.conversion_probability}%` }}
+                  />
+                </div>
+                <span className="text-sm font-bold w-10 text-right">{lead.conversion_probability}%</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {lead.conversion_probability >= 70
+                  ? 'High likelihood to convert'
+                  : lead.conversion_probability >= 50
+                  ? 'Moderate conversion potential'
+                  : 'Needs nurturing'}
+              </p>
             </div>
 
             <div className="space-y-2">

@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/server"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const VALID_ROLES = ['admin', 'delivery_driver']
+const VALID_ROLES = ['admin', 'delivery_driver', 'sales_manager', 'sales_rep', 'operations']
 
 export async function POST(req: Request) {
   try {

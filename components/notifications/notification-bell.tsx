@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Bell } from "lucide-react"
+import { Bell, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,6 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -40,6 +47,7 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -121,135 +129,211 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
     return date.toLocaleDateString()
   }
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            "relative inline-flex items-center justify-center rounded-md text-white hover:text-gray-200 hover:bg-gray-800 p-2 transition-colors",
-            className
-          )}
-          aria-label={`${unreadCount} unread notifications`}
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              variant="destructive"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="bottom"
-        className="w-80 bg-white text-gray-900"
-        sideOffset={8}
-      >
-        <div className="flex items-center justify-between px-4 py-2 bg-white">
-          <h3 className="font-semibold text-gray-900">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="h-auto p-1 text-xs"
-            >
-              Mark all read
-            </Button>
-          )}
+  // Render notification item (used in both mobile and desktop)
+  const renderNotificationItem = (notification: Notification, isMobile = false) => {
+    const content = (
+      <div className="flex items-start gap-3 w-full">
+        <div className={cn(
+          "flex items-center justify-center rounded-lg flex-shrink-0",
+          isMobile ? "w-10 h-10 bg-gradient-to-br from-purple-100 to-blue-100" : "w-9 h-9 bg-purple-50"
+        )}>
+          <span className="text-xl">
+            {NOTIFICATION_ICONS[notification.notification_type] || '📬'}
+          </span>
         </div>
-        <DropdownMenuSeparator />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className={cn(
+              "font-medium line-clamp-1",
+              isMobile ? "text-sm" : "text-sm"
+            )}>
+              {notification.title}
+            </p>
+            {!notification.read && (
+              <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5 animate-pulse" />
+            )}
+          </div>
+          <p className="text-xs text-gray-600 line-clamp-2 mb-1">
+            {notification.message}
+          </p>
+          <p className="text-xs text-gray-400">
+            {formatTimeAgo(notification.created_at)}
+          </p>
+        </div>
+      </div>
+    )
 
-        {isLoading ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Loading notifications...
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No notifications yet
-          </div>
-        ) : (
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.map((notification) => (
-              <div key={notification.id} className="relative">
-                <DropdownMenuItem
-                  asChild
-                  className={cn(
-                    "flex flex-col items-start gap-1 px-4 py-3 cursor-pointer",
-                    !notification.read && "bg-blue-50 dark:bg-blue-950"
-                  )}
-                  onClick={() => {
-                    if (!notification.read) {
-                      handleMarkAsRead(notification.id)
-                    }
-                  }}
-                >
-                  {notification.link ? (
-                    <Link href={notification.link} className="w-full">
-                      <div className="flex items-start gap-2 w-full">
-                        <span className="text-lg flex-shrink-0">
-                          {NOTIFICATION_ICONS[notification.notification_type] || '📬'}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium line-clamp-1">
-                              {notification.title}
-                            </p>
-                            {!notification.read && (
-                              <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatTimeAgo(notification.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="flex items-start gap-2 w-full">
-                      <span className="text-lg flex-shrink-0">
-                        {NOTIFICATION_ICONS[notification.notification_type] || '📬'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium line-clamp-1">
-                            {notification.title}
-                          </p>
-                          {!notification.read && (
-                            <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatTimeAgo(notification.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </DropdownMenuItem>
-              </div>
-            ))}
-          </div>
+    const handleClick = () => {
+      if (!notification.read) {
+        handleMarkAsRead(notification.id)
+      }
+      if (isMobile) {
+        setMobileOpen(false)
+      }
+    }
+
+    if (notification.link) {
+      return (
+        <Link
+          key={notification.id}
+          href={notification.link}
+          onClick={handleClick}
+          className={cn(
+            "block px-4 py-3 transition-all",
+            isMobile ? "hover:bg-purple-50 active:bg-purple-100" : "hover:bg-gray-50",
+            !notification.read && "bg-blue-50/50"
+          )}
+        >
+          {content}
+        </Link>
+      )
+    }
+
+    return (
+      <div
+        key={notification.id}
+        onClick={handleClick}
+        className={cn(
+          "block px-4 py-3 cursor-pointer transition-all",
+          isMobile ? "hover:bg-purple-50 active:bg-purple-100" : "hover:bg-gray-50",
+          !notification.read && "bg-blue-50/50"
         )}
+      >
+        {content}
+      </div>
+    )
+  }
 
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link
-            href={`/${portalType}/notifications`}
-            className="w-full text-center text-sm py-2 cursor-pointer"
+  const bellButton = (
+    <button
+      className={cn(
+        "relative inline-flex items-center justify-center rounded-lg text-white hover:bg-white/10 p-2 transition-all",
+        className
+      )}
+      aria-label={`${unreadCount} unread notifications`}
+    >
+      <Bell className="h-5 w-5" />
+      {unreadCount > 0 && (
+        <Badge
+          className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-gradient-to-r from-red-500 to-pink-500 border-2 border-white animate-pulse"
+          variant="destructive"
+        >
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </Badge>
+      )}
+    </button>
+  )
+
+  return (
+    <>
+      {/* Desktop Dropdown */}
+      <div className="hidden md:block">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            {bellButton}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            side="bottom"
+            className="w-96 bg-white/95 backdrop-blur-lg border-purple-100 shadow-xl"
+            sideOffset={12}
           >
-            View all notifications
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b">
+              <h3 className="font-semibold text-gray-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  className="h-auto px-2 py-1 text-xs hover:bg-white/60"
+                >
+                  Mark all read
+                </Button>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="px-4 py-12 text-center text-sm text-gray-500">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-2"></div>
+                <p>Loading notifications...</p>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="px-4 py-12 text-center text-sm text-gray-500">
+                <Bell className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p>No notifications yet</p>
+              </div>
+            ) : (
+              <div className="max-h-[400px] overflow-y-auto">
+                {notifications.map((notification) => renderNotificationItem(notification, false))}
+              </div>
+            )}
+
+            <div className="border-t bg-gradient-to-r from-purple-50/50 to-blue-50/50">
+              <Link
+                href={`/${portalType}/notifications`}
+                className="block w-full text-center text-sm py-3 text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                View all notifications
+              </Link>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Mobile Sheet */}
+      <div className="md:hidden">
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            {bellButton}
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:w-96 p-0">
+            <SheetHeader className="px-4 py-4 border-b bg-gradient-to-r from-purple-50 to-blue-50">
+              <div className="flex items-center justify-between">
+                <SheetTitle className="text-lg">Notifications</SheetTitle>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    className="h-auto px-3 py-1.5 text-xs"
+                  >
+                    Mark all read
+                  </Button>
+                )}
+              </div>
+            </SheetHeader>
+
+            <div className="flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="px-4 py-16 text-center text-sm text-gray-500">
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-3"></div>
+                  <p>Loading notifications...</p>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="px-4 py-16 text-center text-sm text-gray-500">
+                  <Bell className="h-16 w-16 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base mb-1">No notifications yet</p>
+                  <p className="text-xs">You're all caught up!</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {notifications.map((notification) => renderNotificationItem(notification, true))}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t bg-gradient-to-r from-purple-50/50 to-blue-50/50 p-4">
+              <Link
+                href={`/${portalType}/notifications`}
+                onClick={() => setMobileOpen(false)}
+                className="block w-full text-center py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg"
+              >
+                View all notifications
+              </Link>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </>
   )
 }

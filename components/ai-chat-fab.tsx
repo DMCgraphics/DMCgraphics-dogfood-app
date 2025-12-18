@@ -123,6 +123,7 @@ export function AIChatFAB() {
           question: inputMessage,
           conversationHistory,
           userId: isAuthenticated ? user?.id : undefined,
+          currentPage: pathname,
         }),
       })
 

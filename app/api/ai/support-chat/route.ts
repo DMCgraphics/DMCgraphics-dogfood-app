@@ -20,6 +20,7 @@ interface SupportChatRequest {
   question: string
   conversationHistory: ChatMessage[]
   userId?: string
+  currentPage?: string
 }
 
 /**
@@ -117,7 +118,7 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
 export async function POST(request: NextRequest) {
   try {
     const body: SupportChatRequest = await request.json()
-    const { question, conversationHistory, userId } = body
+    const { question, conversationHistory, userId, currentPage } = body
 
     // Validate required fields
     if (!question) {
@@ -137,8 +138,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Build system prompt based on authentication state
-    const systemPrompt = await buildSystemPrompt(!!userId)
+    // Build system prompt based on authentication state and current page
+    const systemPrompt = await buildSystemPrompt(!!userId, currentPage)
 
     // Detect if question needs user-specific data
     const needsUserContext = userId && detectUserDataIntent(question)

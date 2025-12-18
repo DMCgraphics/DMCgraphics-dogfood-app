@@ -1,12 +1,13 @@
 import { supabaseAdmin } from "@/lib/supabase/server"
 
 /**
- * Build system prompt for support chat based on authentication state
+ * Build system prompt for support chat based on authentication state and current page
  */
-export async function buildSystemPrompt(isAuthenticated: boolean): Promise<string> {
+export async function buildSystemPrompt(isAuthenticated: boolean, currentPage?: string): Promise<string> {
   const basePrompt = getBasePrompt()
   const companyKnowledge = await getCompanyKnowledge()
   const userSpecificGuidance = isAuthenticated ? getUserSpecificGuidance() : ""
+  const pageContext = currentPage ? getPageContext(currentPage) : ""
 
   // Include current date so LLM knows what "today" is
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -17,7 +18,7 @@ export async function buildSystemPrompt(isAuthenticated: boolean): Promise<strin
   })
   const dateContext = `\n\nCurrent Date: ${currentDate}\n(Use this as "today" when answering questions about deliveries, orders, or timing)`
 
-  return `${basePrompt}\n\n${companyKnowledge}${userSpecificGuidance}${dateContext}`
+  return `${basePrompt}\n\n${companyKnowledge}${userSpecificGuidance}${pageContext}${dateContext}`
 }
 
 /**
@@ -131,6 +132,204 @@ When answering questions about their account:
 - For subscription management: direct them to /subscription/manage
 - NEVER make up information - only use what's provided in the User Orders or Active Subscriptions sections
 - If no data is available, acknowledge you don't see their account details and offer to connect them with support`
+}
+
+/**
+ * Get page-specific context to help AI provide relevant guidance
+ */
+function getPageContext(currentPage: string): string {
+  // Sales Leads page - most specific match first
+  if (currentPage.includes('/sales/leads')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is on the All Leads page.
+
+This page shows a table of all sales leads with their contact information, status, and assignment. From here you can:
+- View a searchable table of all leads with filtering options
+- Click on any lead row to open their detailed profile
+- Search leads by email, name, or dog name
+- Filter by lead status, priority, or assignment
+- See lead source, status, and last contact date at a glance
+- Assign leads to team members
+- Add new leads manually using the "+ Add Manual Lead" button
+
+IMPORTANT: Always include clickable links when guiding users:
+- To add a new lead: Click the "+ Add Manual Lead" button in the top right
+- To go to Sales dashboard: [Sales Dashboard](/admin/sales)
+- To return to Admin home: [Admin Portal](/admin)
+
+If the user asks how to contact or reach out to a lead:
+- Explain they should click on a lead row in the table to open the lead's profile
+- From the lead profile, they can see full contact information (email, phone number)
+- They can send emails directly from the profile
+- They can schedule follow-ups using the date picker
+- They can update lead status and add notes about conversations`
+  }
+
+  // Sales portal general - check both /sales and /admin/sales
+  if (currentPage.startsWith('/sales') || currentPage.startsWith('/admin/sales')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is in the Sales section.
+
+This is the sales management area for tracking leads and customer outreach. Key features:
+- Overview of sales metrics and lead statistics
+- Quick access to recent leads and follow-ups
+- Sales pipeline visualization
+
+IMPORTANT: Always include clickable links when guiding users:
+- To view all leads: [Sales Leads](/admin/sales/leads)
+- To return to Admin home: [Admin Portal](/admin)
+
+If the user asks how to manage or view leads:
+- Direct them to [Sales Leads](/admin/sales/leads) to see the full leads table
+- Explain they can click on any lead to view their profile and contact them`
+  }
+
+  // Delivery portal - check both /delivery and /admin/delivery
+  if (currentPage.startsWith('/delivery') || currentPage.startsWith('/admin/delivery')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is in the Delivery section.
+
+This is where delivery drivers and logistics team manage deliveries. Features include:
+- Route planning: view and organize delivery routes
+- Order fulfillment: see orders ready for delivery
+- Delivery status updates: mark orders as out for delivery, delivered, or failed
+- Customer notes: view delivery instructions and preferences
+- Delivery tracking: update tracking information for customers
+
+IMPORTANT: Always include clickable links when guiding users:
+- To view deliveries: [Delivery Portal](/delivery)
+- To return to Admin home: [Admin Portal](/admin)
+
+If the user asks how to use this page:
+- Help them find orders ready for delivery
+- Guide them through updating delivery statuses
+- Explain how to mark orders as delivered
+- Show them where to find customer delivery instructions
+- For routing questions, explain the route optimization features`
+  }
+
+  // Plan Builder pages
+  if (currentPage.startsWith('/plan-builder')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is on the Plan Builder page.
+
+This is where users create personalized meal plans for their dog. The wizard has multiple steps:
+1. Dog Basics: Enter dog's name, age, weight, sex, activity level
+2. Goals & Sensitivities: Select health goals and food sensitivities
+3. Meal Selection: Choose from recommended recipes based on the dog's profile
+4. Plan Preview: Review the plan and proceed to checkout or create an account
+
+If the user asks "what should I do here" or seems confused about the page:
+- Explain that the Plan Builder helps create a personalized meal plan for their dog
+- Guide them through entering their dog's information step by step
+- Explain that we'll recommend recipes based on their dog's specific needs
+- Mention they can either subscribe for regular deliveries or do a one-time purchase
+- If they're on the final step, explain they can proceed to checkout or create an account to save their plan`
+  }
+
+  // Checkout pages
+  if (currentPage.startsWith('/checkout')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is in the checkout flow.
+
+This is where users complete their purchase. The checkout includes:
+- Delivery address validation (we only deliver to certain zip codes)
+- Payment processing via Stripe
+- Order confirmation
+
+If the user asks "what should I do here" or has questions:
+- Explain they're completing their order for fresh dog food delivery
+- If they mention zip code issues, explain we only deliver locally to certain areas in Westchester County, NY
+- For payment questions, reassure them we use Stripe for secure payment processing
+- If they have issues, they can contact support@nouripet.net or (203) 208-6186`
+  }
+
+  // Dashboard/Account pages
+  if (currentPage.startsWith('/dashboard') || currentPage.startsWith('/account')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is on their account dashboard.
+
+This is where users can:
+- View their order history and track deliveries
+- Manage their subscriptions (pause, skip, cancel)
+- Update their delivery address and payment methods
+- View their saved dog profiles and meal plans
+
+IMPORTANT: Always include clickable links when guiding users:
+- To view orders: [My Orders](/dashboard)
+- To manage subscription: [Subscription Settings](/subscription/manage)
+- To build a new plan: [Plan Builder](/plan-builder)
+
+If the user asks how to do something:
+- Guide them to the relevant section of their dashboard
+- For order tracking: mention they can see all orders at [My Orders](/dashboard) with tracking links
+- For subscription changes: direct them to [Subscription Settings](/subscription/manage)
+- For account settings: help them find the right section`
+  }
+
+  // Subscription management
+  if (currentPage.startsWith('/subscription')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is managing their subscription.
+
+This page allows users to:
+- View their active subscription details
+- Pause upcoming deliveries
+- Skip specific delivery dates
+- Update delivery frequency (weekly or bi-weekly)
+- Cancel their subscription
+
+IMPORTANT: Always include clickable links when guiding users:
+- To view orders: [My Orders](/dashboard)
+- To build a new plan: [Plan Builder](/plan-builder)
+
+If the user asks how to make changes:
+- Explain the flexibility of their subscription
+- Guide them through pausing (temporary hold) vs canceling (permanent)
+- Mention they can resume paused subscriptions anytime
+- For complex changes, offer to connect them with support`
+  }
+
+  // Admin portal pages (general admin, NOT sales/delivery which are handled above)
+  if (currentPage.startsWith('/admin')) {
+    return `
+
+CURRENT PAGE CONTEXT: The user is in the Admin Portal.
+
+This is the administrative dashboard for managing the NouriPet platform. Features include:
+- User management: view and edit user accounts
+- Order management: process orders, update statuses, manage fulfillment
+- Recipe management: create and edit dog food recipes
+- Sales management: access the sales section to manage leads and outreach
+- Delivery management: access the delivery section to manage routes and fulfillment
+- Portal access control: manage roles for delivery drivers, sales team, etc.
+- System notifications and alerts
+
+IMPORTANT: Always include clickable links when guiding users to different sections:
+- To manage users: [User Management](/admin/users)
+- To view sales leads: [Sales Leads](/admin/sales/leads)
+- To access delivery: [Delivery Portal](/delivery)
+- To view all orders: [Order Management](/admin/orders)
+- To manage recipes: [Recipe Management](/admin/recipes)
+
+If the user asks how to use this page:
+- Help them navigate to the feature they need with direct links
+- For sales/lead management, direct them to [Sales Leads](/admin/sales/leads)
+- For delivery management, direct them to [Delivery Portal](/delivery)
+- Explain that this is for staff/admin use to manage the platform
+- Guide them through common admin tasks based on what they're trying to do
+- For bulk actions or complex operations, provide step-by-step guidance`
+  }
+
+  // Default: no specific page context
+  return ""
 }
 
 /**

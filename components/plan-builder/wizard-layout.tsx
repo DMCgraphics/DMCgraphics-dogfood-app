@@ -2,7 +2,6 @@
 
 import type React from "react"
 
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { AIStepGuidance, AIProgressBreadcrumbs } from "./ai-step-guidance"
@@ -41,8 +40,6 @@ export function WizardLayout({
   dogProfile,
   completedSteps = [],
 }: WizardLayoutProps) {
-  const progress = (currentStep / totalSteps) * 100
-
   const getStepLabels = () => {
     return ["Dog Basics", "Goals & Sensitivities", "Meal Selection", "Plan Preview"]
   }
@@ -99,25 +96,20 @@ export function WizardLayout({
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="container max-w-4xl py-8">
-        {/* Progress Header */}
-        <div className="mb-8 space-y-4">
-          <div className="flex items-center justify-end text-sm text-muted-foreground">
-            <span>{Math.round(progress)}% Complete</span>
-          </div>
-          <Progress value={progress} className="h-3" />
-
-          {/* AI Progress Breadcrumbs - only show after step 0 */}
-          {dogProfile && currentStep > 0 && (
+        {/* AI Progress Breadcrumbs - only show after step 0 */}
+        {dogProfile && currentStep > 0 && (
+          <div className="mb-8">
             <AIProgressBreadcrumbs
               currentStep={currentStep}
               completedSteps={completedSteps}
             />
-          )}
-
-          <div className="space-y-2">
-            <h1 className="font-manrope text-2xl lg:text-3xl font-bold">{stepTitle}</h1>
-            <p className="text-muted-foreground">{stepDescription}</p>
           </div>
+        )}
+
+        {/* Step Header */}
+        <div className="mb-8 space-y-2">
+          <h1 className="font-manrope text-2xl lg:text-3xl font-bold">{stepTitle}</h1>
+          <p className="text-muted-foreground">{stepDescription}</p>
         </div>
 
         {/* AI Step Guidance - only show after step 0 */}

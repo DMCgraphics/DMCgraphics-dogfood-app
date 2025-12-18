@@ -5,6 +5,7 @@ import { LayoutDashboard, LogOut } from "lucide-react"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs"
+import { AdminMobileMenu } from "@/components/admin/admin-mobile-menu"
 
 export default async function AdminLayout({
   children,
@@ -18,38 +19,40 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Admin Header - Compact on mobile */}
-      <header className="bg-gray-900 text-white shadow-lg border-b border-gray-800">
-        <div className="container mx-auto px-4 py-3 md:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-4">
-              <LayoutDashboard className="h-6 w-6 md:h-8 md:w-8 text-purple-400" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Modern Admin Header - Sticky */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 text-white shadow-xl backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              {/* Mobile Menu Button */}
+              <AdminMobileMenu />
+
+              <LayoutDashboard className="h-5 w-5 md:h-6 md:w-6 text-purple-300" />
               <div>
-                <h1 className="text-lg md:text-2xl font-bold">
+                <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
                   <span className="hidden sm:inline">NouriPet </span>Admin
                 </h1>
-                <p className="text-xs md:text-sm text-gray-400 hidden sm:block">Management Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
               <NotificationBell portalType="admin" />
-              <span className="text-xs md:text-sm text-gray-400 hidden md:inline">{adminUser.email}</span>
+              <span className="text-xs text-gray-300 hidden lg:inline">{adminUser.email}</span>
               <Link
                 href="/"
-                className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-xs md:text-sm"
+                className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-xs md:text-sm backdrop-blur-sm border border-white/10"
               >
-                <LogOut className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Exit Admin</span>
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Exit</span>
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="flex gap-4 md:gap-6">
-          {/* Collapsible Sidebar - Hidden on mobile, shown as drawer */}
+          {/* Desktop Sidebar - Hidden on mobile */}
           <AdminSidebar />
 
           {/* Main Content */}

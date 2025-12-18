@@ -89,7 +89,6 @@ export function AdminSidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
-  const [mobileOpen, setMobileOpen] = useState(false)
 
   // Load collapsed state from localStorage
   useEffect(() => {
@@ -127,135 +126,105 @@ export function AdminSidebar() {
     })
   }
 
-  // Render navigation content
-  const navContent = (isMobile = false) => (
-    <nav className="p-4 space-y-2">
-      {navigationSections.map((section) => {
-        const isExpanded = expandedSections.has(section.title)
-        const hasActiveItem = section.items.some(
-          item => pathname === item.href || pathname.startsWith(item.href + "/")
-        )
-
-        return (
-          <div key={section.title}>
-            {/* Section Header */}
-            {(!isCollapsed || isMobile) && (
-              <button
-                onClick={() => toggleSection(section.title)}
-                className={cn(
-                  "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors rounded-md hover:bg-gray-50",
-                  hasActiveItem && "text-purple-600"
-                )}
-              >
-                <span>{section.title}</span>
-                {isExpanded ? (
-                  <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-              </button>
-            )}
-
-            {/* Section Items */}
-            {(isExpanded || (isCollapsed && !isMobile)) && (
-              <div className={cn("space-y-1", (!isCollapsed || isMobile) && "mt-1")}>
-                {section.items.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => isMobile && setMobileOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group relative",
-                        isActive
-                          ? "bg-purple-50 text-purple-700 font-medium"
-                          : "hover:bg-gray-50 text-gray-700 hover:text-gray-900",
-                        !isMobile && isCollapsed && "justify-center"
-                      )}
-                      title={!isMobile && isCollapsed ? item.label : undefined}
-                    >
-                      <Icon
-                        className={cn(
-                          "h-5 w-5 flex-shrink-0",
-                          isActive ? "text-purple-600" : "text-gray-400 group-hover:text-gray-600"
-                        )}
-                      />
-                      {(isMobile || !isCollapsed) && (
-                        <>
-                          <span className="flex-1 text-sm">{item.label}</span>
-                          {item.badge && (
-                            <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                      {!isMobile && isCollapsed && item.badge && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                          {item.badge > 9 ? "9+" : item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </nav>
-  )
-
   return (
-    <>
-      {/* Mobile Menu Button */}
-      <div className="md:hidden fixed bottom-4 left-4 z-50">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <Button
-              size="lg"
-              className="rounded-full h-14 w-14 shadow-lg"
-              aria-label="Open navigation menu"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <SheetHeader className="p-4 border-b">
-              <SheetTitle>Navigation</SheetTitle>
-            </SheetHeader>
-            {navContent(true)}
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {/* Desktop Sidebar */}
-      <aside
-        className={cn(
-          "hidden md:block bg-white rounded-lg shadow-md transition-all duration-300 relative",
-          isCollapsed ? "w-16" : "w-64"
-        )}
+    <aside
+      className={cn(
+        "hidden md:block bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-purple-100 transition-all duration-300 relative",
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Collapse Toggle Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={toggleCollapsed}
+        className="absolute -right-3 top-4 h-6 w-6 rounded-full bg-white shadow-md border border-purple-200 p-0 z-10 hover:bg-purple-50"
+        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {/* Collapse Toggle Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleCollapsed}
-          className="absolute -right-3 top-4 h-6 w-6 rounded-full bg-white shadow-md border p-0 z-10"
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? (
-            <ChevronRightCollapse className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
+        {isCollapsed ? (
+          <ChevronRightCollapse className="h-4 w-4 text-purple-600" />
+        ) : (
+          <ChevronLeft className="h-4 w-4 text-purple-600" />
+        )}
+      </Button>
 
-        {navContent(false)}
-      </aside>
-    </>
+      <nav className="p-4 space-y-2">
+        {navigationSections.map((section) => {
+          const isExpanded = expandedSections.has(section.title)
+          const hasActiveItem = section.items.some(
+            item => pathname === item.href || pathname.startsWith(item.href + "/")
+          )
+
+          return (
+            <div key={section.title}>
+              {/* Section Header */}
+              {!isCollapsed && (
+                <button
+                  onClick={() => toggleSection(section.title)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors rounded-md hover:bg-purple-50",
+                    hasActiveItem && "text-purple-600"
+                  )}
+                >
+                  <span>{section.title}</span>
+                  {isExpanded ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                </button>
+              )}
+
+              {/* Section Items */}
+              {(isExpanded || isCollapsed) && (
+                <div className={cn("space-y-1", !isCollapsed && "mt-1")}>
+                  {section.items.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group relative",
+                          isActive
+                            ? "bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 font-medium shadow-sm"
+                            : "hover:bg-purple-50/50 text-gray-700 hover:text-gray-900",
+                          isCollapsed && "justify-center"
+                        )}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-5 w-5 flex-shrink-0 transition-colors",
+                            isActive ? "text-purple-600" : "text-gray-400 group-hover:text-purple-500"
+                          )}
+                        />
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1 text-sm">{item.label}</span>
+                            {item.badge && (
+                              <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                {item.badge}
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {isCollapsed && item.badge && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                            {item.badge > 9 ? "9+" : item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </nav>
+    </aside>
   )
 }

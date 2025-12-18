@@ -2448,15 +2448,25 @@ function PlanBuilderContent() {
         totalSteps={TOTAL_STEPS}
         stepTitle={stepInfo.title}
         stepDescription={stepInfo.description}
-        onNext={currentStep === TOTAL_STEPS - 1 ? handleProceedToCheckout : handleNext}
+        onNext={
+          currentStep === TOTAL_STEPS - 1
+            ? user
+              ? handleProceedToCheckout
+              : handleCreateAccount
+            : handleNext
+        }
         onPrevious={handlePrevious}
         canGoNext={canGoNext()}
         canGoPrevious={currentStep > 0}
-        showNextButton={currentStep !== TOTAL_STEPS - 1}
+        showNextButton={true}
         nextLabel={
           currentStep === 0
             ? "Start Building Plan"
-            : "Continue"
+            : currentStep === TOTAL_STEPS - 1
+              ? user
+                ? "Proceed to Checkout"
+                : "Create Account"
+              : "Continue"
         }
         dogProfile={dogProfile}
         completedSteps={currentStep > 0 ? Array.from({ length: currentStep - 1 }, (_, i) => i + 1) : []}

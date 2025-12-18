@@ -97,7 +97,7 @@ export function WizardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       <div className="container max-w-4xl py-8">
         {/* Progress Header */}
         <div className="mb-8 space-y-4">
@@ -130,25 +130,34 @@ export function WizardLayout({
 
         {/* Step Content */}
         <div className="mb-8">{children}</div>
+      </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={onPrevious}
-            disabled={!canGoPrevious}
-            className="flex items-center gap-2 bg-transparent"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Previous
-          </Button>
-
-          {showNextButton && (
-            <Button onClick={onNext} disabled={!canGoNext || isLoading} className="flex items-center gap-2">
-              {nextLabel}
-              <ArrowRight className="h-4 w-4" />
+      {/* Sticky Footer Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container max-w-4xl py-4">
+          <div className="flex items-center gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={onPrevious}
+              disabled={!canGoPrevious}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-transparent"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Previous</span>
             </Button>
-          )}
+
+            {showNextButton && (
+              <Button
+                onClick={onNext}
+                disabled={!canGoNext || isLoading}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2"
+              >
+                <span className="hidden sm:inline">{nextLabel}</span>
+                <span className="sm:hidden">Next</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

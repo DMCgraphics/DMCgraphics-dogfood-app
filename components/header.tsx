@@ -144,20 +144,30 @@ export function Header() {
                 Dashboard
               </Link>
             )}
-            {isAuthenticated && user?.roles?.includes('delivery_driver') && (
-              <Link href="/delivery" className="text-sm font-medium hover:text-primary transition-colors text-blue-600">
-                Delivery
-              </Link>
-            )}
-            {isAuthenticated && (user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep')) && (
-              <Link href="/sales" className="text-sm font-medium hover:text-primary transition-colors text-green-600">
-                Sales
-              </Link>
-            )}
-            {isAuthenticated && user?.isAdmin && (
-              <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors text-purple-600">
-                Admin
-              </Link>
+            {isAuthenticated && (user?.roles?.includes('delivery_driver') || user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep') || user?.isAdmin) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium hover:text-primary transition-colors">
+                  Portal
+                  <ChevronDown className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {user?.roles?.includes('delivery_driver') && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/delivery" className="text-blue-600">Delivery</Link>
+                    </DropdownMenuItem>
+                  )}
+                  {(user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep')) && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/sales" className="text-green-600">Sales</Link>
+                    </DropdownMenuItem>
+                  )}
+                  {user?.isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="text-purple-600">Admin</Link>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </nav>
 
@@ -239,20 +249,25 @@ export function Header() {
                   Dashboard
                 </Link>
               )}
-              {isAuthenticated && user?.roles?.includes('delivery_driver') && (
-                <Link href="/delivery" className="block text-sm font-medium hover:text-primary transition-colors text-blue-600">
-                  Delivery
-                </Link>
-              )}
-              {isAuthenticated && (user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep')) && (
-                <Link href="/sales" className="block text-sm font-medium hover:text-primary transition-colors text-green-600">
-                  Sales
-                </Link>
-              )}
-              {isAuthenticated && user?.isAdmin && (
-                <Link href="/admin" className="block text-sm font-medium hover:text-primary transition-colors text-purple-600">
-                  Admin
-                </Link>
+              {isAuthenticated && (user?.roles?.includes('delivery_driver') || user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep') || user?.isAdmin) && (
+                <>
+                  <div className="text-sm font-medium text-muted-foreground">Portal</div>
+                  {user?.roles?.includes('delivery_driver') && (
+                    <Link href="/delivery" className="block text-sm font-medium hover:text-primary transition-colors text-blue-600 pl-4">
+                      Delivery
+                    </Link>
+                  )}
+                  {(user?.roles?.includes('sales_manager') || user?.roles?.includes('sales_rep')) && (
+                    <Link href="/sales" className="block text-sm font-medium hover:text-primary transition-colors text-green-600 pl-4">
+                      Sales
+                    </Link>
+                  )}
+                  {user?.isAdmin && (
+                    <Link href="/admin" className="block text-sm font-medium hover:text-primary transition-colors text-purple-600 pl-4">
+                      Admin
+                    </Link>
+                  )}
+                </>
               )}
 
               {isAuthenticated ? (

@@ -19,35 +19,37 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin Header - NOT STICKY */}
+      {/* Admin Header - Compact on mobile */}
       <header className="bg-gray-900 text-white shadow-lg border-b border-gray-800">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3 md:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <LayoutDashboard className="h-8 w-8 text-purple-400" />
+            <div className="flex items-center gap-2 md:gap-4">
+              <LayoutDashboard className="h-6 w-6 md:h-8 md:w-8 text-purple-400" />
               <div>
-                <h1 className="text-2xl font-bold">NouriPet Admin</h1>
-                <p className="text-sm text-gray-400">Management Dashboard</p>
+                <h1 className="text-lg md:text-2xl font-bold">
+                  <span className="hidden sm:inline">NouriPet </span>Admin
+                </h1>
+                <p className="text-xs md:text-sm text-gray-400 hidden sm:block">Management Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <NotificationBell portalType="admin" />
-              <span className="text-sm text-gray-400">{adminUser.email}</span>
+              <span className="text-xs md:text-sm text-gray-400 hidden md:inline">{adminUser.email}</span>
               <Link
                 href="/"
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-xs md:text-sm"
               >
-                <LogOut className="h-4 w-4" />
-                Exit Admin
+                <LogOut className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Exit Admin</span>
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-6">
-          {/* Collapsible Sidebar */}
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        <div className="flex gap-4 md:gap-6">
+          {/* Collapsible Sidebar - Hidden on mobile, shown as drawer */}
           <AdminSidebar />
 
           {/* Main Content */}

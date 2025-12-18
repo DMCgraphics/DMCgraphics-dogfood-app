@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -56,6 +57,7 @@ interface ChatMessage {
 }
 
 export function AIChatFAB() {
+  const pathname = usePathname()
   const { user, isAuthenticated } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -64,6 +66,10 @@ export function AIChatFAB() {
   const [isTyping, setIsTyping] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Position FAB higher on plan builder to avoid footer overlap
+  const isPlanBuilder = pathname === "/plan-builder"
+  const fabBottomClass = isPlanBuilder ? "bottom-24" : "bottom-6"
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -162,7 +168,7 @@ export function AIChatFAB() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg z-50"
+          className={`fixed ${fabBottomClass} right-6 rounded-full h-14 w-14 shadow-lg z-50`}
           aria-label="Open AI chat assistant"
         >
           <MessageCircle className="h-6 w-6" />

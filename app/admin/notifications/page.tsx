@@ -173,23 +173,23 @@ export default function AdminNotificationsPage() {
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Notifications</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold">Notifications</h1>
+          <p className="text-sm text-muted-foreground">
             {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchNotifications}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+          <Button variant="outline" size="sm" onClick={fetchNotifications} className="flex-1 sm:flex-none">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           {unreadCount > 0 && (
-            <Button size="sm" onClick={handleMarkAllAsRead}>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Mark All Read
+            <Button size="sm" onClick={handleMarkAllAsRead} className="flex-1 sm:flex-none">
+              <CheckCircle2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Mark All Read</span>
             </Button>
           )}
         </div>
@@ -197,9 +197,9 @@ export default function AdminNotificationsPage() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
+        <CardContent className="pt-4 md:pt-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+            <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -210,49 +210,56 @@ export default function AdminNotificationsPage() {
                 />
               </div>
             </div>
-            <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="unread">Unread</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2 md:flex md:gap-4">
+              <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="unread">Unread</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {selectedIds.size > 0 && (
-            <div className="mt-4 flex items-center gap-4 p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-medium">
+            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+              <span className="text-sm font-medium text-blue-900">
                 {selectedIds.size} selected
               </span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Selected
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedIds(new Set())}
-              >
-                Clear Selection
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Delete Selected</span>
+                  <span className="sm:hidden">Delete</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="flex-1 sm:flex-none"
+                >
+                  Clear
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -297,33 +304,44 @@ export default function AdminNotificationsPage() {
               "transition-colors",
               !notification.read && "bg-blue-50/50 dark:bg-blue-950/20"
             )}>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-start gap-3 md:gap-4">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(notification.id)}
                     onChange={() => toggleSelection(notification.id)}
-                    className="mt-1 h-4 w-4 rounded border-gray-300"
+                    className="mt-1 h-4 w-4 md:h-4 md:w-4 rounded border-gray-300 flex-shrink-0"
                   />
 
-                  <div className="text-2xl flex-shrink-0">
+                  <div className="text-xl md:text-2xl flex-shrink-0">
                     {NOTIFICATION_ICONS[notification.notification_type] || '📬'}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-4 mb-2">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg">
-                            {notification.title}
-                          </h3>
-                          {!notification.read && (
-                            <Badge variant="default" className="text-xs">
-                              New
-                            </Badge>
-                          )}
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-base md:text-lg">
+                              {notification.title}
+                            </h3>
+                            {!notification.read && (
+                              <Badge variant="default" className="text-xs">
+                                New
+                              </Badge>
+                            )}
+                          </div>
+                          <Badge
+                            className={cn(
+                              PRIORITY_BG_COLORS[notification.priority],
+                              PRIORITY_COLORS[notification.priority],
+                              "capitalize text-xs md:hidden flex-shrink-0"
+                            )}
+                          >
+                            {notification.priority}
+                          </Badge>
                         </div>
-                        <p className="text-muted-foreground">
+                        <p className="text-sm md:text-base text-muted-foreground">
                           {notification.message}
                         </p>
                       </div>
@@ -332,22 +350,25 @@ export default function AdminNotificationsPage() {
                         className={cn(
                           PRIORITY_BG_COLORS[notification.priority],
                           PRIORITY_COLORS[notification.priority],
-                          "capitalize"
+                          "capitalize hidden md:inline-flex flex-shrink-0"
                         )}
                       >
                         {notification.priority}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{formatTimeAgo(notification.created_at)}</span>
+                    <div className="flex flex-col gap-3">
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        {formatTimeAgo(notification.created_at)}
+                      </span>
 
-                      <div className="flex items-center gap-2 ml-auto">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         {notification.link && (
                           <Button
                             variant="ghost"
                             size="sm"
                             asChild
+                            className="w-full sm:w-auto justify-center"
                           >
                             <Link href={notification.link}>View Details</Link>
                           </Button>
@@ -357,19 +378,20 @@ export default function AdminNotificationsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleMarkAsRead(notification.id)}
+                            className="w-full sm:w-auto justify-center"
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Mark Read
+                            <CheckCircle2 className="h-4 w-4 sm:mr-2" />
+                            <span className="sm:inline">Mark Read</span>
                           </Button>
                         )}
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(notification.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto justify-center"
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
+                          <Trash2 className="h-4 w-4 sm:mr-2" />
+                          <span className="sm:inline">Delete</span>
                         </Button>
                       </div>
                     </div>

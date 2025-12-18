@@ -12,9 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { CheckCircle2, Trash2, RefreshCw, Search, Filter } from "lucide-react"
+import { CheckCircle2, Trash2, RefreshCw, Search, Filter, ExternalLink } from "lucide-react"
 import Link from "next/link"
-import { NOTIFICATION_ICONS, PRIORITY_BG_COLORS, PRIORITY_COLORS } from "@/lib/notifications/types"
+import { PRIORITY_BG_COLORS, PRIORITY_COLORS } from "@/lib/notifications/types"
+import { NotificationIcon } from "@/components/notifications/notification-icon"
 import { cn } from "@/lib/utils"
 
 interface Notification {
@@ -301,8 +302,8 @@ export default function AdminNotificationsPage() {
 
           {filteredNotifications.map((notification) => (
             <Card key={notification.id} className={cn(
-              "transition-colors",
-              !notification.read && "bg-blue-50/50 dark:bg-blue-950/20"
+              "group hover:shadow-md transition-all duration-200 border",
+              !notification.read && "bg-gradient-to-r from-blue-50/50 to-purple-50/50 border-blue-200"
             )}>
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -310,38 +311,41 @@ export default function AdminNotificationsPage() {
                     type="checkbox"
                     checked={selectedIds.has(notification.id)}
                     onChange={() => toggleSelection(notification.id)}
-                    className="mt-1 h-4 w-4 md:h-4 md:w-4 rounded border-gray-300 flex-shrink-0"
+                    className="mt-2 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
                   />
 
-                  <div className="text-xl md:text-2xl flex-shrink-0">
-                    {NOTIFICATION_ICONS[notification.notification_type] || '📬'}
-                  </div>
+                  <NotificationIcon
+                    notificationType={notification.notification_type}
+                    className="w-10 h-10 md:w-12 md:h-12"
+                    iconSize="h-5 w-5 md:h-6 md:w-6"
+                  />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-4 mb-2">
                       <div className="flex-1">
-                        <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-base md:text-lg">
+                            <h3 className="font-semibold text-base md:text-lg text-gray-900">
                               {notification.title}
                             </h3>
                             {!notification.read && (
-                              <Badge variant="default" className="text-xs">
-                                New
-                              </Badge>
+                              <span className="flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-purple-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                              </span>
                             )}
                           </div>
                           <Badge
                             className={cn(
                               PRIORITY_BG_COLORS[notification.priority],
                               PRIORITY_COLORS[notification.priority],
-                              "capitalize text-xs md:hidden flex-shrink-0"
+                              "capitalize text-xs md:hidden flex-shrink-0 font-medium"
                             )}
                           >
                             {notification.priority}
                           </Badge>
                         </div>
-                        <p className="text-sm md:text-base text-muted-foreground">
+                        <p className="text-sm md:text-base text-gray-600 leading-relaxed">
                           {notification.message}
                         </p>
                       </div>
@@ -350,48 +354,51 @@ export default function AdminNotificationsPage() {
                         className={cn(
                           PRIORITY_BG_COLORS[notification.priority],
                           PRIORITY_COLORS[notification.priority],
-                          "capitalize hidden md:inline-flex flex-shrink-0"
+                          "capitalize hidden md:inline-flex flex-shrink-0 font-medium"
                         )}
                       >
                         {notification.priority}
                       </Badge>
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                      <span className="text-xs md:text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-3 mt-3">
+                      <span className="text-xs md:text-sm text-gray-500 font-medium">
                         {formatTimeAgo(notification.created_at)}
                       </span>
 
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         {notification.link && (
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             asChild
-                            className="w-full sm:w-auto justify-center"
+                            className="w-full sm:w-auto justify-center border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-purple-700"
                           >
-                            <Link href={notification.link}>View Details</Link>
+                            <Link href={notification.link} className="flex items-center gap-2">
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              <span>View Details</span>
+                            </Link>
                           </Button>
                         )}
                         {!notification.read && (
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className="w-full sm:w-auto justify-center"
+                            className="w-full sm:w-auto justify-center border-green-200 hover:bg-green-50 hover:border-green-300 text-green-700"
                           >
-                            <CheckCircle2 className="h-4 w-4 sm:mr-2" />
-                            <span className="sm:inline">Mark Read</span>
+                            <CheckCircle2 className="h-3.5 w-3.5 sm:mr-2" />
+                            <span>Mark Read</span>
                           </Button>
                         )}
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDelete(notification.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto justify-center"
+                          className="w-full sm:w-auto justify-center border-red-200 hover:bg-red-50 hover:border-red-300 text-red-700"
                         >
-                          <Trash2 className="h-4 w-4 sm:mr-2" />
-                          <span className="sm:inline">Delete</span>
+                          <Trash2 className="h-3.5 w-3.5 sm:mr-2" />
+                          <span>Delete</span>
                         </Button>
                       </div>
                     </div>

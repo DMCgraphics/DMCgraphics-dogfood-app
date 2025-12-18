@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { NOTIFICATION_ICONS } from "@/lib/notifications/types"
+import { NotificationIcon } from "@/components/notifications/notification-icon"
 
 type PortalType = 'admin' | 'sales' | 'delivery' | 'customer'
 
@@ -133,30 +133,27 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
   const renderNotificationItem = (notification: Notification, isMobile = false) => {
     const content = (
       <div className="flex items-start gap-3 w-full">
-        <div className={cn(
-          "flex items-center justify-center rounded-lg flex-shrink-0",
-          isMobile ? "w-10 h-10 bg-gradient-to-br from-purple-100 to-blue-100" : "w-9 h-9 bg-purple-50"
-        )}>
-          <span className="text-xl">
-            {NOTIFICATION_ICONS[notification.notification_type] || '📬'}
-          </span>
-        </div>
+        <NotificationIcon
+          notificationType={notification.notification_type}
+          className={isMobile ? "w-10 h-10" : "w-9 h-9"}
+          iconSize={isMobile ? "h-5 w-5" : "h-4 w-4"}
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <p className={cn(
-              "font-medium line-clamp-1",
-              isMobile ? "text-sm" : "text-sm"
-            )}>
+            <p className="font-medium line-clamp-1 text-sm text-gray-900">
               {notification.title}
             </p>
             {!notification.read && (
-              <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5 animate-pulse" />
+              <span className="flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-purple-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+              </span>
             )}
           </div>
           <p className="text-xs text-gray-600 line-clamp-2 mb-1">
             {notification.message}
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500 font-medium">
             {formatTimeAgo(notification.created_at)}
           </p>
         </div>

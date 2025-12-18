@@ -238,8 +238,7 @@ export function SendEmailDialog({
               required
             />
             <p className="text-xs text-muted-foreground">
-              Use merge fields like {"{{"}{"{"}lead_name{"}"}{"}"}} or {"{{"}{"{"}dog_name{"}"}
-              {"}"}
+              Use merge fields like {'{{lead_name}}'} or {'{{dog_name}}'}
             </p>
           </div>
 

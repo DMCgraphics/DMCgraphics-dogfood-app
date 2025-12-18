@@ -34,19 +34,18 @@ export async function POST(req: NextRequest) {
 
     console.log("[follow-up-cron] Starting follow-up reminder check")
 
-    // Get today's date at midnight for comparison
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStr = today.toISOString().split('T')[0]
+    // Get current time for comparison
+    const now = new Date().toISOString()
 
-    // Find all leads with follow_up_date today or in the past that haven't been completed
+    // Find all leads with next_follow_up_at today or in the past that haven't been completed
     const { data: dueLeads, error: leadsError } = await supabaseAdmin
       .from("sales_leads")
-      .select("id, email, full_name, assigned_to, follow_up_date, status")
+      .select("id, email, full_name, assigned_to, next_follow_up_at, status")
       .not("assigned_to", "is", null)
-      .lte("follow_up_date", todayStr)
+      .not("next_follow_up_at", "is", null)
+      .lte("next_follow_up_at", now)
       .in("status", ["new", "contacted", "qualified"]) // Don't notify for converted or lost leads
-      .order("follow_up_date", { ascending: true })
+      .order("next_follow_up_at", { ascending: true })
 
     if (leadsError) {
       console.error("[follow-up-cron] Error fetching due leads:", leadsError)
@@ -73,7 +72,7 @@ export async function POST(req: NextRequest) {
             leadEmail: lead.email,
             leadName: lead.full_name,
             salesRepId: lead.assigned_to!,
-            dueDate: lead.follow_up_date,
+            dueDate: lead.next_follow_up_at,
           })
           console.log(`[follow-up-cron] Sent notification for lead ${lead.id} to rep ${lead.assigned_to}`)
           return { leadId: lead.id, success: true }

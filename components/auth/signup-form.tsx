@@ -128,6 +128,19 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
           hasInvitation: !!inviteToken
         })
 
+        // Send welcome email (non-blocking)
+        fetch("/api/emails/welcome", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+            name: formData.name
+          })
+        }).catch(err => {
+          console.error("[v0] welcome_email_failed", err)
+          // Don't block signup flow if email fails
+        })
+
         // Store subscription ID to pass to redirect handler
         let claimedSubscriptionId: string | undefined = undefined
 

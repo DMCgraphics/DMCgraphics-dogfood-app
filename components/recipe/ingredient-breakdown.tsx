@@ -72,7 +72,7 @@ export function IngredientBreakdown({ recipeId }: IngredientBreakdownProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="text-lg font-semibold">{ingredient.name}</div>
-                <Badge variant="secondary" className="font-bold">
+                <Badge className="font-bold bg-blue-100 text-blue-800 hover:bg-blue-100">
                   {ingredient.percentage}%
                 </Badge>
               </div>

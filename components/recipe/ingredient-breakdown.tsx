@@ -24,8 +24,8 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Carrots", percentage: 4, source: "Local CT & NY farms", benefits: ["Beta-carotene", "Eye health"] },
     { name: "Spinach", percentage: 2, source: "Local CT & NY farms", benefits: ["Iron", "Folate", "Antioxidants"] },
     { name: "Green peas", percentage: 4, source: "Local CT & NY farms", benefits: ["Protein", "Fiber"] },
-    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
-    { name: "Vitamin & Mineral Premix", percentage: 0.5, source: "NouriPet", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "J Edwards", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
+    { name: "Vitamin & Mineral Premix", percentage: 0.5, source: "Animix", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
   ],
   "lamb-pumpkin-feast": [
     { name: "Lamb", percentage: 50, source: "Mosner Family Brands", benefits: ["Highly bioavailable protein", "Rich in zinc"] },
@@ -34,8 +34,8 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Pumpkin", percentage: 15, source: "Local CT & NY farms", benefits: ["Digestive support", "Beta-carotene"] },
     { name: "Peas", percentage: 10, source: "Local CT & NY farms", benefits: ["Protein", "Fiber"] },
     { name: "Spinach", percentage: 5, source: "Local CT & NY farms", benefits: ["Iron", "Folate", "Antioxidants"] },
-    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
-    { name: "Vitamin & Mineral Premix", percentage: 7.5, source: "NouriPet", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "J Edwards", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
+    { name: "Vitamin & Mineral Premix", percentage: 7.5, source: "Animix", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
   ],
   "low-fat-chicken-garden-veggie": [
     { name: "Chicken breast", percentage: 55, source: "Mosner Family Brands", benefits: ["High-quality lean protein", "B vitamins"] },
@@ -44,7 +44,7 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Carrots", percentage: 8, source: "Local CT & NY farms", benefits: ["Fiber", "Beta-carotene"] },
     { name: "Spinach", percentage: 8, source: "Local CT & NY farms", benefits: ["Iron", "Folate"] },
     { name: "Green peas", percentage: 3, source: "Local CT & NY farms", benefits: ["Protein", "Fiber"] },
-    { name: "Vitamin & Mineral Premix", percentage: 3, source: "NouriPet", benefits: ["Essential vitamins & minerals"] },
+    { name: "Vitamin & Mineral Premix", percentage: 3, source: "Animix", benefits: ["Essential vitamins & minerals"] },
   ],
   "turkey-brown-rice-comfort": [
     { name: "Turkey", percentage: 50, source: "Mosner Family Brands", benefits: ["Lean protein", "B vitamins"] },
@@ -53,8 +53,8 @@ const ingredientData: Record<string, Ingredient[]> = {
     { name: "Carrots", percentage: 10, source: "Local CT & NY farms", benefits: ["Beta-carotene", "Eye health"] },
     { name: "Zucchini", percentage: 8, source: "Local CT & NY farms", benefits: ["Hydration", "Fiber"] },
     { name: "Spinach", percentage: 6, source: "Local CT & NY farms", benefits: ["Iron", "Vitamins"] },
-    { name: "Cod liver oil", percentage: 0.5, source: "IFOS-certified", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
-    { name: "Vitamin & Mineral Premix", percentage: 2.5, source: "NouriPet", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
+    { name: "Cod liver oil", percentage: 0.5, source: "J Edwards", benefits: ["EPA+DHA omega-3s", "Brain & heart health"] },
+    { name: "Vitamin & Mineral Premix", percentage: 2.5, source: "Animix", benefits: ["Complete micronutrients", "Essential vitamins & minerals"] },
   ],
 }
 

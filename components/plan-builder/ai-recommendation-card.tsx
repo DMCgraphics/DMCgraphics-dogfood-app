@@ -214,7 +214,7 @@ export function AIRecommendationCard({ recommendation, onSelectRecipe, selectedR
           </div>
           <div className="flex flex-wrap gap-1">
             {recommendation.nutritionalFocus.map((focus) => (
-              <Badge key={focus} variant="secondary" className="text-xs">
+              <Badge key={focus} className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
                 {focus.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
               </Badge>
             ))}

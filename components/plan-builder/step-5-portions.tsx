@@ -340,7 +340,7 @@ function Step5PortionsInner({
                 {Array.from({ length: mealsPerDay }, (_, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Meal {i + 1}</Badge>
+                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200">Meal {i + 1}</Badge>
                       <span className="text-sm">
                         {i === 0 && "Morning"}
                         {i === 1 && mealsPerDay === 2 && "Evening"}

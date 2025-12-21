@@ -124,7 +124,7 @@ export function MultiDogManager({
                   <div className="text-sm font-medium mb-1">Shared Meals:</div>
                   <div className="flex flex-wrap gap-1">
                     {aiRecommendations.variety.sharedMeals.map((recipeId: string) => (
-                      <Badge key={recipeId} className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
+                      <Badge key={recipeId} className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200">
                         {recipeId.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                       </Badge>
                     ))}
@@ -146,7 +146,7 @@ export function MultiDogManager({
                   <p className="text-sm text-muted-foreground mb-2">{rec.reasoning}</p>
                   <div className="flex flex-wrap gap-1">
                     {rec.nutritionalFocus.map((focus: string) => (
-                      <Badge key={focus} className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
+                      <Badge key={focus} className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200">
                         {focus.replace("-", " ")}
                       </Badge>
                     ))}

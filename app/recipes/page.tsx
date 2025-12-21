@@ -101,9 +101,9 @@ export default async function RecipesPage() {
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Contains:</div>
                   <div className="flex flex-wrap gap-1">
-                    {recipe.allergens.map((allergen) => (
-                      <Badge key={allergen} variant="outline" className="text-xs capitalize">
-                        {allergen}
+                    {recipe.ingredients.map((ingredient) => (
+                      <Badge key={ingredient} variant="outline" className="text-xs capitalize">
+                        {ingredient}
                       </Badge>
                     ))}
                   </div>

@@ -137,8 +137,8 @@ export function MetricsSection() {
     <section ref={sectionRef} className="section-padding bg-muted/30" aria-labelledby="metrics-heading">
       <div className="container">
         <div className="text-center space-y-4 mb-12">
-          <h2 id="metrics-heading" className="font-serif text-3xl lg:text-4xl font-bold">
-            Fresh food, fully explained.
+          <h2 id="metrics-heading" className="font-sans text-3xl lg:text-4xl font-bold">
+            Real results, real dogs.
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Transparency you can trust, backed by real results from thousands of dogs.
@@ -176,7 +176,7 @@ export function MetricsSection() {
                   </div>
 
                   <dd className="space-y-2">
-                    <div className="text-3xl lg:text-4xl font-bold font-serif text-primary" aria-live="polite">
+                    <div className="text-3xl lg:text-4xl font-bold font-sans text-primary" aria-live="polite">
                       {metric.value}
                     </div>
                     <p className="text-sm text-muted-foreground">{metric.qualifier}</p>

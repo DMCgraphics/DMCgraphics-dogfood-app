@@ -25,7 +25,7 @@ export default function AboutPage() {
               <Badge variant="secondary" className="mb-6 bg-green-100 text-green-800">
                 Our Story
               </Badge>
-              <h1 className="font-serif text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
+              <h1 className="font-sans text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
                 Fresh nutrition made simple for your dog
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
@@ -56,7 +56,7 @@ export default function AboutPage() {
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Our Mission & Values</h2>
+                <h2 className="font-sans text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Our Mission & Values</h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                   We're committed to revolutionizing pet nutrition through science-backed, personalized meal plans that
                   support every dog's health journey.
@@ -76,7 +76,7 @@ export default function AboutPage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="font-serif text-xl font-semibold mb-3">Science-First</h3>
+                    <h3 className="font-sans text-xl font-semibold mb-3">Science-First</h3>
                     <p className="text-gray-600">
                       Every recipe is formulated by veterinary nutritionists using the latest research.
                     </p>
@@ -95,7 +95,7 @@ export default function AboutPage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="font-serif text-xl font-semibold mb-3">Personalized</h3>
+                    <h3 className="font-sans text-xl font-semibold mb-3">Personalized</h3>
                     <p className="text-gray-600">
                       Tailored nutrition plans based on your dog's unique profile and health needs.
                     </p>
@@ -114,7 +114,7 @@ export default function AboutPage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="font-serif text-xl font-semibold mb-3">Transparent</h3>
+                    <h3 className="font-sans text-xl font-semibold mb-3">Transparent</h3>
                     <p className="text-gray-600">
                       Complete ingredient transparency with detailed nutritional breakdowns.
                     </p>
@@ -133,7 +133,7 @@ export default function AboutPage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="font-serif text-xl font-semibold mb-3">Sustainable</h3>
+                    <h3 className="font-sans text-xl font-semibold mb-3">Sustainable</h3>
                     <p className="text-gray-600">Responsibly sourced ingredients with minimal environmental impact.</p>
                   </CardContent>
                 </Card>
@@ -147,7 +147,7 @@ export default function AboutPage() {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Expert Nutritional Formulation</h2>
+                <h2 className="font-sans text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Expert Nutritional Formulation</h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                   Our recipes are formulated by a board-certified veterinary nutritionist to ensure complete and balanced nutrition for your dog.
                 </p>
@@ -159,7 +159,7 @@ export default function AboutPage() {
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full mx-auto mb-4 flex items-center justify-center">
                       <span className="text-white font-bold text-xl">JP</span>
                     </div>
-                    <h3 className="font-serif text-2xl font-semibold mb-2">Dr. James Pendergast</h3>
+                    <h3 className="font-sans text-2xl font-semibold mb-2">Dr. James Pendergast</h3>
                     <p className="text-blue-600 font-medium mb-4">Veterinary Nutritionist</p>
                     <p className="text-gray-600">
                       Dr. Pendergast formulated our recipes to meet AAFCO standards using whole food ingredients, minimizing the need for supplements while ensuring complete nutritional balance, including developing our custom vitamin and mineral premix.
@@ -180,7 +180,7 @@ export default function AboutPage() {
                   <Badge variant="secondary" className="mb-6 bg-green-100 text-green-800">
                     Our Impact
                   </Badge>
-                  <h2 className="font-serif text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+                  <h2 className="font-sans text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
                     Transforming lives, one meal at a time
                   </h2>
                   <p className="text-lg text-gray-600 mb-6 leading-relaxed">
@@ -226,7 +226,7 @@ export default function AboutPage() {
         <section className="bg-gradient-to-r from-green-600 to-emerald-600 py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="font-serif text-3xl lg:text-4xl font-bold text-white mb-6">
+              <h2 className="font-sans text-3xl lg:text-4xl font-bold text-white mb-6">
                 Ready to transform your dog's nutrition?
               </h2>
               <p className="text-xl text-green-100 mb-8">

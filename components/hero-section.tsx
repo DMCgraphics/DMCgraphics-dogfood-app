@@ -115,7 +115,7 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
-              <h1 className="font-serif text-4xl lg:text-6xl font-bold tracking-tight">
+              <h1 className="font-sans text-4xl lg:text-6xl font-bold tracking-tight">
                 Fresh food, <span className="text-primary">fully explained.</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
@@ -158,21 +158,21 @@ export function HeroSection() {
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Leaf className="h-5 w-5 text-primary" />
-                  <div className="font-serif text-2xl font-bold text-primary">100%</div>
+                  <div className="font-sans text-2xl font-bold text-primary">100%</div>
                 </div>
                 <div className="text-sm text-muted-foreground">Fresh, Local Ingredients</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Stethoscope className="h-5 w-5 text-primary" />
-                  <div className="font-serif text-2xl font-bold text-primary">Vet-Approved</div>
+                  <div className="font-sans text-2xl font-bold text-primary">Vet-Approved</div>
                 </div>
                 <div className="text-sm text-muted-foreground">AAFCO Balanced</div>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Ban className="h-5 w-5 text-primary" />
-                  <div className="font-serif text-2xl font-bold text-primary">Zero</div>
+                  <div className="font-sans text-2xl font-bold text-primary">Zero</div>
                 </div>
                 <div className="text-sm text-muted-foreground">Artificial Preservatives</div>
               </div>

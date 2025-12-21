@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, ShoppingCart, Heart } from "lucide-react"
 import Link from "next/link"
 import { getRecipeBySlug } from "@/lib/recipes"
-import { RecipeIngredientList } from "@/components/recipe-ingredient-list"
 import { NutrientTransparencyPanel } from "@/components/recipe/nutrient-transparency-panel"
 import { IngredientBreakdown } from "@/components/recipe/ingredient-breakdown"
 import { SourcingSustainability } from "@/components/recipe/sourcing-sustainability"
@@ -151,38 +150,6 @@ export default async function RecipePage({ params }: RecipePageProps) {
               <div className="text-xs text-muted-foreground">Farm to bowl transparency</div>
             </div>
           </div>
-        </div>
-
-        {/* Allergen and Ingredients Information */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="font-semibold mb-2">Contains:</h3>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {recipe.allergens.map((allergen) => (
-                  <Badge key={allergen} variant="outline" className="capitalize">
-                    {allergen}
-                  </Badge>
-                ))}
-              </div>
-              <div className="pt-4 border-t">
-                <div className="text-sm font-medium mb-2">Free from:</div>
-                <div className="text-xs text-muted-foreground">
-                  Corn, wheat, soy, artificial preservatives
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="font-semibold mb-3">Ingredients:</h3>
-              <RecipeIngredientList
-                ingredients={recipe.ingredients}
-                premixDetails={recipe.premixDetails}
-              />
-            </CardContent>
-          </Card>
         </div>
 
         {/* Main Content Grid */}

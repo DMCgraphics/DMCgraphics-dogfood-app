@@ -150,7 +150,8 @@ async function getOrders() {
   // Combine plan-based orders
   const planOrders = (plans || []).map(plan => ({
     ...plan,
-    order_type: "plan" as const,
+    // Use plan_type from database to determine order_type
+    order_type: (plan.plan_type === "topper" ? "topper" : "plan") as const,
     plan_items: planItems?.filter(item => item.plan_id === plan.id) || [],
     dogs: dogs?.find(dog => dog.id === plan.dog_id) || null,
     subscriptions: planSubscriptions?.filter(sub => sub.plan_id === plan.id) || [],

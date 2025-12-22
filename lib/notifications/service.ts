@@ -1,10 +1,24 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import type { Notification, CreateNotificationParams, PortalType } from './types'
+
+// Helper to get Supabase client (works in both webhook and server component context)
+async function getClient() {
+  // If we have environment variables, use admin client (for webhooks)
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+  }
+  // Otherwise use server client (for server components)
+  return await createServerClient()
+}
 
 export class NotificationService {
   // Create a single notification
   static async create(params: CreateNotificationParams): Promise<Notification | null> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     const { data, error } = await supabase
       .from('notifications')
@@ -31,7 +45,7 @@ export class NotificationService {
 
   // Create multiple notifications at once
   static async createBulk(notifications: CreateNotificationParams[]): Promise<Notification[]> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     const { data, error } = await supabase
       .from('notifications')
@@ -66,7 +80,7 @@ export class NotificationService {
       unreadOnly?: boolean
     }
   ): Promise<{ notifications: Notification[]; unreadCount: number }> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     let query = supabase
       .from('notifications')
@@ -106,7 +120,7 @@ export class NotificationService {
 
   // Get unread count for a user
   static async getUnreadCount(userId: string, portalType: PortalType): Promise<number> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     const { count, error } = await supabase
       .from('notifications')
@@ -125,7 +139,7 @@ export class NotificationService {
 
   // Mark notification as read
   static async markAsRead(notificationId: string): Promise<boolean> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     const { error } = await supabase
       .from('notifications')
@@ -145,7 +159,7 @@ export class NotificationService {
 
   // Mark all notifications as read for a user/portal
   static async markAllAsRead(userId: string, portalType: PortalType): Promise<boolean> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     const { error } = await supabase
       .from('notifications')
@@ -167,7 +181,7 @@ export class NotificationService {
 
   // Delete a notification
   static async delete(notificationId: string): Promise<boolean> {
-    const supabase = await createClient()
+    const supabase = await getClient()
 
     const { error } = await supabase
       .from('notifications')

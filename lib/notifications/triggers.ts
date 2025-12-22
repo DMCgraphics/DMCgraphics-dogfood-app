@@ -240,8 +240,13 @@ export async function notifyFollowUpDue(params: {
  * Helper to get all admin user IDs
  */
 export async function getAdminUserIds(): Promise<string[]> {
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
+  const { createClient } = await import('@supabase/supabase-js')
+
+  // Use admin client to bypass RLS - required for webhook context
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   const { data, error } = await supabase
     .from('profiles')

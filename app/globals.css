@@ -154,6 +154,25 @@
   }
 }
 
+/* Wave gradient animation - subtle flowing wave */
+@keyframes gradient-wave {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 75%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 25%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Adding utility class for gradient shift animation */
 @layer utilities {
   .animate-gradient-shift {
@@ -163,5 +182,55 @@
   .animate-gradient-x {
     background-size: 200% 100%;
     animation: gradient-x 8s ease infinite;
+  }
+
+  .animate-gradient-wave {
+    background-size: 300% 300%;
+    animation: gradient-wave 12s ease-in-out infinite;
+  }
+}
+
+/* Flip card countdown animations */
+@keyframes flip-number {
+  0% {
+    transform: perspective(600px) rotateX(0deg) scale(1);
+  }
+  25% {
+    transform: perspective(600px) rotateX(-45deg) scale(1.05);
+  }
+  50% {
+    transform: perspective(600px) rotateX(-90deg) scale(1.1);
+  }
+  75% {
+    transform: perspective(600px) rotateX(-45deg) scale(1.05);
+  }
+  100% {
+    transform: perspective(600px) rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.4);
+  }
+}
+
+@layer utilities {
+  .flip-card {
+    position: relative;
+    display: inline-block;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease;
+  }
+
+  .flip-animate {
+    animation: flip-number 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .flip-glow {
+    animation: pulse-glow 0.8s ease-out;
   }
 }

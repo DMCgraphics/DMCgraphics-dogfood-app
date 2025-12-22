@@ -10,6 +10,7 @@ import { ShoppingCart, Package, Sparkles, Check, ArrowRight } from "lucide-react
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { useAuth } from "@/contexts/auth-context"
+import { CountdownTimer } from "@/components/countdown-timer"
 
 // Individual pack recipes
 const recipes = [
@@ -177,6 +178,10 @@ export default function ShopPage() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Try our fresh recipes or subscribe to topper plans for your pup
           </p>
+        </div>
+
+        <div className="max-w-2xl mx-auto mb-8">
+          <CountdownTimer />
         </div>
 
         <Tabs defaultValue="individual" className="space-y-8">

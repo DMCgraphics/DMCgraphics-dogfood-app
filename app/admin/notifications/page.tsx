@@ -202,7 +202,7 @@ export default function AdminNotificationsPage() {
           <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <Input
                   placeholder="Search notifications..."
                   value={searchQuery}
@@ -237,8 +237,8 @@ export default function AdminNotificationsPage() {
           </div>
 
           {selectedIds.size > 0 && (
-            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-              <span className="text-sm font-medium text-blue-900">
+            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+              <span className="text-sm font-medium text-blue-900 dark:text-blue-200">
                 {selectedIds.size} selected
               </span>
               <div className="flex gap-2 w-full sm:w-auto">
@@ -303,7 +303,7 @@ export default function AdminNotificationsPage() {
           {filteredNotifications.map((notification) => (
             <Card key={notification.id} className={cn(
               "group hover:shadow-md transition-all duration-200 border",
-              !notification.read && "bg-gradient-to-r from-blue-50/50 to-purple-50/50 border-blue-200"
+              !notification.read && "bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200 dark:border-blue-800"
             )}>
               <CardContent className="p-4 md:p-6">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -325,7 +325,7 @@ export default function AdminNotificationsPage() {
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-base md:text-lg text-gray-900">
+                            <h3 className="font-semibold text-base md:text-lg text-gray-900 dark:text-gray-100">
                               {notification.title}
                             </h3>
                             {!notification.read && (
@@ -345,7 +345,7 @@ export default function AdminNotificationsPage() {
                             {notification.priority}
                           </Badge>
                         </div>
-                        <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
                           {notification.message}
                         </p>
                       </div>
@@ -362,7 +362,7 @@ export default function AdminNotificationsPage() {
                     </div>
 
                     <div className="flex flex-col gap-3 mt-3">
-                      <span className="text-xs md:text-sm text-gray-500 font-medium">
+                      <span className="text-xs md:text-sm text-gray-500 dark:text-gray-500 font-medium">
                         {formatTimeAgo(notification.created_at)}
                       </span>
 
@@ -372,7 +372,7 @@ export default function AdminNotificationsPage() {
                             variant="outline"
                             size="sm"
                             asChild
-                            className="w-full sm:w-auto justify-center border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-purple-700"
+                            className="w-full sm:w-auto justify-center border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-300 dark:hover:border-purple-700 text-purple-700 dark:text-purple-400"
                           >
                             <Link href={notification.link} className="flex items-center gap-2">
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -385,7 +385,7 @@ export default function AdminNotificationsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleMarkAsRead(notification.id)}
-                            className="w-full sm:w-auto justify-center border-green-200 hover:bg-green-50 hover:border-green-300 text-green-700"
+                            className="w-full sm:w-auto justify-center border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-300 dark:hover:border-green-700 text-green-700 dark:text-green-400"
                           >
                             <CheckCircle2 className="h-3.5 w-3.5 sm:mr-2" />
                             <span>Mark Read</span>
@@ -395,7 +395,7 @@ export default function AdminNotificationsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(notification.id)}
-                          className="w-full sm:w-auto justify-center border-red-200 hover:bg-red-50 hover:border-red-300 text-red-700"
+                          className="w-full sm:w-auto justify-center border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 text-red-700 dark:text-red-400"
                         >
                           <Trash2 className="h-3.5 w-3.5 sm:mr-2" />
                           <span>Delete</span>

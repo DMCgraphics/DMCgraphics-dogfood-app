@@ -140,7 +140,7 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="font-medium line-clamp-1 text-sm text-gray-900">
+            <p className="font-medium line-clamp-1 text-sm text-gray-900 dark:text-gray-100">
               {notification.title}
             </p>
             {!notification.read && (
@@ -150,10 +150,10 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-600 line-clamp-2 mb-1">
+          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-1">
             {notification.message}
           </p>
-          <p className="text-xs text-gray-500 font-medium">
+          <p className="text-xs text-gray-500 dark:text-gray-500 font-medium">
             {formatTimeAgo(notification.created_at)}
           </p>
         </div>
@@ -177,8 +177,8 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
           onClick={handleClick}
           className={cn(
             "block px-4 py-3 transition-all",
-            isMobile ? "hover:bg-purple-50 active:bg-purple-100" : "hover:bg-gray-50",
-            !notification.read && "bg-blue-50/50"
+            isMobile ? "hover:bg-purple-50 dark:hover:bg-purple-950/30 active:bg-purple-100 dark:active:bg-purple-900/30" : "hover:bg-gray-50 dark:hover:bg-gray-800",
+            !notification.read && "bg-blue-50/50 dark:bg-blue-950/30"
           )}
         >
           {content}
@@ -192,8 +192,8 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
         onClick={handleClick}
         className={cn(
           "block px-4 py-3 cursor-pointer transition-all",
-          isMobile ? "hover:bg-purple-50 active:bg-purple-100" : "hover:bg-gray-50",
-          !notification.read && "bg-blue-50/50"
+          isMobile ? "hover:bg-purple-50 dark:hover:bg-purple-950/30 active:bg-purple-100 dark:active:bg-purple-900/30" : "hover:bg-gray-50 dark:hover:bg-gray-800",
+          !notification.read && "bg-blue-50/50 dark:bg-blue-950/30"
         )}
       >
         {content}
@@ -232,11 +232,11 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
           <DropdownMenuContent
             align="end"
             side="bottom"
-            className="w-96 bg-white/95 backdrop-blur-lg border-purple-100 shadow-xl"
+            className="w-96 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-purple-100 dark:border-purple-900 shadow-xl"
             sideOffset={12}
           >
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b">
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 border-b dark:border-gray-800">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
               {unreadCount > 0 && (
                 <Button
                   variant="ghost"
@@ -250,13 +250,13 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
             </div>
 
             {isLoading ? (
-              <div className="px-4 py-12 text-center text-sm text-gray-500">
+              <div className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-2"></div>
                 <p>Loading notifications...</p>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="px-4 py-12 text-center text-sm text-gray-500">
-                <Bell className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+              <div className="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                <Bell className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                 <p>No notifications yet</p>
               </div>
             ) : (
@@ -265,10 +265,10 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
               </div>
             )}
 
-            <div className="border-t bg-gradient-to-r from-purple-50/50 to-blue-50/50">
+            <div className="border-t dark:border-gray-800 bg-gradient-to-r from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20">
               <Link
                 href={`/${portalType}/notifications`}
-                className="block w-full text-center text-sm py-3 text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                className="block w-full text-center text-sm py-3 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
               >
                 View all notifications
               </Link>
@@ -284,7 +284,7 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
             {bellButton}
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:w-96 p-0">
-            <SheetHeader className="px-4 py-4 border-b bg-gradient-to-r from-purple-50 to-blue-50">
+            <SheetHeader className="px-4 py-4 border-b dark:border-gray-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-lg">Notifications</SheetTitle>
                 {unreadCount > 0 && (
@@ -302,13 +302,13 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
 
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
-                <div className="px-4 py-16 text-center text-sm text-gray-500">
+                <div className="px-4 py-16 text-center text-sm text-gray-500 dark:text-gray-400">
                   <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-3"></div>
                   <p>Loading notifications...</p>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="px-4 py-16 text-center text-sm text-gray-500">
-                  <Bell className="h-16 w-16 mx-auto mb-3 text-gray-300" />
+                <div className="px-4 py-16 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <Bell className="h-16 w-16 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                   <p className="text-base mb-1">No notifications yet</p>
                   <p className="text-xs">You're all caught up!</p>
                 </div>
@@ -319,7 +319,7 @@ export function NotificationBell({ portalType, className }: NotificationBellProp
               )}
             </div>
 
-            <div className="border-t bg-gradient-to-r from-purple-50/50 to-blue-50/50 p-4">
+            <div className="border-t dark:border-gray-800 bg-gradient-to-r from-purple-50/50 to-blue-50/50 dark:from-purple-950/20 dark:to-blue-950/20 p-4">
               <Link
                 href={`/${portalType}/notifications`}
                 onClick={() => setMobileOpen(false)}

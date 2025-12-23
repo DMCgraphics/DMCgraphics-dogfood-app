@@ -181,9 +181,12 @@ export function HeroSection() {
 
           <div className="relative">
             <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/10 to-secondary/10 p-8">
-              <img
-                src="/hero-puppy-ingredients.png"
-                alt="Adorable puppy with fresh natural ingredients including sweet potato, rice, and leafy greens for premium dog nutrition"
+              <video
+                src="/hero-video.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="w-full h-full object-cover rounded-2xl"
               />
             </div>

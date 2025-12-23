@@ -59,6 +59,16 @@ export function AIChatFAB() {
     scrollToBottom()
   }, [messages])
 
+  // Auto-fullscreen on mobile when opening chat
+  useEffect(() => {
+    if (isOpen) {
+      const isMobile = window.innerWidth < 768
+      if (isMobile) {
+        setIsFullscreen(true)
+      }
+    }
+  }, [isOpen])
+
   // Initialize with welcome message and quick actions when dialog opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -339,7 +349,7 @@ export function AIChatFAB() {
         showCloseButton={false}
         className={
           isFullscreen
-            ? 'p-0 gap-0 flex !fixed !inset-0 !w-screen !h-screen !max-w-none !rounded-none !border-0 !shadow-none !translate-x-0 !translate-y-0 !top-0 !left-0 !m-0 z-[100]'
+            ? 'p-0 gap-0 flex !fixed !inset-0 !w-screen !h-[100dvh] !max-w-none !rounded-none !border-0 !shadow-none !translate-x-0 !translate-y-0 !top-0 !left-0 !m-0 z-[100]'
             : `p-0 gap-0 flex ${!hasAnimated ? 'animate-in slide-in-from-bottom-2 fade-in duration-300' : ''} sm:max-w-4xl h-[600px] max-h-[90vh] w-full`
         }
       >
@@ -411,7 +421,7 @@ export function AIChatFAB() {
                 </Button>
               )}
               <div className="flex-1">
-                <h2 className="text-lg font-semibold">Nouri - AI Assistant</h2>
+                <h2 className="text-lg font-semibold">Nouri - Pet Nutrition Assistant</h2>
                 <div className="flex gap-2 mt-2">
                   <Badge className="text-xs bg-gradient-to-r from-purple-200 to-blue-200 dark:from-purple-900 dark:to-blue-900 text-purple-900 dark:text-purple-100 border-purple-300 dark:border-purple-700">
                     <Bot className="h-3 w-3 mr-1" />
@@ -426,17 +436,56 @@ export function AIChatFAB() {
               </div>
             </div>
             <div className="flex gap-1 ml-4">
-              {/* Mobile New Chat Button */}
+              {/* Mobile Chat History and New Chat Buttons */}
               {isAuthenticated && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 md:hidden"
-                  onClick={startNewConversation}
-                  title="New Conversation"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 md:hidden"
+                        title="Chat History"
+                      >
+                        <History className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 max-h-[400px] overflow-y-auto">
+                      <DropdownMenuItem onClick={startNewConversation} className="cursor-pointer">
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Chat
+                      </DropdownMenuItem>
+                      {conversations.length > 0 && <DropdownMenuSeparator />}
+                      {loadingConversations ? (
+                        <div className="py-8 text-center text-sm text-gray-500">
+                          Loading...
+                        </div>
+                      ) : conversations.length === 0 ? (
+                        <div className="py-8 text-center text-sm text-gray-500">
+                          No conversations yet
+                        </div>
+                      ) : (
+                        conversations.map((conv) => (
+                          <DropdownMenuItem
+                            key={conv.id}
+                            onClick={() => loadConversation(conv.id)}
+                            className={`cursor-pointer ${conversationId === conv.id ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+                          >
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <div className="font-medium truncate">{conv.title}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                {new Date(conv.last_message_at).toLocaleDateString([], {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               )}
               <Button
                 variant="ghost"

@@ -67,6 +67,7 @@ const STAGE_CONFIG = {
 export function DeliveryStatusBanner({ orderId, sessionId, className }: DeliveryStatusBannerProps) {
   const { order, events, isConnected, isLoading } = useOrderTracking(orderId, sessionId)
   const [isVisible, setIsVisible] = useState(true)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   // Auto-hide after delivery
   useEffect(() => {
@@ -77,6 +78,17 @@ export function DeliveryStatusBanner({ orderId, sessionId, className }: Delivery
       return () => clearTimeout(timer)
     }
   }, [order?.fulfillment_status])
+
+  // Track scroll position for compact mode
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY
+      setIsScrolled(scrollPosition > 10)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   if (!isVisible || isLoading || !order) {
     return null
@@ -94,17 +106,25 @@ export function DeliveryStatusBanner({ orderId, sessionId, className }: Delivery
   return (
     <div
       className={cn(
-        "sticky top-0 z-50 border-b shadow-sm animate-in slide-in-from-top duration-300",
+        "sticky top-16 z-40 border-b shadow-sm animate-in slide-in-from-top duration-300 transition-all",
         config.bgColor,
         config.borderColor,
         className
       )}
     >
       <div className="container">
-        <div className="flex items-center justify-between gap-4 py-3">
+        <div className={cn(
+          "flex items-center justify-between gap-4 transition-all duration-300",
+          isScrolled ? "py-2" : "py-3"
+        )}>
           {/* Status Info */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={cn("flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center", config.color)}>
+            {/* Icon - Hidden when scrolled */}
+            <div className={cn(
+              "flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-300",
+              config.color,
+              isScrolled ? "w-0 h-0 opacity-0 overflow-hidden" : "w-10 h-10 opacity-100"
+            )}>
               <Icon className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0 flex-1">
@@ -117,14 +137,20 @@ export function DeliveryStatusBanner({ orderId, sessionId, className }: Delivery
                   </span>
                 )}
               </div>
-              {order.estimated_delivery_window && status !== "delivered" && (
-                <p className="text-xs text-muted-foreground truncate">
-                  Estimated: {order.estimated_delivery_window}
-                </p>
-              )}
-              {order.driver_name && ["driver_assigned", "preparing", "out_for_delivery"].includes(status) && (
-                <p className="text-xs text-muted-foreground truncate">Driver: {order.driver_name}</p>
-              )}
+              {/* Subtext - Hidden when scrolled */}
+              <div className={cn(
+                "overflow-hidden transition-all duration-300",
+                isScrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+              )}>
+                {order.estimated_delivery_window && status !== "delivered" && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    Estimated: {order.estimated_delivery_window}
+                  </p>
+                )}
+                {order.driver_name && ["driver_assigned", "preparing", "out_for_delivery"].includes(status) && (
+                  <p className="text-xs text-muted-foreground truncate">Driver: {order.driver_name}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -150,8 +176,11 @@ export function DeliveryStatusBanner({ orderId, sessionId, className }: Delivery
           </Button>
         </div>
 
-        {/* Mobile Progress Bar */}
-        <div className="sm:hidden pb-2">
+        {/* Mobile Progress Bar - Hidden when scrolled */}
+        <div className={cn(
+          "sm:hidden overflow-hidden transition-all duration-300",
+          isScrolled ? "max-h-0 pb-0 opacity-0" : "max-h-10 pb-2 opacity-100"
+        )}>
           <div className="h-1.5 bg-white/50 dark:bg-black/30 rounded-full overflow-hidden">
             <div
               className={cn("h-full transition-all duration-500", config.color)}

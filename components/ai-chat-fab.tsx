@@ -187,7 +187,7 @@ export function AIChatFAB() {
           <div className="flex-1">
             <h2 className="text-lg font-semibold">Nouri - AI Assistant</h2>
             <div className="flex gap-2 mt-2">
-              <Badge variant="secondary" className="text-xs">
+              <Badge className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-950/40 dark:to-blue-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800">
                 <Bot className="h-3 w-3 mr-1" />
                 AI-Powered
               </Badge>

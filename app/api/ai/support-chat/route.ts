@@ -264,19 +264,27 @@ async function generateCardData(
   if (/my dog|dog profile|about.*dog/i.test(lowerQ)) {
     const { data: dogs } = await supabase
       .from("dogs")
-      .select("name, breed, age_years, age_months, weight_lbs, activity_level, selected_allergens, health_goals")
+      .select("name, breed, age, age_unit, weight, weight_kg, weight_unit, activity_level, allergies, conditions")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
 
     if (dogs && dogs.length > 0) {
       const dog = dogs[0]
-      const age =
-        dog.age_years > 0
-          ? `${dog.age_years} year${dog.age_years !== 1 ? "s" : ""}${
-              dog.age_months > 0 ? ` ${dog.age_months} months` : ""
-            }`
-          : `${dog.age_months} month${dog.age_months !== 1 ? "s" : ""}`
+
+      // Format age based on age_unit
+      let age = ""
+      if (dog.age_unit === "months") {
+        age = `${dog.age} month${dog.age !== 1 ? "s" : ""}`
+      } else {
+        age = `${dog.age} year${dog.age !== 1 ? "s" : ""}`
+      }
+
+      // Convert weight to lbs for display
+      let weightLbs = dog.weight || 0
+      if (dog.weight_unit === "kg") {
+        weightLbs = Math.round((dog.weight_kg || dog.weight || 0) * 2.20462)
+      }
 
       cards.push({
         type: "dog_profile_card",
@@ -284,10 +292,10 @@ async function generateCardData(
           name: dog.name,
           breed: dog.breed,
           age,
-          weight: dog.weight_lbs,
+          weight: weightLbs,
           activityLevel: dog.activity_level,
-          allergens: dog.selected_allergens || [],
-          healthGoals: dog.health_goals || [],
+          allergens: dog.allergies || [],
+          healthGoals: [], // No health_goals column in database
         },
       })
     }
@@ -313,7 +321,7 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
   if (needsDogProfile) {
     const { data: dogs } = await supabase
       .from("dogs")
-      .select("id, name, breed, age_years, age_months, weight_lbs, activity_level, health_goals, selected_allergens, medical_needs, selected_recipe")
+      .select("id, name, breed, age, age_unit, weight, weight_kg, weight_unit, activity_level, allergies, conditions")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5)
@@ -321,26 +329,28 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
     if (dogs && dogs.length > 0) {
       contextParts.push("\nUser's Dogs:")
       for (const dog of dogs) {
-        const age = dog.age_years > 0
-          ? `${dog.age_years} year${dog.age_years !== 1 ? 's' : ''}${dog.age_months > 0 ? ` ${dog.age_months} months` : ''}`
-          : `${dog.age_months} month${dog.age_months !== 1 ? 's' : ''}`
-
-        let dogInfo = `- ${dog.name}: ${dog.breed}, ${age} old, ${dog.weight_lbs}lbs, ${dog.activity_level} activity`
-
-        if (dog.selected_allergens && dog.selected_allergens.length > 0) {
-          dogInfo += `, Allergens: ${dog.selected_allergens.join(', ')}`
+        // Format age based on age_unit
+        let age = ""
+        if (dog.age_unit === "months") {
+          age = `${dog.age} month${dog.age !== 1 ? 's' : ''}`
+        } else {
+          age = `${dog.age} year${dog.age !== 1 ? 's' : ''}`
         }
 
-        if (dog.health_goals && dog.health_goals.length > 0) {
-          dogInfo += `, Health Goals: ${dog.health_goals.join(', ')}`
+        // Convert weight to lbs for display
+        let weightLbs = dog.weight || 0
+        if (dog.weight_unit === "kg") {
+          weightLbs = Math.round((dog.weight_kg || dog.weight || 0) * 2.20462)
         }
 
-        if (dog.medical_needs) {
-          dogInfo += `, Medical Needs: ${dog.medical_needs}`
+        let dogInfo = `- ${dog.name}: ${dog.breed}, ${age} old, ${weightLbs}lbs, ${dog.activity_level} activity`
+
+        if (dog.allergies && dog.allergies.length > 0) {
+          dogInfo += `, Allergies: ${dog.allergies.join(', ')}`
         }
 
-        if (dog.selected_recipe) {
-          dogInfo += `, Current Recipe: ${dog.selected_recipe}`
+        if (dog.conditions && dog.conditions.length > 0) {
+          dogInfo += `, Medical Conditions: ${dog.conditions.join(', ')}`
         }
 
         contextParts.push(dogInfo)

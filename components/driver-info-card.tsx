@@ -16,7 +16,7 @@ export function DriverInfoCard({
   estimatedWindow,
 }: DriverInfoCardProps) {
   return (
-    <Card className="border-blue-200 bg-blue-50">
+    <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
           {/* Driver avatar */}
@@ -26,10 +26,10 @@ export function DriverInfoCard({
 
           <div className="flex-1">
             <h3 className="font-semibold text-lg mb-1">Your Driver</h3>
-            <p className="text-blue-900 font-medium">{driverName}</p>
+            <p className="text-blue-900 dark:text-blue-200 font-medium">{driverName}</p>
 
             {estimatedWindow && (
-              <div className="flex items-center gap-2 mt-2 text-sm text-blue-700">
+              <div className="flex items-center gap-2 mt-2 text-sm text-blue-700 dark:text-blue-300">
                 <MapPin className="h-4 w-4" />
                 <span>Estimated arrival: {estimatedWindow}</span>
               </div>

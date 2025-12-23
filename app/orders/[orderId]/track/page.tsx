@@ -42,7 +42,7 @@ export default function TrackOrderPage() {
                 <p className="text-muted-foreground">Real-time updates on your delivery</p>
               </div>
               {isConnected && (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                   <span className="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse" />
                   Live
                 </Badge>
@@ -61,13 +61,13 @@ export default function TrackOrderPage() {
 
             {/* Error State */}
             {error && (
-              <Card className="border-red-200 bg-red-50">
+              <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
                 <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 text-red-600">
+                  <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
                     <AlertCircle className="h-8 w-8" />
                     <div>
                       <h3 className="font-semibold text-lg">Unable to Load Order</h3>
-                      <p className="text-sm text-red-600/80">{error}</p>
+                      <p className="text-sm text-red-600/80 dark:text-red-400/80">{error}</p>
                     </div>
                   </div>
                 </CardContent>

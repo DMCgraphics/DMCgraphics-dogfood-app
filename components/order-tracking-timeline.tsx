@@ -78,15 +78,15 @@ export function OrderTrackingTimeline({
 
   if (isCancelled || isFailed) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3 text-red-600">
+          <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
             <XCircle className="h-8 w-8" />
             <div>
               <h3 className="font-semibold text-lg">
                 {isCancelled ? "Order Cancelled" : "Delivery Failed"}
               </h3>
-              <p className="text-sm text-red-600/80">
+              <p className="text-sm text-red-600/80 dark:text-red-400/80">
                 {isCancelled
                   ? "This order has been cancelled."
                   : "There was an issue with delivery. Please contact support."}
@@ -130,7 +130,7 @@ export function OrderTrackingTimeline({
                 <div
                   className={cn(
                     "absolute left-5 top-12 w-0.5 h-full -translate-x-1/2",
-                    isCompleted || isCurrent ? "bg-green-500" : "bg-gray-200"
+                    isCompleted || isCurrent ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
                   )}
                 />
               )}
@@ -143,7 +143,7 @@ export function OrderTrackingTimeline({
                   isCurrent && stage.key === "delivered" && "bg-green-500 border-green-500 text-white",
                   isCurrent && stage.key !== "delivered" &&
                     "bg-blue-500 border-blue-500 text-white animate-pulse shadow-lg shadow-blue-500/50",
-                  isPending && "bg-white border-gray-300 text-gray-400"
+                  isPending && "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500"
                 )}
               >
                 {isCurrent && !isCompleted && stage.key !== "delivered" ? (
@@ -158,10 +158,10 @@ export function OrderTrackingTimeline({
                 <div
                   className={cn(
                     "font-semibold text-lg mb-1",
-                    isCompleted && "text-green-700",
-                    isCurrent && stage.key === "delivered" && "text-green-700",
-                    isCurrent && stage.key !== "delivered" && "text-blue-700",
-                    isPending && "text-gray-400"
+                    isCompleted && "text-green-700 dark:text-green-400",
+                    isCurrent && stage.key === "delivered" && "text-green-700 dark:text-green-400",
+                    isCurrent && stage.key !== "delivered" && "text-blue-700 dark:text-blue-400",
+                    isPending && "text-gray-400 dark:text-gray-500"
                   )}
                 >
                   {stage.label}
@@ -170,10 +170,10 @@ export function OrderTrackingTimeline({
                 <p
                   className={cn(
                     "text-sm mb-2",
-                    isCompleted && "text-green-600/80",
-                    isCurrent && stage.key === "delivered" && "text-green-600/80",
-                    isCurrent && stage.key !== "delivered" && "text-blue-600/80",
-                    isPending && "text-gray-400"
+                    isCompleted && "text-green-600/80 dark:text-green-500/80",
+                    isCurrent && stage.key === "delivered" && "text-green-600/80 dark:text-green-500/80",
+                    isCurrent && stage.key !== "delivered" && "text-blue-600/80 dark:text-blue-500/80",
+                    isPending && "text-gray-400 dark:text-gray-500"
                   )}
                 >
                   {stageEvent?.description || stage.description}

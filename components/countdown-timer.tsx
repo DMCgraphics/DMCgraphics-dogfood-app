@@ -84,6 +84,7 @@ export function CountdownTimer({ className }: CountdownTimerProps) {
   return (
     <Card className={cn(
       "overflow-hidden bg-gradient-to-br from-green-50 via-blue-50 to-cyan-50",
+      "dark:from-green-950/30 dark:via-blue-950/30 dark:to-cyan-950/30",
       "border-2 border-primary/20 shadow-lg hover:shadow-xl transition-shadow",
       "animate-gradient-wave",
       className
@@ -94,7 +95,7 @@ export function CountdownTimer({ className }: CountdownTimerProps) {
             <Clock className="h-6 w-6 text-primary" />
             <h3 className="text-2xl font-bold text-primary">Next Fresh Batch</h3>
           </div>
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-950">
             Cooking Soon
           </Badge>
         </div>

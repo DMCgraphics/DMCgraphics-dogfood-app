@@ -129,7 +129,7 @@ export function AdminSidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:block bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-purple-100 transition-all duration-300 relative",
+        "hidden md:block bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-purple-100 dark:border-purple-900 transition-all duration-300 relative",
         isCollapsed ? "w-16" : "w-64"
       )}
     >
@@ -138,13 +138,13 @@ export function AdminSidebar() {
         variant="ghost"
         size="sm"
         onClick={toggleCollapsed}
-        className="absolute -right-3 top-4 h-6 w-6 rounded-full bg-white shadow-md border border-purple-200 p-0 z-10 hover:bg-purple-50"
+        className="absolute -right-3 top-4 h-6 w-6 rounded-full bg-white dark:bg-gray-800 shadow-md border border-purple-200 dark:border-purple-700 p-0 z-10 hover:bg-purple-50 dark:hover:bg-purple-900"
         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? (
-          <ChevronRightCollapse className="h-4 w-4 text-purple-600" />
+          <ChevronRightCollapse className="h-4 w-4 text-purple-600 dark:text-purple-400" />
         ) : (
-          <ChevronLeft className="h-4 w-4 text-purple-600" />
+          <ChevronLeft className="h-4 w-4 text-purple-600 dark:text-purple-400" />
         )}
       </Button>
 
@@ -162,8 +162,8 @@ export function AdminSidebar() {
                 <button
                   onClick={() => toggleSection(section.title)}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors rounded-md hover:bg-purple-50",
-                    hasActiveItem && "text-purple-600"
+                    "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors rounded-md hover:bg-purple-50 dark:hover:bg-purple-950/30",
+                    hasActiveItem && "text-purple-600 dark:text-purple-400"
                   )}
                 >
                   <span>{section.title}</span>
@@ -189,8 +189,8 @@ export function AdminSidebar() {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group relative",
                           isActive
-                            ? "bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 font-medium shadow-sm"
-                            : "hover:bg-purple-50/50 text-gray-700 hover:text-gray-900",
+                            ? "bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/40 text-purple-700 dark:text-purple-300 font-medium shadow-sm"
+                            : "hover:bg-purple-50/50 dark:hover:bg-purple-950/20 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100",
                           isCollapsed && "justify-center"
                         )}
                         title={isCollapsed ? item.label : undefined}
@@ -198,7 +198,7 @@ export function AdminSidebar() {
                         <Icon
                           className={cn(
                             "h-5 w-5 flex-shrink-0 transition-colors",
-                            isActive ? "text-purple-600" : "text-gray-400 group-hover:text-purple-500"
+                            isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-400 dark:text-gray-500 group-hover:text-purple-500 dark:group-hover:text-purple-400"
                           )}
                         />
                         {!isCollapsed && (

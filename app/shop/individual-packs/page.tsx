@@ -73,7 +73,7 @@ function IndividualPacksContent() {
       description: "Try one pack to see if your dog loves it",
       price: 7.00,
       badge: "Try It",
-      badgeColor: "bg-blue-100 text-blue-800"
+      badgeColor: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
     },
     {
       quantity: 3 as const,
@@ -81,7 +81,7 @@ function IndividualPacksContent() {
       description: "Perfect sample size - save $1",
       price: 20.00,
       badge: "Best Value",
-      badgeColor: "bg-green-100 text-green-800",
+      badgeColor: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
       savings: "Save $1"
     }
   ]
@@ -363,7 +363,7 @@ function IndividualPacksContent() {
                           </Badge>
                         )}
                         {option.savings && (
-                          <Badge variant="outline" className="text-green-700 border-green-300">
+                          <Badge variant="outline" className="text-green-700 border-green-300 dark:text-green-300 dark:border-green-700">
                             {option.savings}
                           </Badge>
                         )}
@@ -427,7 +427,7 @@ function IndividualPacksContent() {
                       key={recipe.id}
                       className={`transition-all ${
                         !inStock
-                          ? "opacity-40 cursor-not-allowed bg-gray-50"
+                          ? "opacity-40 cursor-not-allowed bg-gray-50 dark:bg-gray-900"
                           : isSelected
                           ? "ring-2 ring-primary ring-offset-2"
                           : "hover:shadow-lg"
@@ -439,7 +439,7 @@ function IndividualPacksContent() {
                             <div className="flex items-center justify-between">
                               <CardTitle className="text-lg">{recipe.name}</CardTitle>
                               {!inStock && (
-                                <Badge variant="outline" className="bg-gray-100 text-gray-700 ml-2">
+                                <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 ml-2">
                                   Out of Stock
                                 </Badge>
                               )}
@@ -493,8 +493,8 @@ function IndividualPacksContent() {
                 })}
               </div>
               {selectedQuantity === 3 && totalSelectedPacks === 3 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800 font-medium">
+                <div className="bg-green-50 border border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-sm text-green-800 dark:text-green-300 font-medium">
                     Perfect! You've selected 3 packs for your 3-pack bundle.
                   </p>
                 </div>
@@ -522,14 +522,14 @@ function IndividualPacksContent() {
 
           {/* Account Required */}
           {!user && selectedQuantity && canCheckout && (
-            <Card className="border-blue-200 bg-blue-50">
+            <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
               <CardContent className="pt-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900">Account Required</h3>
+                    <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">Account Required</h3>
                   </div>
-                  <p className="text-sm text-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
                     Create a free account to complete your purchase and track your orders.
                   </p>
                   <Button
@@ -545,7 +545,7 @@ function IndividualPacksContent() {
                   >
                     Create Account
                   </Button>
-                  <p className="text-xs text-blue-700 text-center">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 text-center">
                     Already have an account?{" "}
                     <Link href="/auth/login?returnTo=%2Fshop%2Findividual-packs" className="underline font-medium">
                       Sign in

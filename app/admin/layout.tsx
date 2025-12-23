@@ -19,9 +19,9 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
       {/* Modern Admin Header - Sticky */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 text-white shadow-xl backdrop-blur-sm">
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 dark:from-gray-950 dark:via-purple-950 dark:to-gray-950 text-white shadow-xl backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">

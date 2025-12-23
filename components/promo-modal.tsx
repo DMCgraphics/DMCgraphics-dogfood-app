@@ -30,7 +30,7 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-primary/20">
+      <DialogContent className="sm:max-w-md bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 border-2 border-primary/20">
         <DialogHeader className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-4xl">
             <Gift className="h-8 w-8 text-primary" />

@@ -21,6 +21,7 @@ interface SupportChatRequest {
   conversationHistory: ChatMessage[]
   userId?: string
   currentPage?: string
+  conversationId?: string
 }
 
 /**
@@ -48,6 +49,254 @@ function detectUserDataIntent(question: string): boolean {
 }
 
 /**
+ * Generate a conversation title from the first user message
+ */
+function generateTitle(firstMessage: string): string {
+  // Use first 50 chars or first sentence
+  const cleaned = firstMessage.trim()
+  if (cleaned.length <= 50) return cleaned
+
+  // Try to get first sentence
+  const firstSentence = cleaned.match(/^[^.!?]+[.!?]/)
+  if (firstSentence) {
+    const sentence = firstSentence[0]
+    return sentence.length <= 60 ? sentence : `${sentence.substring(0, 57)}...`
+  }
+
+  // Fallback: truncate at 50 chars
+  return `${cleaned.substring(0, 47)}...`
+}
+
+/**
+ * Create or get conversation
+ */
+async function ensureConversation(
+  conversationId: string | undefined,
+  userId: string,
+  firstMessage: string,
+  currentPage?: string
+): Promise<string> {
+  const supabase = await createClient()
+
+  // If conversationId provided, return it (conversation already exists)
+  if (conversationId) {
+    return conversationId
+  }
+
+  // Create new conversation
+  const title = generateTitle(firstMessage)
+
+  const { data, error } = await supabase
+    .from("ai_chat_conversations")
+    .insert({
+      user_id: userId,
+      title,
+      page_context: currentPage || null,
+      started_at: new Date().toISOString(),
+      last_message_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single()
+
+  if (error) {
+    console.error("[Support Chat] Failed to create conversation:", error)
+    throw new Error("Failed to create conversation")
+  }
+
+  return data.id
+}
+
+/**
+ * Save a message to the database
+ */
+async function saveMessage(
+  conversationId: string,
+  role: "user" | "assistant",
+  content: string,
+  tokensUsed?: number,
+  llmModel?: string
+): Promise<void> {
+  const supabase = await createClient()
+
+  const { error: messageError } = await supabase
+    .from("ai_chat_messages")
+    .insert({
+      conversation_id: conversationId,
+      role,
+      content,
+      tokens_used: tokensUsed || null,
+      llm_model: llmModel || null,
+    })
+
+  if (messageError) {
+    console.error("[Support Chat] Failed to save message:", messageError)
+    throw new Error("Failed to save message")
+  }
+
+  // Update conversation last_message_at
+  const { error: updateError } = await supabase
+    .from("ai_chat_conversations")
+    .update({
+      last_message_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", conversationId)
+
+  if (updateError) {
+    console.error("[Support Chat] Failed to update conversation timestamp:", updateError)
+    // Don't throw - this is not critical
+  }
+}
+
+/**
+ * Generate card data based on question and user context
+ * Returns an array of cards to support multiple cards per message
+ */
+async function generateCardData(
+  question: string,
+  userId: string | undefined,
+  aiResponse: string
+): Promise<Array<{ type: string; data: any }>> {
+  if (!userId) return []
+
+  const supabase = await createClient()
+  const lowerQ = question.toLowerCase()
+  const lowerResponse = aiResponse.toLowerCase()
+  const cards: Array<{ type: string; data: any }> = []
+
+  // Order card: When asking about orders or tracking
+  if (/track|order|delivery|where is my|status|shipped/i.test(lowerQ)) {
+    const { data: orders } = await supabase
+      .from("orders")
+      .select("id, order_number, status, fulfillment_status, estimated_delivery_date, tracking_url, tracking_token")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+
+    if (orders && orders.length > 0) {
+      const order = orders[0]
+      cards.push({
+        type: "order_card",
+        data: {
+          orderId: order.id,
+          orderNumber: order.order_number,
+          status: order.status,
+          fulfillmentStatus: order.fulfillment_status,
+          estimatedDelivery: order.estimated_delivery_date
+            ? new Date(order.estimated_delivery_date).toLocaleDateString()
+            : undefined,
+          trackingUrl: order.tracking_url,
+          trackingToken: order.tracking_token,
+        },
+      })
+    }
+  }
+
+  // Recipe cards: When AI mentions specific recipe names (find ALL mentioned recipes)
+  const recipeKeywords = /turkey|beef|chicken|lamb|pork|salmon|fish|sweet potato|barley|recipe|quinoa|pumpkin|rice|veggie/i
+  if (recipeKeywords.test(lowerResponse) && /recipe|recommend|suggest|best|compare/i.test(lowerQ)) {
+    const { data: recipes } = await supabase
+      .from("recipes")
+      .select("name, slug, description, macros")
+      .eq("is_active", true)
+
+    if (recipes && recipes.length > 0) {
+      // Find ALL recipes mentioned in response
+      // Use flexible matching with multiple strategies
+      const mentionedRecipes = recipes.filter((r) => {
+        // Strategy 1: Normalize full recipe name matching
+        const normalizedRecipeName = r.name
+          .toLowerCase()
+          .replace(/&/g, "and")
+          .replace(/[^a-z0-9\s]/g, "")
+          .trim()
+
+        const normalizedResponse = lowerResponse
+          .replace(/&/g, "and")
+          .replace(/[^a-z0-9\s]/g, "")
+
+        if (normalizedResponse.includes(normalizedRecipeName)) {
+          return true
+        }
+
+        // Strategy 2: Extract key protein + key ingredient (more flexible)
+        // e.g., "Beef & Quinoa Harvest" → match "beef" AND "quinoa"
+        // e.g., "Chicken & Garden Veggie" → match "chicken" AND ("veggie" OR "vegetable")
+        // e.g., "Lamb & Pumpkin Feast" → match "lamb" AND "pumpkin"
+        // e.g., "Turkey & Brown Rice Comfort" → match "turkey" AND "rice"
+
+        const recipeLower = r.name.toLowerCase()
+
+        // Check for protein + key ingredient combinations
+        if (recipeLower.includes("beef") && recipeLower.includes("quinoa")) {
+          return normalizedResponse.includes("beef") && normalizedResponse.includes("quinoa")
+        }
+        if (recipeLower.includes("chicken") && (recipeLower.includes("veggie") || recipeLower.includes("garden"))) {
+          return normalizedResponse.includes("chicken") && (normalizedResponse.includes("veggie") || normalizedResponse.includes("vegetable") || normalizedResponse.includes("garden"))
+        }
+        if (recipeLower.includes("lamb") && recipeLower.includes("pumpkin")) {
+          return normalizedResponse.includes("lamb") && normalizedResponse.includes("pumpkin")
+        }
+        if (recipeLower.includes("turkey") && recipeLower.includes("rice")) {
+          return normalizedResponse.includes("turkey") && normalizedResponse.includes("rice")
+        }
+
+        return false
+      })
+
+      // Add a card for each mentioned recipe
+      mentionedRecipes.forEach((recipe) => {
+        cards.push({
+          type: "recipe_card",
+          data: {
+            name: recipe.name,
+            description: recipe.description,
+            protein: recipe.macros?.protein,
+            fat: recipe.macros?.fat,
+            slug: recipe.slug,
+          },
+        })
+      })
+    }
+  }
+
+  // Dog profile card: When discussing user's dog
+  if (/my dog|dog profile|about.*dog/i.test(lowerQ)) {
+    const { data: dogs } = await supabase
+      .from("dogs")
+      .select("name, breed, age_years, age_months, weight_lbs, activity_level, selected_allergens, health_goals")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+
+    if (dogs && dogs.length > 0) {
+      const dog = dogs[0]
+      const age =
+        dog.age_years > 0
+          ? `${dog.age_years} year${dog.age_years !== 1 ? "s" : ""}${
+              dog.age_months > 0 ? ` ${dog.age_months} months` : ""
+            }`
+          : `${dog.age_months} month${dog.age_months !== 1 ? "s" : ""}`
+
+      cards.push({
+        type: "dog_profile_card",
+        data: {
+          name: dog.name,
+          breed: dog.breed,
+          age,
+          weight: dog.weight_lbs,
+          activityLevel: dog.activity_level,
+          allergens: dog.selected_allergens || [],
+          healthGoals: dog.health_goals || [],
+        },
+      })
+    }
+  }
+
+  return cards
+}
+
+/**
  * Fetch relevant user context based on question intent
  */
 async function fetchUserContext(userId: string, question: string): Promise<string> {
@@ -56,8 +305,50 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
   // Determine what data to fetch
   const needsOrders = /order|delivery|track|status|when will|shipped|arriving/i.test(question)
   const needsSubscription = /subscription|plan|billing|pause|cancel|skip|next delivery|recurring/i.test(question)
+  const needsDogProfile = /my dog|his|her|dog's|recipe|food|meal|nutrition|allergies|allergen|health|weight|breed|activity|pet/i.test(question)
 
   const contextParts: string[] = []
+
+  // Fetch dog profiles if question is dog-related
+  if (needsDogProfile) {
+    const { data: dogs } = await supabase
+      .from("dogs")
+      .select("id, name, breed, age_years, age_months, weight_lbs, activity_level, health_goals, selected_allergens, medical_needs, selected_recipe")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5)
+
+    if (dogs && dogs.length > 0) {
+      contextParts.push("\nUser's Dogs:")
+      for (const dog of dogs) {
+        const age = dog.age_years > 0
+          ? `${dog.age_years} year${dog.age_years !== 1 ? 's' : ''}${dog.age_months > 0 ? ` ${dog.age_months} months` : ''}`
+          : `${dog.age_months} month${dog.age_months !== 1 ? 's' : ''}`
+
+        let dogInfo = `- ${dog.name}: ${dog.breed}, ${age} old, ${dog.weight_lbs}lbs, ${dog.activity_level} activity`
+
+        if (dog.selected_allergens && dog.selected_allergens.length > 0) {
+          dogInfo += `, Allergens: ${dog.selected_allergens.join(', ')}`
+        }
+
+        if (dog.health_goals && dog.health_goals.length > 0) {
+          dogInfo += `, Health Goals: ${dog.health_goals.join(', ')}`
+        }
+
+        if (dog.medical_needs) {
+          dogInfo += `, Medical Needs: ${dog.medical_needs}`
+        }
+
+        if (dog.selected_recipe) {
+          dogInfo += `, Current Recipe: ${dog.selected_recipe}`
+        }
+
+        contextParts.push(dogInfo)
+      }
+    } else {
+      contextParts.push("\nUser's Dogs: No dog profiles found. Suggest creating a profile in the Plan Builder.")
+    }
+  }
 
   if (needsOrders) {
     // Fetch recent orders (last 5)
@@ -118,7 +409,7 @@ async function fetchUserContext(userId: string, question: string): Promise<strin
 export async function POST(request: NextRequest) {
   try {
     const body: SupportChatRequest = await request.json()
-    const { question, conversationHistory, userId, currentPage } = body
+    const { question, conversationHistory, userId, currentPage, conversationId } = body
 
     // Validate required fields
     if (!question) {
@@ -136,6 +427,25 @@ export async function POST(request: NextRequest) {
         answer: getFallbackAnswer(question),
         llmUsed: false,
       })
+    }
+
+    // Ensure conversation exists (only for authenticated users)
+    let currentConversationId: string | undefined = conversationId
+    if (userId) {
+      try {
+        currentConversationId = await ensureConversation(
+          conversationId,
+          userId,
+          question,
+          currentPage
+        )
+
+        // Save user message to database
+        await saveMessage(currentConversationId, "user", question)
+      } catch (convError) {
+        console.error("[Support Chat] Conversation persistence error:", convError)
+        // Continue without persistence rather than failing the request
+      }
     }
 
     // Build system prompt based on authentication state and current page
@@ -175,6 +485,7 @@ export async function POST(request: NextRequest) {
     // Track AI costs
     const inputTokens = message.usage.input_tokens
     const outputTokens = message.usage.output_tokens
+    const totalTokens = inputTokens + outputTokens
     // Claude Haiku pricing: $0.25 per MTok input, $1.25 per MTok output
     const estimatedCost = (inputTokens / 1_000_000) * 0.25 + (outputTokens / 1_000_000) * 1.25
 
@@ -194,10 +505,39 @@ export async function POST(request: NextRequest) {
       // Don't fail the request if tracking fails
     }
 
+    // Save assistant message to database (only for authenticated users)
+    if (userId && currentConversationId) {
+      try {
+        await saveMessage(
+          currentConversationId,
+          "assistant",
+          answer,
+          totalTokens,
+          "claude-3-haiku-20240307"
+        )
+      } catch (saveError) {
+        console.error("[Support Chat] Failed to save assistant message:", saveError)
+        // Don't fail the request if saving fails
+      }
+    }
+
+    // Generate card data if applicable
+    let cards: Array<{ type: string; data: any }> = []
+    if (userId) {
+      try {
+        cards = await generateCardData(question, userId, answer)
+      } catch (cardError) {
+        console.error("[Support Chat] Failed to generate card data:", cardError)
+        // Don't fail the request if card generation fails
+      }
+    }
+
     return NextResponse.json({
       answer,
-      tokensUsed: inputTokens + outputTokens,
+      tokensUsed: totalTokens,
       llmUsed: true,
+      conversationId: currentConversationId,
+      cards: cards.length > 0 ? cards : undefined,
     })
   } catch (error) {
     console.error("[Support Chat] Error:", error)

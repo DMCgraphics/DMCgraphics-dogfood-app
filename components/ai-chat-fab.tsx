@@ -18,6 +18,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 interface ChatMessage {
   id: string
@@ -45,6 +52,7 @@ export function AIChatFAB() {
   const [loadingConversations, setLoadingConversations] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [hasAnimated, setHasAnimated] = useState(false)
+  const [historySheetOpen, setHistorySheetOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Position FAB higher on plan builder to avoid footer overlap
@@ -148,6 +156,7 @@ export function AIChatFAB() {
       setMessages(loadedMessages)
       setConversationId(convId)
       setQuickActions([]) // Clear quick actions for loaded conversation
+      setHistorySheetOpen(false) // Close mobile sheet after selection
     } catch (error) {
       console.error("Error loading conversation:", error)
       setError("Failed to load conversation. Please try again.")
@@ -160,6 +169,7 @@ export function AIChatFAB() {
     setMessages([])
     setConversationId(undefined)
     setError(null)
+    setHistorySheetOpen(false) // Close mobile sheet
 
     // Show welcome message and initial quick actions
     const welcomeMessage: ChatMessage = {
@@ -436,61 +446,76 @@ export function AIChatFAB() {
               </div>
             </div>
             <div className="flex gap-1 ml-4">
-              {/* Mobile Chat History and New Chat Buttons */}
+              {/* Mobile Chat History Sheet */}
               {isAuthenticated && (
-                <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 md:hidden"
+                      title="Chat History"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[85vh]">
+                    <SheetHeader>
+                      <SheetTitle>Chat History</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col h-full pt-4">
+                      {/* New Chat Button */}
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 md:hidden"
-                        title="Chat History"
+                        onClick={startNewConversation}
+                        className="w-full justify-start gap-2 mb-4"
+                        variant="outline"
                       >
-                        <History className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 max-h-[400px] overflow-y-auto">
-                      <DropdownMenuItem onClick={startNewConversation} className="cursor-pointer">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-4 w-4" />
                         New Chat
-                      </DropdownMenuItem>
-                      {conversations.length > 0 && <DropdownMenuSeparator />}
-                      {loadingConversations ? (
-                        <div className="py-8 text-center text-sm text-gray-500">
-                          Loading...
-                        </div>
-                      ) : conversations.length === 0 ? (
-                        <div className="py-8 text-center text-sm text-gray-500">
-                          No conversations yet
-                        </div>
-                      ) : (
-                        conversations.map((conv) => (
-                          <DropdownMenuItem
-                            key={conv.id}
-                            onClick={() => loadConversation(conv.id)}
-                            className={`cursor-pointer ${conversationId === conv.id ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-                          >
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <div className="font-medium truncate">{conv.title}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                {new Date(conv.last_message_at).toLocaleDateString([], {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </div>
-                            </div>
-                          </DropdownMenuItem>
-                        ))
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
+                      </Button>
+
+                      {/* Conversations List */}
+                      <div className="flex-1 overflow-y-auto">
+                        {loadingConversations ? (
+                          <div className="py-8 text-center text-sm text-gray-500">
+                            Loading...
+                          </div>
+                        ) : conversations.length === 0 ? (
+                          <div className="py-8 text-center text-sm text-gray-500">
+                            No conversations yet
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {conversations.map((conv) => (
+                              <button
+                                key={conv.id}
+                                onClick={() => loadConversation(conv.id)}
+                                className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                                  conversationId === conv.id
+                                    ? 'bg-primary/10 border-primary'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <div className="font-medium truncate">{conv.title}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {new Date(conv.last_message_at).toLocaleDateString([], {
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               )}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 hidden md:flex"
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >

@@ -19,7 +19,7 @@ const STAGE_CONFIG = {
     icon: Search,
     color: "bg-yellow-500",
     textColor: "text-yellow-900 dark:text-yellow-100",
-    bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
+    bgColor: "bg-yellow-50/90 dark:bg-yellow-950/40",
     borderColor: "border-yellow-200 dark:border-yellow-800",
   },
   driver_assigned: {
@@ -27,7 +27,7 @@ const STAGE_CONFIG = {
     icon: UserCheck,
     color: "bg-blue-500",
     textColor: "text-blue-900 dark:text-blue-100",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
+    bgColor: "bg-blue-50/90 dark:bg-blue-950/40",
     borderColor: "border-blue-200 dark:border-blue-800",
   },
   preparing: {
@@ -35,7 +35,7 @@ const STAGE_CONFIG = {
     icon: Package,
     color: "bg-purple-500",
     textColor: "text-purple-900 dark:text-purple-100",
-    bgColor: "bg-purple-50 dark:bg-purple-950/30",
+    bgColor: "bg-purple-50/90 dark:bg-purple-950/40",
     borderColor: "border-purple-200 dark:border-purple-800",
   },
   out_for_delivery: {
@@ -43,7 +43,7 @@ const STAGE_CONFIG = {
     icon: Truck,
     color: "bg-green-500",
     textColor: "text-green-900 dark:text-green-100",
-    bgColor: "bg-green-50 dark:bg-green-950/30",
+    bgColor: "bg-green-50/90 dark:bg-green-950/40",
     borderColor: "border-green-200 dark:border-green-800",
   },
   delivered: {
@@ -51,7 +51,7 @@ const STAGE_CONFIG = {
     icon: CheckCircle,
     color: "bg-green-600",
     textColor: "text-green-900 dark:text-green-100",
-    bgColor: "bg-green-50 dark:bg-green-950/30",
+    bgColor: "bg-green-50/90 dark:bg-green-950/40",
     borderColor: "border-green-200 dark:border-green-800",
   },
   pending: {
@@ -59,7 +59,7 @@ const STAGE_CONFIG = {
     icon: Clock,
     color: "bg-gray-500",
     textColor: "text-gray-900 dark:text-gray-100",
-    bgColor: "bg-gray-50 dark:bg-gray-950/30",
+    bgColor: "bg-gray-50/90 dark:bg-gray-950/40",
     borderColor: "border-gray-200 dark:border-gray-800",
   },
 }
@@ -106,7 +106,8 @@ export function DeliveryStatusBanner({ orderId, sessionId, className }: Delivery
   return (
     <div
       className={cn(
-        "sticky top-16 z-40 border-b shadow-sm animate-in slide-in-from-top duration-300 transition-all",
+        "sticky z-40 border-b shadow-sm animate-in slide-in-from-top transition-all duration-300 backdrop-blur-md",
+        isScrolled ? "top-16" : "top-0",
         config.bgColor,
         config.borderColor,
         className

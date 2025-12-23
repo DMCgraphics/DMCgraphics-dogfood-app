@@ -18,13 +18,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
 
 interface ChatMessage {
   id: string
@@ -446,71 +439,17 @@ export function AIChatFAB() {
               </div>
             </div>
             <div className="flex gap-1 ml-4">
-              {/* Mobile Chat History Sheet */}
+              {/* Mobile Chat History Button */}
               {isAuthenticated && (
-                <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 md:hidden"
-                      title="Chat History"
-                    >
-                      <History className="h-4 w-4" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[85vh]">
-                    <SheetHeader>
-                      <SheetTitle>Chat History</SheetTitle>
-                    </SheetHeader>
-                    <div className="flex flex-col h-full pt-4">
-                      {/* New Chat Button */}
-                      <Button
-                        onClick={startNewConversation}
-                        className="w-full justify-start gap-2 mb-4"
-                        variant="outline"
-                      >
-                        <Plus className="h-4 w-4" />
-                        New Chat
-                      </Button>
-
-                      {/* Conversations List */}
-                      <div className="flex-1 overflow-y-auto">
-                        {loadingConversations ? (
-                          <div className="py-8 text-center text-sm text-gray-500">
-                            Loading...
-                          </div>
-                        ) : conversations.length === 0 ? (
-                          <div className="py-8 text-center text-sm text-gray-500">
-                            No conversations yet
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {conversations.map((conv) => (
-                              <button
-                                key={conv.id}
-                                onClick={() => loadConversation(conv.id)}
-                                className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-                                  conversationId === conv.id
-                                    ? 'bg-primary/10 border-primary'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                }`}
-                              >
-                                <div className="font-medium truncate">{conv.title}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  {new Date(conv.last_message_at).toLocaleDateString([], {
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 md:hidden"
+                  onClick={() => setHistorySheetOpen(!historySheetOpen)}
+                  title="Chat History"
+                >
+                  <History className="h-4 w-4" />
+                </Button>
               )}
               <Button
                 variant="ghost"
@@ -644,6 +583,79 @@ export function AIChatFAB() {
           </div>
           </div>
         </div>
+
+        {/* Mobile History Overlay */}
+        {isAuthenticated && historySheetOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="md:hidden fixed inset-0 bg-black/50 z-[110] animate-in fade-in duration-200"
+              onClick={() => setHistorySheetOpen(false)}
+            />
+
+            {/* History Panel */}
+            <div className="md:hidden fixed inset-x-0 bottom-0 z-[120] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <h3 className="text-lg font-semibold">Chat History</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setHistorySheetOpen(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {/* New Chat Button */}
+                <Button
+                  onClick={startNewConversation}
+                  className="w-full justify-start gap-2 mb-4"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Chat
+                </Button>
+
+                {/* Conversations List */}
+                {loadingConversations ? (
+                  <div className="py-8 text-center text-sm text-gray-500">
+                    Loading...
+                  </div>
+                ) : conversations.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-gray-500">
+                    No conversations yet
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {conversations.map((conv) => (
+                      <button
+                        key={conv.id}
+                        onClick={() => loadConversation(conv.id)}
+                        className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                          conversationId === conv.id
+                            ? 'bg-primary/10 border-primary'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium truncate">{conv.title}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {new Date(conv.last_message_at).toLocaleDateString([], {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

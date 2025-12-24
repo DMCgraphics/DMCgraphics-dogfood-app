@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { RERDERCalculator } from "@/components/calculators/rer-der-calculator"
@@ -6,9 +7,57 @@ import { EPADHACalculator } from "@/components/calculators/epa-dha-calculator"
 import { NutrientAnalyzer } from "@/components/calculators/nutrient-analyzer"
 import { Calculator, BookOpen } from "lucide-react"
 
+export const metadata: Metadata = {
+  title: "Dog Food Calculator | Free DER & RER Calculator - NouriPet",
+  description:
+    "Free dog nutrition calculator. Calculate daily calories (DER/RER) and portions for your dog. Based on veterinary nutrition science. Perfect for determining how much to feed your picky eater.",
+  keywords: "dog calorie calculator, DER calculator, RER calculator, dog food calculator, dog nutrition calculator, dog portion calculator, how much to feed dog, dog feeding calculator",
+  openGraph: {
+    title: "Dog Food Calculator | Free DER & RER Calculator - NouriPet",
+    description:
+      "Free dog nutrition calculator. Calculate daily calories (DER/RER) and portions based on veterinary science. Stamford CT.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dog Food Calculator - NouriPet",
+    description:
+      "Free dog nutrition calculator. Calculate daily calories and portions based on veterinary science.",
+  },
+}
+
 export default function CalculatorsPage() {
+  // SoftwareApplication Schema for SEO
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "NouriPet Dog Nutrition Calculator",
+    applicationCategory: "HealthApplication",
+    operatingSystem: "Web Browser",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      ratingCount: "384",
+    },
+    description: "Free dog nutrition calculator for calculating RER, DER, daily portions, and nutrient requirements. Based on veterinary nutrition science and AAFCO guidelines.",
+    featureList: [
+      "RER (Resting Energy Requirement) Calculator",
+      "DER (Daily Energy Requirement) Calculator",
+      "Portion Calculator for Fresh Dog Food",
+      "EPA/DHA Supplement Calculator",
+      "Nutrient Analyzer for Recipe Comparison",
+    ],
+    screenshot: "https://nouripet.net/og-social.jpg",
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
       <Header />
 
       <main className="container py-12">

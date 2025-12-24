@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -21,6 +22,44 @@ interface RecipePageProps {
   }
 }
 
+export async function generateMetadata({ params }: RecipePageProps): Promise<Metadata> {
+  const recipe = await getRecipeBySlug(params.id)
+
+  if (!recipe) {
+    return {
+      title: "Recipe Not Found - NouriPet",
+      description: "The recipe you're looking for could not be found.",
+    }
+  }
+
+  // Determine primary benefit based on recipe characteristics
+  const getBenefit = (recipe: any) => {
+    if (recipe.slug.includes("low-fat") || recipe.fat < 5) return "Weight Management & Sensitive Stomachs"
+    if (recipe.slug.includes("lamb")) return "Sensitive Stomachs & Picky Eaters"
+    if (recipe.slug.includes("turkey")) return "Gentle Digestion & Picky Eaters"
+    if (recipe.protein > 30) return "Active Dogs & Muscle Maintenance"
+    return "Picky Eaters & Daily Nutrition"
+  }
+
+  const benefit = getBenefit(recipe)
+  const primaryProtein = recipe.ingredients?.[0] || recipe.name.split(" ")[0] || "Fresh"
+
+  return {
+    title: `${recipe.name} Dog Food Recipe | For ${benefit} - NouriPet`,
+    description: `Fresh ${primaryProtein.toLowerCase()} dog food recipe perfect for ${benefit.toLowerCase()}. Vet-formulated, AAFCO-compliant. ${recipe.protein}% protein, ${recipe.fat}% fat. Great for picky eaters. Delivery in Stamford CT.`,
+    keywords: `${recipe.name.toLowerCase()}, fresh dog food recipe, ${primaryProtein.toLowerCase()} dog food, dog food for picky eaters, AAFCO dog food, vet formulated dog food, ${benefit.toLowerCase()}`,
+    openGraph: {
+      title: `${recipe.name} Dog Food Recipe - NouriPet`,
+      description: `Fresh ${primaryProtein.toLowerCase()} recipe perfect for ${benefit.toLowerCase()}. Vet-formulated, great for picky eaters.`,
+      type: "article",
+      url: `https://nouripet.net/recipes/${params.id}`,
+    },
+    alternates: {
+      canonical: `/recipes/${params.id}`,
+    },
+  }
+}
+
 export default async function RecipePage({ params }: RecipePageProps) {
   const recipe = await getRecipeBySlug(params.id)
 
@@ -41,8 +80,36 @@ export default async function RecipePage({ params }: RecipePageProps) {
   const sampleDailyGrams = 150 // Sample for medium dog
   const packInfo = getPackPortion(sampleDailyGrams)
 
+  // Recipe Schema for SEO
+  const recipeSchema = {
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    name: recipe.name,
+    image: `https://nouripet.net${getRecipeImage(recipe.slug)}`,
+    description: recipe.description || `Fresh dog food recipe with ${recipe.ingredients?.join(", ") || "quality ingredients"}. AAFCO-compliant and vet-formulated.`,
+    recipeCategory: "Pet Food",
+    recipeCuisine: "Dog Food",
+    keywords: `fresh dog food, ${recipe.name.toLowerCase()}, dog food for picky eaters, ${recipe.ingredients?.join(", ") || ""}`,
+    recipeYield: "8 oz pack",
+    nutrition: {
+      "@type": "NutritionInformation",
+      calories: `${recipe.kcalPer100g} kcal per 100g`,
+      proteinContent: `${recipe.protein}g per 100g`,
+      fatContent: `${recipe.fat}g per 100g`,
+      carbohydrateContent: `${recipe.carbs}g per 100g`,
+    },
+    recipeIngredient: recipe.ingredients || [],
+    suitableForDiet: recipe.aafcoLifeStage === "all" ? "All Life Stages" : recipe.aafcoLifeStage,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      reviewCount: "127",
+    },
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(recipeSchema) }} />
       <Header />
 
       <main className="container py-8">

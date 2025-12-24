@@ -7,8 +7,11 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export const metadata: Metadata = {
-  title: "About Us - NouriPet",
-  description: "Learn about NouriPet's mission to provide personalized, veterinarian-approved nutrition for every dog.",
+  title: "About NouriPet | Fresh Dog Food Delivery Stamford CT",
+  description: "Learn about NouriPet's mission to provide personalized, vet-approved fresh dog food for picky eaters and sensitive stomachs. Local delivery in Stamford & Fairfield County.",
+  alternates: {
+    canonical: "/about",
+  },
 }
 
 export default function AboutPage() {

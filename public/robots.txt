@@ -1,0 +1,12 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin/
+Disallow: /delivery/
+Disallow: /sales/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://nouripet.net/sitemap.xml

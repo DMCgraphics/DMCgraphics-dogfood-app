@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
@@ -6,6 +7,19 @@ import { Button } from "@/components/ui/button"
 import { Leaf, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { getAllRecipes } from "@/lib/recipes"
+
+export const metadata: Metadata = {
+  title: "Fresh Dog Food Recipes for Picky Eaters | Human-Grade - NouriPet",
+  description:
+    "Vet-formulated fresh dog food recipes that picky eaters love. Human-grade ingredients, full transparency. Beef, Lamb, Chicken & more. Delivered fresh in Fairfield County!",
+  keywords: "fresh dog food recipes, dog food for picky eaters, human grade dog food, vet formulated dog food, AAFCO dog food, fresh dog food Connecticut",
+  openGraph: {
+    title: "Fresh Dog Food Recipes for Picky Eaters - NouriPet",
+    description:
+      "Vet-formulated recipes perfect for picky eaters and sensitive stomachs. Human-grade ingredients with full transparency.",
+    type: "website",
+  },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

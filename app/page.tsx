@@ -2,13 +2,14 @@ import type { Metadata } from "next"
 import ClientHomePage from "./client-page"
 
 export const metadata: Metadata = {
-  title: "NouriPet | Fresh, Personalized Dog Food Delivery",
+  title: "Fresh Dog Food Delivery Stamford CT | Perfect for Picky Eaters - NouriPet",
   description:
-    "Fresh, algorithm-guided meals for dogs with complete nutritional transparency. Personalized meal plans delivered to Westchester County, NY and Fairfield County, CT.",
+    "Fresh dog food for picky eaters & sensitive stomachs. Local delivery in Stamford & Fairfield County. Vet-formulated, same-day delivery. Start your subscription today!",
+  keywords: "fresh dog food delivery, dog food for picky eaters, dog food for sensitive stomach, Stamford CT, Fairfield County, local dog food delivery, fresh dog food subscription",
   openGraph: {
-    title: "NouriPet | Fresh, Personalized Dog Food Delivery",
+    title: "Fresh Dog Food Delivery Stamford CT | Perfect for Picky Eaters - NouriPet",
     description:
-      "Fresh, algorithm-guided meals for dogs with complete nutritional transparency. Personalized meal plans delivered to your door.",
+      "Fresh dog food for picky eaters & sensitive stomachs. Local delivery in Stamford & Fairfield County. Vet-formulated, same-day delivery available.",
     url: "https://nouripet.net",
     siteName: "NouriPet",
     images: [
@@ -16,13 +17,13 @@ export const metadata: Metadata = {
         url: "https://nouripet.net/og-social.jpg",
         width: 1200,
         height: 630,
-        alt: "NouriPet - Fresh, algorithm-guided meals for dogs",
+        alt: "NouriPet - Fresh Dog Food for Picky Eaters in Stamford CT",
       },
       {
         url: "https://nouripet.net/og-image.png",
         width: 1200,
         height: 630,
-        alt: "NouriPet - Fresh, algorithm-guided meals for dogs",
+        alt: "NouriPet - Fresh Dog Food for Picky Eaters",
       },
     ],
     locale: "en_US",
@@ -30,9 +31,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NouriPet | Fresh, Personalized Dog Food Delivery",
+    title: "Fresh Dog Food for Picky Eaters | Stamford CT - NouriPet",
     description:
-      "Fresh, algorithm-guided meals for dogs with complete nutritional transparency. Personalized meal plans delivered to your door.",
+      "Fresh dog food for picky eaters & sensitive stomachs. Local delivery in Stamford & Fairfield County. Vet-formulated, same-day delivery available.",
     images: ["https://nouripet.net/og-social.jpg"],
   },
   alternates: {

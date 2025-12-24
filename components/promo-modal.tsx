@@ -30,7 +30,7 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 border-2 border-primary/20">
+      <DialogContent className="sm:max-w-md bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-primary/20">
         <DialogHeader className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-4xl">
             <Gift className="h-8 w-8 text-primary" />
@@ -42,7 +42,7 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
           <DialogDescription className="text-lg text-foreground">
             Get <span className="font-bold text-primary text-xl">15% Off Your First Month</span>
           </DialogDescription>
-          <Badge className="mx-auto bg-green-100 text-green-800 hover:bg-green-100 text-sm px-4 py-1">
+          <Badge className="mx-auto bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-100 dark:hover:bg-green-900 text-sm px-4 py-1">
             Subscription Plans Only
           </Badge>
         </DialogHeader>
@@ -53,7 +53,7 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
             <p className="text-center text-sm text-muted-foreground font-medium">
               Use code at checkout:
             </p>
-            <div className="flex items-center gap-2 bg-white border-2 border-primary/30 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-2 bg-white dark:bg-gray-900 border-2 border-primary/30 rounded-lg p-4 shadow-sm">
               <code className="flex-1 text-center text-2xl font-bold text-primary tracking-wider">
                 NOURI15
               </code>
@@ -63,7 +63,7 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
                 onClick={copyCode}
                 className={cn(
                   "shrink-0",
-                  copied && "bg-green-100 border-green-300 text-green-800"
+                  copied && "bg-green-100 border-green-300 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-100"
                 )}
               >
                 {copied ? (

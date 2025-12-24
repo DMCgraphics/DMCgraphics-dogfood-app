@@ -344,6 +344,36 @@ If the user asks how to use this page:
 - For bulk actions or complex operations, provide step-by-step guidance`
   }
 
+  // Homepage (root path)
+  if (currentPage === '/' || currentPage === '') {
+    return `
+
+CURRENT PAGE CONTEXT: The user is on the NouriPet homepage.
+
+This is the main landing page where visitors learn about NouriPet and our fresh dog food approach. The homepage features:
+- Hero section introducing NouriPet's mission and value proposition
+- Overview of our personalized nutrition approach
+- Call-to-action to build a customized meal plan
+- Links to explore recipes, learn about our ingredients, and shop
+
+IMPORTANT: Always include clickable links when guiding users:
+- To build a personalized plan: [Build Your Plan](/plan-builder)
+- To browse recipes: [Explore Recipes](/recipes)
+- To shop individual packs: [Shop](/shop)
+- To learn more: [About Us](/about)
+
+If the user asks "where am I?" or "what should I do here":
+- Explain they're on the homepage, the starting point for discovering NouriPet
+- The best next step is to use the [Plan Builder](/plan-builder) to create a personalized meal plan for their dog
+- Explain that the Plan Builder will recommend the perfect recipes based on their dog's specific needs (age, weight, activity level, health goals)
+- Mention they can also browse all recipes or shop individual packs if they prefer to explore first
+
+If they ask about getting started:
+- Direct them to the [Plan Builder](/plan-builder) to create a personalized plan
+- Explain it takes just 2-3 minutes to get recipe recommendations
+- They'll be able to choose between subscription (bi-weekly delivery) or one-time purchase`
+  }
+
   // Default: no specific page context
   return ""
 }

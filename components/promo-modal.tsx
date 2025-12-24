@@ -13,6 +13,22 @@ interface PromoModalProps {
   onOpenChange: (open: boolean) => void
 }
 
+// Snowflake component
+function Snowflake({ delay, duration, left }: { delay: number; duration: number; left: number }) {
+  return (
+    <div
+      className="absolute top-0 text-white/60 dark:text-white/40 pointer-events-none"
+      style={{
+        left: `${left}%`,
+        animation: `snowfall ${duration}s linear ${delay}s infinite`,
+        fontSize: `${Math.random() * 10 + 10}px`,
+      }}
+    >
+      ❄
+    </div>
+  )
+}
+
 export function PromoModal({ open, onOpenChange }: PromoModalProps) {
   const [copied, setCopied] = useState(false)
   const router = useRouter()
@@ -28,18 +44,56 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
     router.push('/plan-builder')
   }
 
+  // Generate snowflakes with random positions and timing
+  const snowflakes = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    delay: Math.random() * 5,
+    duration: Math.random() * 3 + 5,
+    left: Math.random() * 100,
+  }))
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-primary/20">
-        <DialogHeader className="text-center space-y-3">
+      <DialogContent className="sm:max-w-md bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-primary/20 overflow-hidden">
+        {/* Snow animation overlay */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <style jsx>{`
+            @keyframes snowfall {
+              0% {
+                transform: translateY(-10px) rotate(0deg);
+                opacity: 0;
+              }
+              10% {
+                opacity: 1;
+              }
+              90% {
+                opacity: 1;
+              }
+              100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+              }
+            }
+          `}</style>
+          {snowflakes.map((flake) => (
+            <Snowflake
+              key={flake.id}
+              delay={flake.delay}
+              duration={flake.duration}
+              left={flake.left}
+            />
+          ))}
+        </div>
+
+        <DialogHeader className="text-center space-y-3 relative z-10">
           <div className="flex items-center justify-center gap-2 text-4xl">
             <Gift className="h-8 w-8 text-primary" />
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
-          <DialogTitle className="text-3xl font-bold text-primary">
+          <DialogTitle className="text-3xl font-bold text-primary text-center">
             Holiday Special!
           </DialogTitle>
-          <DialogDescription className="text-lg text-foreground">
+          <DialogDescription className="text-lg text-foreground text-center">
             Get <span className="font-bold text-primary text-xl">15% Off Your First Month</span>
           </DialogDescription>
           <Badge className="mx-auto bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-100 dark:hover:bg-green-900 text-sm px-4 py-1">
@@ -47,7 +101,7 @@ export function PromoModal({ open, onOpenChange }: PromoModalProps) {
           </Badge>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4">
+        <div className="space-y-6 pt-4 relative z-10">
           {/* Promo Code Section */}
           <div className="space-y-2">
             <p className="text-center text-sm text-muted-foreground font-medium">

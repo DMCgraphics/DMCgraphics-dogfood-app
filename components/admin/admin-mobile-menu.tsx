@@ -17,6 +17,8 @@ import {
   Mail,
   Brain,
   Bell,
+  ChefHat,
+  UserPlus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -63,6 +65,8 @@ const navigationSections: NavSection[] = [
     title: "Operations",
     items: [
       { label: "Fulfillment", href: "/admin/fulfillment", icon: ClipboardList },
+      { label: "Batch Planning", href: "/admin/batch-planning", icon: ChefHat },
+      { label: "Manual Subscription", href: "/admin/manual-subscription", icon: UserPlus },
       { label: "Deliveries", href: "/admin/deliveries", icon: Truck },
       { label: "Drivers", href: "/admin/drivers", icon: UserCircle },
     ],

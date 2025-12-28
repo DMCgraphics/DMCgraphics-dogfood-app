@@ -93,6 +93,33 @@ export async function GET(
       )
     }
 
+    // Fetch order items with recipe details
+    const { data: orderItems, error: itemsError } = await supabase
+      .from("order_items")
+      .select(`
+        id,
+        quantity,
+        price,
+        recipes (
+          id,
+          name,
+          slug
+        )
+      `)
+      .eq("order_id", orderId)
+
+    if (itemsError) {
+      console.error("[TRACKING API] Error fetching order items:", itemsError)
+    }
+
+    // Format recipes from order_items
+    const recipes = orderItems?.map(item => ({
+      id: item.recipes?.id,
+      name: item.recipes?.name,
+      slug: item.recipes?.slug,
+      quantity: item.quantity
+    })) || []
+
     // Fetch tracking events
     const { data: events, error: eventsError } = await supabase
       .from("delivery_tracking_events")
@@ -115,7 +142,7 @@ export async function GET(
         status: order.status,
         fulfillment_status: order.fulfillment_status,
         total_cents: order.total_cents,
-        recipes: order.recipes || [],
+        recipes: recipes,
         delivery_zipcode: order.delivery_zipcode,
         estimated_delivery_window: order.estimated_delivery_window,
         estimated_delivery_date: order.estimated_delivery_date,

@@ -92,7 +92,7 @@ export default function OrderTrackingPage({ params }: OrderTrackingPageProps) {
   const recipes = order.recipes || []
   const recipesText =
     recipes.length > 0
-      ? recipes.map((r: any) => r.name).join(", ")
+      ? recipes.map((r: any) => `${r.name} × ${r.quantity || 1}`).join(", ")
       : "Fresh Food Pack"
 
   return (

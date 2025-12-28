@@ -1,9 +1,11 @@
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 export async function waitForSession(timeoutMs = 8000, intervalMs = 250) {
   const start = Date.now()
 
   while (Date.now() - start < timeoutMs) {
+    // Create a fresh client each time to ensure we get the latest session
+    const supabase = createClient()
     const {
       data: { session },
     } = await supabase.auth.getSession()

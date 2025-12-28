@@ -15,7 +15,7 @@ import type { DogProfile, HealthGoals } from "@/lib/nutrition-calculator"
 import { calculateDERFromProfile, calculateDailyGrams, toKg } from "@/lib/nutrition-calculator"
 import { useRouter, useSearchParams } from "next/navigation"
 import { analytics } from "@/lib/analytics"
-import { supabase } from "@/lib/supabase/client"
+import { supabase, createClient } from "@/lib/supabase/client"
 import { waitForSession } from "@/lib/auth/waitForSession"
 import { claimGuestPlan } from "@/app/plan-builder/_actions/claimPlan"
 import { useAuth } from "@/contexts/auth-context"
@@ -1242,10 +1242,13 @@ function PlanBuilderContent() {
     
     try {
       console.log("[v0] Waiting for authenticated session...")
-      
+
+      // Create a fresh supabase client to ensure we get the latest session
+      const freshSupabase = createClient()
+
       // First, try to get the current session directly
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
-      
+      const { data: { session: currentSession }, error: sessionError } = await freshSupabase.auth.getSession()
+
       let session
       if (currentSession?.user && !sessionError) {
         console.log("[v0] Session already available:", currentSession.user.id)
@@ -1254,7 +1257,7 @@ function PlanBuilderContent() {
       } else {
         console.log("[v0] No current session, waiting for session...")
         // Use shorter timeout for waitForSession since we have a global timeout
-        session = await waitForSession(5000, 250) // Reduced timeout and interval
+        session = await waitForSession(7000, 300) // Increased timeout to account for dev env
         console.log("[v0] Session confirmed:", session.user.id)
         clearTimeout(timeoutId)
       }

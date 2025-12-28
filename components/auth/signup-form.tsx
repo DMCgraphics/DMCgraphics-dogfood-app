@@ -128,6 +128,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
           hasInvitation: !!inviteToken
         })
 
+        // Wait a moment for session cookies to be set (especially important in dev)
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         // Send welcome email (non-blocking)
         fetch("/api/emails/welcome", {
           method: "POST",

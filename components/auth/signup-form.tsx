@@ -129,7 +129,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin, onUserInteraction, invi
         })
 
         // Wait a moment for session cookies to be set (especially important in dev)
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // In production, session is typically available immediately, but in dev it can take longer
+        const isDev = process.env.NODE_ENV === 'development'
+        if (isDev) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
 
         // Send welcome email (non-blocking)
         fetch("/api/emails/welcome", {

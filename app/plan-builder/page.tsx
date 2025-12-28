@@ -1256,8 +1256,11 @@ function PlanBuilderContent() {
         clearTimeout(timeoutId)
       } else {
         console.log("[v0] No current session, waiting for session...")
-        // Use shorter timeout for waitForSession since we have a global timeout
-        session = await waitForSession(7000, 300) // Increased timeout to account for dev env
+        // Dev needs more time for session cookies to propagate, production is typically fast
+        const isDev = process.env.NODE_ENV === 'development'
+        const timeout = isDev ? 7000 : 5000
+        const interval = isDev ? 300 : 250
+        session = await waitForSession(timeout, interval)
         console.log("[v0] Session confirmed:", session.user.id)
         clearTimeout(timeoutId)
       }
@@ -2483,6 +2486,26 @@ function PlanBuilderContent() {
         defaultMode="signup"
         onSuccess={handleAuthSuccess}
       />
+
+      {/* Loading overlay when processing authentication */}
+      {isProcessingAuth && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-card p-8 rounded-lg shadow-lg border max-w-md w-full mx-4">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 border-4 border-primary/30 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg mb-2">Setting up your account...</h3>
+                <p className="text-sm text-muted-foreground">
+                  We're creating your personalized plan and preparing checkout
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

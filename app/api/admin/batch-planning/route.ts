@@ -228,32 +228,29 @@ export async function POST(request: Request) {
 }
 
 /**
- * Calculate daily calories using FEDIAF formula
- * ME = K × BW(kg)^0.75
- * where K varies by activity level:
- * - low: 95
- * - moderate: 110
- * - high: 130
+ * Calculate daily grams using standard body weight percentage formula
+ * Daily food = Dog weight (kg) × 1000g × percentage
+ * where percentage varies by activity level:
+ * - low: 2%
+ * - moderate: 2.5%
+ * - high: 3%
  */
-function calculateDailyCalories(weightKg: number, activityLevel: string): number {
+function calculateDailyGrams(weightKg: number, activityLevel: string): number {
   const weight = parseFloat(weightKg.toString())
-  let K = 110 // default moderate
+  let percentage = 0.025 // 2.5% for moderate (default)
 
-  if (activityLevel === 'low') K = 95
-  else if (activityLevel === 'high') K = 130
+  if (activityLevel === 'low') percentage = 0.02 // 2%
+  else if (activityLevel === 'high') percentage = 0.03 // 3%
 
-  return K * Math.pow(weight, 0.75)
+  return weight * 1000 * percentage // Returns grams per day
 }
 
 /**
- * Calculate grams needed for 2 weeks based on dog's caloric needs
+ * Calculate grams needed for 2 weeks based on body weight percentage
  */
-function calculateBiweeklyGrams(weightKg: number, activityLevel: string, recipeKcalPerKg: number): number {
-  const dailyCalories = calculateDailyCalories(weightKg, activityLevel)
-  const dailyGrams = (dailyCalories / recipeKcalPerKg) * 1000 // Convert to grams
-  const biweeklyGrams = dailyGrams * 14 // 14 days
-
-  return Math.round(biweeklyGrams)
+function calculateBiweeklyGrams(weightKg: number, activityLevel: string): number {
+  const dailyGrams = calculateDailyGrams(weightKg, activityLevel)
+  return Math.round(dailyGrams * 14) // 14 days
 }
 
 function calculateBatchRequirements(planItems: any[]): RecipeRequirement[] {
@@ -268,9 +265,6 @@ function calculateBatchRequirements(planItems: any[]): RecipeRequirement[] {
     const dogName = item.dogs.name || 'Unknown'
     const activityLevel = item.dogs.activity_level || 'moderate'
 
-    // Recipe kcal per kg (convert from kcal_per_100g)
-    const recipeKcalPerKg = (item.recipes.kcal_per_100g || 0) * 10
-
     if (!recipeRequirements[recipeName]) {
       recipeRequirements[recipeName] = {
         recipe: recipeName,
@@ -283,14 +277,14 @@ function calculateBatchRequirements(planItems: any[]): RecipeRequirement[] {
       }
     }
 
-    // Calculate biweekly grams needed for this dog
-    const dailyCalories = calculateDailyCalories(dogWeight, activityLevel)
-    const biweeklyGrams = calculateBiweeklyGrams(dogWeight, activityLevel, recipeKcalPerKg)
+    // Calculate biweekly grams needed for this dog using body weight percentage
+    const dailyGrams = calculateDailyGrams(dogWeight, activityLevel)
+    const biweeklyGrams = calculateBiweeklyGrams(dogWeight, activityLevel)
     const biweeklyPacks = Math.ceil(biweeklyGrams / PACK_SIZE_G)
 
     console.log(`[BATCH PLANNING] ${dogName} (${dogWeight}kg, ${activityLevel}):`)
-    console.log(`  - Recipe: ${recipeName} (${recipeKcalPerKg} kcal/kg)`)
-    console.log(`  - Daily calories: ${dailyCalories.toFixed(0)} kcal/day`)
+    console.log(`  - Recipe: ${recipeName}`)
+    console.log(`  - Daily grams: ${dailyGrams.toFixed(0)}g/day (${((dogWeight * (activityLevel === 'low' ? 2 : activityLevel === 'high' ? 3 : 2.5))).toFixed(1)}% of body weight)`)
     console.log(`  - Biweekly grams: ${biweeklyGrams}g (${(biweeklyGrams / 453.592).toFixed(2)} lbs)`)
     console.log(`  - Biweekly packs (12oz): ${biweeklyPacks} packs`)
 

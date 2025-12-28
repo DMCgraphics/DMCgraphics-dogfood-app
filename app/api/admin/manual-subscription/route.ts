@@ -130,9 +130,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // 5. Calculate biweekly food amount based on FEDIAF formula
-    const K = dogActivityLevel === 'low' ? 95 : dogActivityLevel === 'high' ? 130 : 110
-    const dailyCalories = K * Math.pow(weightKg, 0.75)
+    // 5. Calculate biweekly food amount using standard body weight percentage
+    // Low: 2%, Moderate: 2.5%, High: 3% of body weight per day
+    let dailyPercentage = 0.025 // 2.5% for moderate
+    if (dogActivityLevel === 'low') dailyPercentage = 0.02
+    else if (dogActivityLevel === 'high') dailyPercentage = 0.03
+
+    const dailyGrams = weightKg * 1000 * dailyPercentage
 
     // Determine portion multiplier based on plan type
     let portionMultiplier = 1.0 // Full meal = 100%
@@ -158,19 +162,12 @@ export async function POST(request: Request) {
 
     // 7. Create plan items for each selected recipe
     const planItems = []
-    const gramsPerRecipe = Math.round((dailyCalories * portionMultiplier * 14) / recipes.length)
+
+    // Calculate biweekly grams split equally across all recipes
+    const biweeklyGramsTotal = dailyGrams * portionMultiplier * 14
+    const biweeklyGramsForRecipe = Math.round(biweeklyGramsTotal / recipes.length)
 
     for (const recipe of recipes) {
-      // Get recipe kcal density
-      const { data: recipeData } = await supabase
-        .from("recipes")
-        .select("kcal_per_100g")
-        .eq("id", recipe.recipeId)
-        .single()
-
-      const recipeKcalPerKg = (recipeData?.kcal_per_100g || 0) * 10
-      const dailyGramsForRecipe = ((dailyCalories * portionMultiplier) / recipeKcalPerKg) * 1000
-      const biweeklyGramsForRecipe = Math.round((dailyGramsForRecipe * 14) / recipes.length)
 
       const { data: planItem, error: planItemError } = await supabase
         .from("plan_items")

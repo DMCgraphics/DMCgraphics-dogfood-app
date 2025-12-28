@@ -88,10 +88,11 @@ export async function GET(request: Request) {
 
   // Define production customer emails/names (real customers only)
   const productionCustomers = new Set([
-    'stefanie.aivalis@gmail.com', // Stefanie Aivalis (Dean)
-    'kkm141209@gmail.com',        // Keisha Russell
-    'nassty@gmail.com',           // Mike Nass
-    'brigarus@icloud.com',        // Brianna Garus
+    'stefanie.aivalis@gmail.com', // Stefanie Aivalis (Ollie)
+    'kkm141209@gmail.com',        // Keisha Russell (Roxy)
+    'nassty@gmail.com',           // Mike Nass (Scotty)
+    'brigarus@icloud.com',        // Brianna Garus (Mabel)
+    'jill.k.carmichael@gmail.com', // Jill Carmichael (Lottie)
   ])
 
   // Also match by name for customers with null emails
@@ -100,6 +101,7 @@ export async function GET(request: Request) {
     'Stefanie Aivalis',
     'Keisha Russell',
     'Mike Nass',
+    'Jill Carmichael',
   ])
 
   // Get all active plans first

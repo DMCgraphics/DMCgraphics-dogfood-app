@@ -93,6 +93,7 @@ export async function GET(request: Request) {
     'nassty@gmail.com',           // Mike Nass (Scotty)
     'brigarus@icloud.com',        // Brianna Garus (Mabel)
     'jill.k.carmichael@gmail.com', // Jill Carmichael (Lottie)
+    'vcarilli@majestickitchens.com', // Vincent Carilli (Lulu)
   ])
 
   // Also match by name for customers with null emails
@@ -102,6 +103,7 @@ export async function GET(request: Request) {
     'Keisha Russell',
     'Mike Nass',
     'Jill Carmichael',
+    'Vincent Carilli',
   ])
 
   // Get all active plans first

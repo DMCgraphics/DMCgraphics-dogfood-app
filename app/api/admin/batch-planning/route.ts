@@ -86,26 +86,6 @@ export async function GET(request: Request) {
     batchDate = getNextCookDate()
   }
 
-  // Define production customer emails/names (real customers only)
-  const productionCustomers = new Set([
-    'stefanie.aivalis@gmail.com', // Stefanie Aivalis (Ollie)
-    'kkm141209@gmail.com',        // Keisha Russell (Roxy)
-    'nassty@gmail.com',           // Mike Nass (Scotty)
-    'brigarus@icloud.com',        // Brianna Garus (Mabel)
-    'jill.k.carmichael@gmail.com', // Jill Carmichael (Lottie)
-    'vcarilli@majestickitchens.com', // Vincent Carilli (Lulu)
-  ])
-
-  // Also match by name for customers with null emails
-  const productionCustomerNames = new Set([
-    'Brianna Garus',
-    'Stefanie Aivalis',
-    'Keisha Russell',
-    'Mike Nass',
-    'Jill Carmichael',
-    'Vincent Carilli',
-  ])
-
   // Get all active plans first
   // Note: Including "checkout_in_progress" for dev testing - remove in production
   // Use supabaseAdmin to bypass RLS policies for admin operations
@@ -123,7 +103,7 @@ export async function GET(request: Request) {
   const userIds = [...new Set(activePlans?.map(p => p.user_id).filter(Boolean))] || []
   const { data: profiles } = await supabaseAdmin
     .from("profiles")
-    .select("id, email, full_name")
+    .select("id, email, full_name, is_production_customer")
     .in("id", userIds)
 
   // Create a map of user_id to profile for easy lookup
@@ -132,26 +112,16 @@ export async function GET(request: Request) {
   // Filter plans based on customer filter
   let filteredPlans = activePlans
   if (customerFilter === 'production') {
-    // Only production customers (whitelist approach)
+    // Only production customers (database field approach)
     filteredPlans = activePlans?.filter(plan => {
       const profile = profileMap.get(plan.user_id)
-      if (!profile) return false
-
-      const email = profile.email?.toLowerCase() || ''
-      const name = profile.full_name || ''
-
-      return productionCustomers.has(email) || productionCustomerNames.has(name)
+      return profile?.is_production_customer === true
     }) || []
   } else if (customerFilter === 'test') {
-    // Only test customers (not in production whitelist)
+    // Only test customers (not marked as production)
     filteredPlans = activePlans?.filter(plan => {
       const profile = profileMap.get(plan.user_id)
-      if (!profile) return false
-
-      const email = profile.email?.toLowerCase() || ''
-      const name = profile.full_name || ''
-
-      return !productionCustomers.has(email) && !productionCustomerNames.has(name)
+      return profile && profile.is_production_customer !== true
     }) || []
   }
   // else 'all' - no filtering needed

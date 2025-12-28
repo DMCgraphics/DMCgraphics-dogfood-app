@@ -83,6 +83,7 @@ export async function POST(request: Request) {
             id: authUser.id,
             email: customerEmail,
             full_name: customerName,
+            is_production_customer: true, // Mark as production customer
           })
           .select()
           .single()
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
           id: newAuthUser.user.id,
           email: customerEmail,
           full_name: customerName,
+          is_production_customer: true, // Mark as production customer
         })
         .select()
         .single()

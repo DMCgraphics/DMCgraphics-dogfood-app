@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 export interface RecipeSelection {
@@ -58,8 +58,9 @@ export async function POST(request: Request) {
     // Convert lbs to kg
     const weightKg = dogWeightLbs * 0.453592
 
+    // Use supabaseAdmin to bypass RLS policies for admin operations
     // 1. Check if profile exists for this email
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile } = await supabaseAdmin
       .from("profiles")
       .select("id")
       .eq("email", customerEmail)
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
       // Generate a UUID for the profile (profiles table requires explicit ID)
       const newProfileId = crypto.randomUUID()
 
-      const { data: newProfile, error: profileError } = await supabase
+      const { data: newProfile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .insert({
           id: newProfileId,
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Check if dog already exists for this profile
-    const { data: existingDog } = await supabase
+    const { data: existingDog } = await supabaseAdmin
       .from("dogs")
       .select("id, weight_kg")
       .eq("user_id", profileId)
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
 
     // 4. If dog doesn't exist, create it; otherwise update weight/activity
     if (!dogId) {
-      const { data: newDog, error: dogError } = await supabase
+      const { data: newDog, error: dogError } = await supabaseAdmin
         .from("dogs")
         .insert({
           user_id: profileId,
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
       dogId = newDog.id
     } else {
       // Update existing dog's weight and activity level
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from("dogs")
         .update({
           weight_kg: weightKg,
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
     }
 
     // 6. Create plan
-    const { data: plan, error: planError } = await supabase
+    const { data: plan, error: planError } = await supabaseAdmin
       .from("plans")
       .insert({
         user_id: profileId,
@@ -173,7 +174,7 @@ export async function POST(request: Request) {
 
     for (const recipe of recipes) {
 
-      const { data: planItem, error: planItemError } = await supabase
+      const { data: planItem, error: planItemError } = await supabaseAdmin
         .from("plan_items")
         .insert({
           plan_id: plan.id,

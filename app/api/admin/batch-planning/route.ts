@@ -197,7 +197,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 })
   }
 
-  console.log(`[BATCH PLANNING] Found ${activePlanIds.length} active plans, ${planItems?.length || 0} plan items`)
+  console.log(`[BATCH PLANNING] Found ${filteredPlanIds.length} filtered plans, ${planItems?.length || 0} plan items`)
 
   // Calculate requirements
   const recipeRequirements = calculateBatchRequirements(planItems)

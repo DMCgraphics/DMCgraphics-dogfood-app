@@ -146,6 +146,7 @@ export async function GET(
         delivery_zipcode: order.delivery_zipcode,
         estimated_delivery_window: order.estimated_delivery_window,
         estimated_delivery_date: order.estimated_delivery_date,
+        delivered_at: order.delivered_at,
         driver_id: order.driver_id,
         driver_name: order.driver_name,
         driver_phone: order.driver_phone,

@@ -96,7 +96,21 @@ export default function TrackOrderPage() {
                       </div>
                     </div>
 
-                    {(order.estimated_delivery_date || order.estimated_delivery_window) && (
+                    {/* Show delivery time if delivered, otherwise estimated delivery */}
+                    {(order.fulfillment_status === 'delivered' && order.delivered_at) ? (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Delivered</p>
+                        <p className="font-semibold text-sm sm:text-base">
+                          {new Date(order.delivered_at).toLocaleString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    ) : (order.estimated_delivery_date || order.estimated_delivery_window) && (
                       <div>
                         <p className="text-sm text-muted-foreground">Estimated Delivery</p>
                         <p className="font-semibold text-sm sm:text-base">

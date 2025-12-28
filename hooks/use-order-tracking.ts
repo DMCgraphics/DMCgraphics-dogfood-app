@@ -16,6 +16,7 @@ interface OrderData {
   delivery_zipcode?: string
   estimated_delivery_window?: string
   estimated_delivery_date?: string
+  delivered_at?: string
   driver_id?: string
   driver_name?: string
   driver_phone?: string

@@ -85,20 +85,12 @@ export async function GET(request: Request) {
     batchDate = getNextCookDate()
   }
 
-  // Get all active plans first with user info
+  // Get all active plans first
   // Note: Including "checkout_in_progress" for dev testing - remove in production
   // Use supabaseAdmin to bypass RLS policies for admin operations
   const { data: activePlans, error: plansError } = await supabaseAdmin
     .from("plans")
-    .select(`
-      id,
-      user_id,
-      profiles:user_id (
-        id,
-        email,
-        full_name
-      )
-    `)
+    .select("id, user_id")
     .in("status", ["active", "purchased", "checkout_in_progress"])
 
   if (plansError) {
@@ -107,6 +99,16 @@ export async function GET(request: Request) {
   }
 
   const activePlanIds = activePlans?.map(p => p.id) || []
+
+  // Get profile data for all users with active plans
+  const userIds = [...new Set(activePlans?.map(p => p.user_id).filter(Boolean))] || []
+  const { data: profiles } = await supabaseAdmin
+    .from("profiles")
+    .select("id, email, full_name")
+    .in("id", userIds)
+
+  // Create a map of user_id to profile for easy lookup
+  const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
 
   if (activePlanIds.length === 0) {
     // No active plans, return empty response
@@ -162,7 +164,7 @@ export async function GET(request: Request) {
   const totalBatches = recipeRequirements.reduce((sum, req) => sum + req.numberOfBatches, 0)
 
   // Build dog subscriptions list
-  const dogSubscriptions = buildDogSubscriptions(planItems, activePlans)
+  const dogSubscriptions = buildDogSubscriptions(planItems, activePlans, profileMap)
 
   // Calculate ordering timeline
   const orderByDate = new Date(batchDate)
@@ -427,14 +429,15 @@ function consolidateIngredients(requirements: RecipeRequirement[]): Consolidated
 /**
  * Build list of dog subscriptions with customer info
  */
-function buildDogSubscriptions(planItems: any[], activePlans: any[]): DogSubscription[] {
+function buildDogSubscriptions(planItems: any[], activePlans: any[], profileMap: Map<string, any>): DogSubscription[] {
   // Create a map of plan_id to customer info
   const planToCustomer = new Map()
   for (const plan of activePlans) {
-    if (plan.profiles) {
+    const profile = profileMap.get(plan.user_id)
+    if (profile) {
       planToCustomer.set(plan.id, {
-        email: plan.profiles.email || '',
-        fullName: plan.profiles.full_name || 'Unknown Customer'
+        email: profile.email || '',
+        fullName: profile.full_name || 'Unknown Customer'
       })
     }
   }

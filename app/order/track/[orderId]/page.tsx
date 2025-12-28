@@ -20,10 +20,12 @@ interface OrderTrackingPageProps {
 export default function OrderTrackingPage({ params }: OrderTrackingPageProps) {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
+  const token = searchParams.get("token")
 
   const { order, events, isConnected, isLoading, error } = useOrderTracking(
     params.orderId,
-    sessionId
+    sessionId,
+    token
   )
 
   if (isLoading) {

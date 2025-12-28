@@ -4,6 +4,7 @@ import {
   type TrackingEvent,
   type OrderUpdate,
 } from "@/lib/realtime/order-tracking"
+import { useAuth } from "@/contexts/auth-context"
 
 interface OrderData {
   id: string
@@ -40,8 +41,10 @@ interface UseOrderTrackingResult {
  */
 export function useOrderTracking(
   orderId: string,
-  sessionId?: string | null
+  sessionId?: string | null,
+  token?: string | null
 ): UseOrderTrackingResult {
+  const { user } = useAuth()
   const [order, setOrder] = useState<OrderData | null>(null)
   const [events, setEvents] = useState<TrackingEvent[]>([])
   const [isConnected, setIsConnected] = useState(false)
@@ -53,13 +56,16 @@ export function useOrderTracking(
       setIsLoading(true)
       setError(null)
 
-      // Build URL with optional session_id for guest access
+      // Build URL with optional session_id for guest access and token for public tracking links
       const url = new URL(`/api/orders/${orderId}/tracking`, window.location.origin)
       if (sessionId) {
         url.searchParams.set("session_id", sessionId)
       }
+      if (token) {
+        url.searchParams.set("token", token)
+      }
 
-      console.log("[ORDER TRACKING] Fetching order data:", url.toString())
+      console.log("[ORDER TRACKING] Fetching order data:", url.toString(), "User:", user?.email)
 
       const response = await fetch(url.toString())
 
@@ -84,9 +90,9 @@ export function useOrderTracking(
     } finally {
       setIsLoading(false)
     }
-  }, [orderId, sessionId])
+  }, [orderId, sessionId, token, user])
 
-  // Fetch initial data
+  // Fetch initial data and refetch when user auth state changes
   useEffect(() => {
     fetchOrderData()
   }, [fetchOrderData])

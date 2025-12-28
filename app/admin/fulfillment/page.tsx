@@ -31,6 +31,10 @@ type Order = {
   quantity: number
   delivery_method: string
   delivery_zipcode: string
+  delivery_address_line1?: string
+  delivery_address_line2?: string
+  delivery_city?: string
+  delivery_state?: string
   estimated_delivery_date: string
   created_at: string
   user_id: string
@@ -579,8 +583,11 @@ export default function FulfillmentPage() {
                               {order.recipe_name} × {order.quantity}
                             </p>
                             <p className="text-sm">
-                              <strong>Delivery:</strong> {order.delivery_method || 'Not set'} |
-                              <strong> Zipcode:</strong> {order.delivery_zipcode || 'Not set'}
+                              <strong>Address:</strong> {order.delivery_address_line1 || 'Not set'}
+                              {order.delivery_address_line2 && `, ${order.delivery_address_line2}`}
+                              <br />
+                              {order.delivery_city && order.delivery_state && order.delivery_zipcode &&
+                                `${order.delivery_city}, ${order.delivery_state} ${order.delivery_zipcode}`}
                             </p>
                             <p className="text-sm">
                               <strong>Customer:</strong> {order.customer_name || order.guest_email || 'Registered user'}
@@ -877,7 +884,11 @@ export default function FulfillmentPage() {
                                       {order.recipe_name} × {order.quantity}
                                     </p>
                                     <p className="text-sm">
-                                      <strong>Zipcode:</strong> {order.delivery_zipcode}
+                                      <strong>Address:</strong> {order.delivery_address_line1 || 'Not set'}
+                                      {order.delivery_address_line2 && `, ${order.delivery_address_line2}`}
+                                      <br />
+                                      {order.delivery_city && order.delivery_state && order.delivery_zipcode &&
+                                        `${order.delivery_city}, ${order.delivery_state} ${order.delivery_zipcode}`}
                                       {driverZip !== 'unassigned' && order.delivery_zipcode && (
                                         <span className="ml-2 text-xs text-muted-foreground">
                                           (distance: {calculateZipcodeDistance(driverZip, order.delivery_zipcode)})

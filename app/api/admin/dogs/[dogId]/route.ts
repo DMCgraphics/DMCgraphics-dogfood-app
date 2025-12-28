@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 /**
@@ -17,25 +17,26 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("is_admin")
+    .select("is_admin, roles")
     .eq("id", user.id)
     .single()
 
-  if (!profile?.is_admin) {
+  if (!profile?.is_admin && !profile?.roles?.includes('admin')) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const body = await request.json()
-  const { weight_kg, activity_level } = body
+  const { name, weight_kg, activity_level } = body
 
   // Build update object
   const updates: any = {}
+  if (name !== undefined) updates.name = name
   if (weight_kg !== undefined) updates.weight_kg = weight_kg
   if (activity_level !== undefined) updates.activity_level = activity_level
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("dogs")
     .update(updates)
     .eq("id", params.dogId)

@@ -135,19 +135,24 @@ export async function POST(request: Request) {
       }
     }
 
-    // 5. Calculate biweekly food amount using standard body weight percentage
-    // Low: 2%, Moderate: 2.5%, High: 3% of body weight per day
-    let dailyPercentage = 0.025 // 2.5% for moderate
-    if (dogActivityLevel === 'low') dailyPercentage = 0.02
-    else if (dogActivityLevel === 'high') dailyPercentage = 0.03
+    // 5. Calculate Daily Energy Requirement (DER) using RER formula
+    // RER = 110 × (weight_kg)^0.75
+    // DER = RER × activity_multiplier
+    const RER = 110 * Math.pow(weightKg, 0.75)
 
-    const dailyGrams = weightKg * 1000 * dailyPercentage
+    let activityMultiplier = 1.0 // moderate
+    if (dogActivityLevel === 'low') activityMultiplier = 0.8
+    else if (dogActivityLevel === 'high') activityMultiplier = 1.2
+
+    const DER = RER * activityMultiplier // kcal per day
 
     // Determine portion multiplier based on plan type
     let portionMultiplier = 1.0 // Full meal = 100%
     if (planType === 'topper' && topperPercentage) {
       portionMultiplier = topperPercentage / 100
     }
+
+    const dailyKcalNeeded = DER * portionMultiplier
 
     // 6. Create plan
     const { data: plan, error: planError } = await supabaseAdmin
@@ -167,14 +172,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create plan" }, { status: 500 })
     }
 
-    // 7. Create plan items for each selected recipe
+    // 7. Fetch recipe kcal data
+    const { data: recipeData, error: recipeError } = await supabaseAdmin
+      .from("recipes")
+      .select("id, name, kcal_per_100g")
+      .in("id", recipes.map(r => r.recipeId))
+
+    if (recipeError || !recipeData) {
+      console.error("Error fetching recipes:", recipeError)
+      return NextResponse.json({ error: "Failed to fetch recipe data" }, { status: 500 })
+    }
+
+    // Create a map of recipe kcal data
+    const recipeKcalMap = new Map(recipeData.map(r => [r.id, r.kcal_per_100g]))
+
+    // 8. Create plan items for each selected recipe
     const planItems = []
 
-    // Calculate biweekly grams split equally across all recipes
-    const biweeklyGramsTotal = dailyGrams * portionMultiplier * 14
-    const biweeklyGramsForRecipe = Math.round(biweeklyGramsTotal / recipes.length)
+    // Split daily kcal equally across all recipes
+    const dailyKcalPerRecipe = dailyKcalNeeded / recipes.length
 
     for (const recipe of recipes) {
+      const kcalPer100g = recipeKcalMap.get(recipe.recipeId) || 160 // default fallback
+      const kcalPerKg = kcalPer100g * 10
+
+      // Convert kcal to kg, then to grams
+      const dailyKg = dailyKcalPerRecipe / kcalPerKg
+      const dailyGrams = dailyKg * 1000
+
+      // Calculate biweekly grams (14 days)
+      const biweeklyGrams = Math.round(dailyGrams * 14)
 
       const { data: planItem, error: planItemError } = await supabaseAdmin
         .from("plan_items")
@@ -183,7 +210,7 @@ export async function POST(request: Request) {
           dog_id: dogId,
           recipe_id: recipe.recipeId,
           qty: 1,
-          size_g: biweeklyGramsForRecipe,
+          size_g: biweeklyGrams,
         })
         .select()
         .single()
@@ -196,7 +223,9 @@ export async function POST(request: Request) {
       planItems.push({
         id: planItem.id,
         recipe: recipe.recipeName,
-        biweekly_grams: biweeklyGramsForRecipe
+        biweekly_grams: biweeklyGrams,
+        daily_kcal: dailyKcalPerRecipe,
+        kcal_per_100g: kcalPer100g
       })
     }
 

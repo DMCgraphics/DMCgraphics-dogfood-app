@@ -30,23 +30,25 @@ export default function TrackOrderPage() {
         <main className="container py-8 max-w-4xl">
           <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/orders">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Orders
-                </Link>
-              </Button>
-              <div className="flex-1">
-                <h1 className="font-manrope text-2xl lg:text-3xl font-bold">Track Your Order</h1>
-                <p className="text-muted-foreground">Real-time updates on your delivery</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/orders">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Orders
+                  </Link>
+                </Button>
+                {isConnected && (
+                  <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                    <span className="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                    Live
+                  </Badge>
+                )}
               </div>
-              {isConnected && (
-                <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
-                  <span className="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-                  Live
-                </Badge>
-              )}
+              <div>
+                <h1 className="font-manrope text-2xl lg:text-3xl font-bold">Track Your Order</h1>
+                <p className="text-sm text-muted-foreground mt-1">Real-time updates on your delivery</p>
+              </div>
             </div>
 
             {/* Loading State */}

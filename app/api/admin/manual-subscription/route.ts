@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       .from("profiles")
       .select("id")
       .eq("email", customerEmail)
-      .single()
+      .maybeSingle()
 
     let profileId = existingProfile?.id
 
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       .select("id, weight_kg")
       .eq("user_id", profileId)
       .eq("name", dogName)
-      .single()
+      .maybeSingle()
 
     let dogId = existingDog?.id
 

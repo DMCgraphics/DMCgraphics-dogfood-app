@@ -59,24 +59,58 @@ export async function POST(request: Request) {
     const weightKg = dogWeightLbs * 0.453592
 
     // Use supabaseAdmin to bypass RLS policies for admin operations
-    // 1. Check if profile exists for this email
-    const { data: existingProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("email", customerEmail)
-      .maybeSingle()
+    // 1. Check if auth user exists for this email
+    const { data: existingAuthUser } = await supabaseAdmin.auth.admin.listUsers()
+    const authUser = existingAuthUser.users.find(u => u.email === customerEmail)
 
-    let profileId = existingProfile?.id
+    let profileId: string
 
-    // 2. If profile doesn't exist, create it
-    if (!profileId) {
-      // Generate a UUID for the profile (profiles table requires explicit ID)
-      const newProfileId = crypto.randomUUID()
+    if (authUser) {
+      // Auth user exists, check if profile exists
+      const { data: existingProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("id", authUser.id)
+        .maybeSingle()
 
+      if (existingProfile) {
+        profileId = existingProfile.id
+      } else {
+        // Auth user exists but no profile - create profile
+        const { data: newProfile, error: profileError } = await supabaseAdmin
+          .from("profiles")
+          .insert({
+            id: authUser.id,
+            email: customerEmail,
+            full_name: customerName,
+          })
+          .select()
+          .single()
+
+        if (profileError) {
+          console.error("Error creating profile:", profileError)
+          return NextResponse.json({ error: "Failed to create profile" }, { status: 500 })
+        }
+
+        profileId = newProfile.id
+      }
+    } else {
+      // 2. Create auth user first (no password - they can set it later via password reset)
+      const { data: newAuthUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: customerEmail,
+        email_confirm: true, // Auto-confirm email
+      })
+
+      if (authError || !newAuthUser.user) {
+        console.error("Error creating auth user:", authError)
+        return NextResponse.json({ error: "Failed to create user account" }, { status: 500 })
+      }
+
+      // 3. Create profile with auth user ID
       const { data: newProfile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .insert({
-          id: newProfileId,
+          id: newAuthUser.user.id,
           email: customerEmail,
           full_name: customerName,
         })
@@ -91,7 +125,7 @@ export async function POST(request: Request) {
       profileId = newProfile.id
     }
 
-    // 3. Check if dog already exists for this profile
+    // 4. Check if dog already exists for this profile
     const { data: existingDog } = await supabaseAdmin
       .from("dogs")
       .select("id, weight_kg")
@@ -101,7 +135,7 @@ export async function POST(request: Request) {
 
     let dogId = existingDog?.id
 
-    // 4. If dog doesn't exist, create it; otherwise update weight/activity
+    // 5. If dog doesn't exist, create it; otherwise update weight/activity
     if (!dogId) {
       const { data: newDog, error: dogError } = await supabaseAdmin
         .from("dogs")
@@ -135,7 +169,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 5. Calculate Daily Energy Requirement (DER) using RER formula
+    // 6. Calculate Daily Energy Requirement (DER) using RER formula
     // RER = 110 × (weight_kg)^0.75
     // DER = RER × activity_multiplier
     const RER = 110 * Math.pow(weightKg, 0.75)
@@ -154,7 +188,7 @@ export async function POST(request: Request) {
 
     const dailyKcalNeeded = DER * portionMultiplier
 
-    // 6. Create plan
+    // 7. Create plan
     const { data: plan, error: planError } = await supabaseAdmin
       .from("plans")
       .insert({
@@ -172,7 +206,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create plan" }, { status: 500 })
     }
 
-    // 7. Fetch recipe kcal data
+    // 8. Fetch recipe kcal data
     const { data: recipeData, error: recipeError } = await supabaseAdmin
       .from("recipes")
       .select("id, name, kcal_per_100g")
@@ -186,7 +220,7 @@ export async function POST(request: Request) {
     // Create a map of recipe kcal data
     const recipeKcalMap = new Map(recipeData.map(r => [r.id, r.kcal_per_100g]))
 
-    // 8. Create plan items for each selected recipe
+    // 9. Create plan items for each selected recipe
     const planItems = []
 
     // Split daily kcal equally across all recipes

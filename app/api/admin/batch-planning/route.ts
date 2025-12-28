@@ -355,14 +355,12 @@ function calculateBatchRequirements(planItems: any[]): RecipeRequirement[] {
       }
     }
 
-    // Calculate biweekly grams needed for this dog using body weight percentage
-    const dailyGrams = calculateDailyGrams(dogWeight, activityLevel)
-    const biweeklyGrams = calculateBiweeklyGrams(dogWeight, activityLevel)
+    // Use the biweekly grams stored in plan_items (respects plan type and topper level)
+    const biweeklyGrams = parseFloat(item.size_g) || 0
     const biweeklyPacks = Math.ceil(biweeklyGrams / PACK_SIZE_G)
 
     console.log(`[BATCH PLANNING] ${dogName} (${dogWeight}kg, ${activityLevel}):`)
     console.log(`  - Recipe: ${recipeName}`)
-    console.log(`  - Daily grams: ${dailyGrams.toFixed(0)}g/day (${((dogWeight * (activityLevel === 'low' ? 2 : activityLevel === 'high' ? 3 : 2.5))).toFixed(1)}% of body weight)`)
     console.log(`  - Biweekly grams: ${biweeklyGrams}g (${(biweeklyGrams / 453.592).toFixed(2)} lbs)`)
     console.log(`  - Biweekly packs (12oz): ${biweeklyPacks} packs`)
 
@@ -497,12 +495,9 @@ function buildDogSubscriptions(planItems: any[], activePlans: any[], profileMap:
     if (!item.dogs || !item.recipes) continue
 
     const dogId = item.dogs.id
-    const weightKg = parseFloat(item.dogs.weight_kg)
-    const activityLevel = item.dogs.activity_level || 'moderate'
 
-    // Calculate biweekly grams for this dog's recipe
-    const dailyGrams = calculateDailyGrams(weightKg, activityLevel)
-    const biweeklyGrams = calculateBiweeklyGrams(weightKg, activityLevel)
+    // Use the biweekly grams stored in plan_items (respects plan type and topper level)
+    const biweeklyGrams = parseFloat(item.size_g) || 0
     const biweeklyPacks = Math.ceil(biweeklyGrams / PACK_SIZE_G)
 
     if (!dogMap.has(dogId)) {

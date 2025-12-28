@@ -22,10 +22,28 @@ export interface ConsolidatedIngredient {
   categoryColor: string
 }
 
+export interface DogSubscription {
+  dogId: string
+  dogName: string
+  dogWeightKg: number
+  dogWeightLbs: number
+  activityLevel: string
+  customerName: string
+  customerEmail: string
+  recipes: {
+    recipeName: string
+    biweeklyGrams: number
+    biweeklyPacks: number
+  }[]
+  totalBiweeklyGrams: number
+  totalBiweeklyPacks: number
+}
+
 export interface BatchPlanResponse {
   batchDate: string
   recipeRequirements: RecipeRequirement[]
   consolidatedIngredients: ConsolidatedIngredient[]
+  dogSubscriptions: DogSubscription[]
   totalPacks: number
   totalBatches: number
   orderByDate: string
@@ -67,11 +85,19 @@ export async function GET(request: Request) {
     batchDate = getNextCookDate()
   }
 
-  // Get all active plans first
+  // Get all active plans first with user info
   // Note: Including "checkout_in_progress" for dev testing - remove in production
   const { data: activePlans, error: plansError } = await supabase
     .from("plans")
-    .select("id")
+    .select(`
+      id,
+      user_id,
+      profiles:user_id (
+        id,
+        email,
+        full_name
+      )
+    `)
     .in("status", ["active", "purchased", "checkout_in_progress"])
 
   if (plansError) {
@@ -87,6 +113,7 @@ export async function GET(request: Request) {
       batchDate: batchDate.toISOString().split('T')[0],
       recipeRequirements: [],
       consolidatedIngredients: [],
+      dogSubscriptions: [],
       totalPacks: 0,
       totalBatches: 0,
       orderByDate: new Date(batchDate.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -133,6 +160,9 @@ export async function GET(request: Request) {
   const totalPacks = recipeRequirements.reduce((sum, req) => sum + req.numberOfPacks, 0)
   const totalBatches = recipeRequirements.reduce((sum, req) => sum + req.numberOfBatches, 0)
 
+  // Build dog subscriptions list
+  const dogSubscriptions = buildDogSubscriptions(planItems, activePlans)
+
   // Calculate ordering timeline
   const orderByDate = new Date(batchDate)
   orderByDate.setDate(orderByDate.getDate() - 14) // 2 weeks before
@@ -144,6 +174,7 @@ export async function GET(request: Request) {
     batchDate: batchDate.toISOString().split('T')[0],
     recipeRequirements,
     consolidatedIngredients,
+    dogSubscriptions,
     totalPacks,
     totalBatches,
     orderByDate: orderByDate.toISOString().split('T')[0],
@@ -390,6 +421,81 @@ function consolidateIngredients(requirements: RecipeRequirement[]): Consolidated
     }
     return b.grams - a.grams
   })
+}
+
+/**
+ * Build list of dog subscriptions with customer info
+ */
+function buildDogSubscriptions(planItems: any[], activePlans: any[]): DogSubscription[] {
+  // Create a map of plan_id to customer info
+  const planToCustomer = new Map()
+  for (const plan of activePlans) {
+    if (plan.profiles) {
+      planToCustomer.set(plan.id, {
+        email: plan.profiles.email || '',
+        fullName: plan.profiles.full_name || 'Unknown Customer'
+      })
+    }
+  }
+
+  // Group plan items by dog
+  const dogMap = new Map<string, {
+    dog: any
+    planId: string
+    recipes: { recipeName: string; biweeklyGrams: number; biweeklyPacks: number }[]
+  }>()
+
+  for (const item of planItems) {
+    if (!item.dogs || !item.recipes) continue
+
+    const dogId = item.dogs.id
+    const weightKg = parseFloat(item.dogs.weight_kg)
+    const activityLevel = item.dogs.activity_level || 'moderate'
+
+    // Calculate biweekly grams for this dog's recipe
+    const dailyGrams = calculateDailyGrams(weightKg, activityLevel)
+    const biweeklyGrams = calculateBiweeklyGrams(weightKg, activityLevel)
+    const biweeklyPacks = Math.ceil(biweeklyGrams / PACK_SIZE_G)
+
+    if (!dogMap.has(dogId)) {
+      dogMap.set(dogId, {
+        dog: item.dogs,
+        planId: item.plan_id,
+        recipes: []
+      })
+    }
+
+    dogMap.get(dogId)!.recipes.push({
+      recipeName: item.recipes.name,
+      biweeklyGrams,
+      biweeklyPacks
+    })
+  }
+
+  // Build final array
+  const dogSubscriptions: DogSubscription[] = []
+
+  for (const [dogId, data] of dogMap.entries()) {
+    const customer = planToCustomer.get(data.planId) || { email: '', fullName: 'Unknown' }
+    const weightKg = parseFloat(data.dog.weight_kg)
+    const totalBiweeklyGrams = data.recipes.reduce((sum, r) => sum + r.biweeklyGrams, 0)
+    const totalBiweeklyPacks = data.recipes.reduce((sum, r) => sum + r.biweeklyPacks, 0)
+
+    dogSubscriptions.push({
+      dogId,
+      dogName: data.dog.name,
+      dogWeightKg: weightKg,
+      dogWeightLbs: weightKg * 2.20462,
+      activityLevel: data.dog.activity_level || 'moderate',
+      customerName: customer.fullName,
+      customerEmail: customer.email,
+      recipes: data.recipes,
+      totalBiweeklyGrams,
+      totalBiweeklyPacks
+    })
+  }
+
+  return dogSubscriptions.sort((a, b) => a.customerName.localeCompare(b.customerName))
 }
 
 /**

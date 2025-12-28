@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { CalendarIcon, Download, Printer, Save, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarToday } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import type { BatchPlanResponse, RecipeRequirement, ConsolidatedIngredient } from "@/app/api/admin/batch-planning/route"
+import type { BatchPlanResponse, RecipeRequirement, ConsolidatedIngredient, DogSubscription } from "@/app/api/admin/batch-planning/route"
 
 /**
  * Calculate the next cook date based on bi-weekly schedule starting Jan 8, 2026
@@ -255,6 +255,58 @@ export default function BatchPlanningPage() {
               Export CSV
             </Button>
           </div>
+
+          {/* Dog Subscriptions */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Dogs & Customers</CardTitle>
+              <CardDescription>Cooking for {batchPlan.dogSubscriptions.length} {batchPlan.dogSubscriptions.length === 1 ? 'dog' : 'dogs'} this batch</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {batchPlan.dogSubscriptions.map((dog) => (
+                  <div key={dog.dogId} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-lg">{dog.dogName}</h3>
+                        <p className="text-sm text-muted-foreground">{dog.customerName}</p>
+                        <p className="text-xs text-muted-foreground">{dog.customerEmail}</p>
+                      </div>
+                      <Badge variant="secondary" className="text-sm">
+                        {dog.totalBiweeklyPacks} packs
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                      <div>
+                        <div className="text-muted-foreground">Weight</div>
+                        <div className="font-medium">{dog.dogWeightLbs.toFixed(1)} lbs ({dog.dogWeightKg.toFixed(1)} kg)</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Activity</div>
+                        <div className="font-medium capitalize">{dog.activityLevel}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Total Amount</div>
+                        <div className="font-medium">{(dog.totalBiweeklyGrams / 453.592).toFixed(1)} lbs</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Recipes</div>
+                        <div className="font-medium">{dog.recipes.length}</div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {dog.recipes.map((recipe, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm bg-muted/50 px-3 py-1.5 rounded">
+                          <span>{recipe.recipeName}</span>
+                          <span className="text-muted-foreground">{recipe.biweeklyPacks} packs ({(recipe.biweeklyGrams / 453.592).toFixed(1)} lbs)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Recipe Requirements */}
           <Card className="mb-6">

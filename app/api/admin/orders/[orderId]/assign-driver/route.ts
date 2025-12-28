@@ -7,8 +7,9 @@ import { NextResponse } from "next/server"
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params
   const supabase = await createClient()
 
   // Check admin access
@@ -55,7 +56,7 @@ export async function PATCH(
       driver_phone: driver.phone || null,
       driver_home_zipcode: driver.home_zipcode,
     })
-    .eq("id", params.orderId)
+    .eq("id", orderId)
     .select()
     .single()
 

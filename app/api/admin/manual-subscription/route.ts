@@ -154,8 +154,10 @@ export async function POST(request: Request) {
       .from("plans")
       .insert({
         user_id: profileId,
+        dog_id: dogId,
         status: "active",
-        frequency: "biweekly",
+        plan_type: planType,
+        topper_level: planType === 'topper' && topperPercentage ? topperPercentage.toString() : null,
       })
       .select()
       .single()

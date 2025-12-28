@@ -327,7 +327,7 @@ function Step5PortionsInner({
               <div className="font-medium">
                 Portion per meal: {Math.round(currentGramsPerMeal)}g
                 <span className="text-sm text-muted-foreground ml-2">
-                  ({(currentGramsPerMeal / pricing.packInfo.packSize).toFixed(1)} × {pricing.packInfo.packSize}g packs)
+                  ({(currentGramsPerMeal / pricing.packInfo.packSize).toFixed(1)} × 12oz packs)
                 </span>
                 {multipleRecipes.length > 1 && (
                   <span className="text-sm text-muted-foreground ml-2">
@@ -361,7 +361,7 @@ function Step5PortionsInner({
                     <div className="text-right">
                       <div className="font-semibold">{Math.round(currentGramsPerMeal)}g</div>
                       <div className="text-xs text-muted-foreground">
-                        {(currentGramsPerMeal / pricing.packInfo.packSize).toFixed(1)} packs
+                        {(currentGramsPerMeal / pricing.packInfo.packSize).toFixed(1)} × 12oz packs
                       </div>
                     </div>
                   </div>
@@ -454,7 +454,7 @@ function Step5PortionsInner({
           <div className="mt-4 pt-4 border-t text-sm">
             <div className="flex justify-between">
               <span>Recommended pack size:</span>
-              <span>{pricing.packInfo.packSize}g</span>
+              <span>12oz ({pricing.packInfo.packSize}g)</span>
             </div>
             <div className="flex justify-between">
               <span>Packs per day:</span>

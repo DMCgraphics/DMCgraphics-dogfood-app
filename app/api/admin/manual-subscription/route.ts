@@ -69,9 +69,13 @@ export async function POST(request: Request) {
 
     // 2. If profile doesn't exist, create it
     if (!profileId) {
+      // Generate a UUID for the profile (profiles table requires explicit ID)
+      const newProfileId = crypto.randomUUID()
+
       const { data: newProfile, error: profileError } = await supabase
         .from("profiles")
         .insert({
+          id: newProfileId,
           email: customerEmail,
           full_name: customerName,
         })

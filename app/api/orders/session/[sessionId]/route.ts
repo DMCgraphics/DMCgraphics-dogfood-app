@@ -23,7 +23,7 @@ export async function GET(
     // Fetch order by stripe_session_id
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, order_number, fulfillment_status, estimated_delivery_window, estimated_delivery_date, total_cents, recipes")
+      .select("id, order_number, order_type, delivery_method, fulfillment_status, estimated_delivery_window, estimated_delivery_date, total_cents, recipes")
       .eq("stripe_session_id", sessionId)
       .single()
 

@@ -11,6 +11,8 @@ import { Header } from "@/components/header"
 interface Order {
   id: string
   order_number: string
+  order_type?: string
+  delivery_method?: string
   fulfillment_status: string
   estimated_delivery_window?: string
   estimated_delivery_date?: string
@@ -122,68 +124,108 @@ function ShopSuccessContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                  1
+            {order?.order_type === 'subscription' ? (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">Your Subscription is Active</p>
+                    <p className="text-sm text-muted-foreground">
+                      You're all set! Your subscription will be delivered bi-weekly on Sundays
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Looking for a Driver</p>
-                  <p className="text-sm text-muted-foreground">
-                    We're finding the best driver in your area for fast delivery
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Next Delivery: January 11, 2025</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your first delivery will arrive on Sunday, January 11th, and then every other Sunday
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium">Track Your Deliveries</p>
+                    <p className="text-sm text-muted-foreground">
+                      You'll receive tracking notifications before each delivery
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                  2
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">Looking for a Driver</p>
+                    <p className="text-sm text-muted-foreground">
+                      We're finding the best driver in your area for fast delivery
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Preparing Your Order</p>
-                  <p className="text-sm text-muted-foreground">
-                    We'll prepare your fresh food packs with care
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Preparing Your Order</p>
+                    <p className="text-sm text-muted-foreground">
+                      We'll prepare your fresh food packs with care
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium">Free Local Delivery</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your order will be delivered fresh to your door
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                  3
-                </div>
-                <div>
-                  <p className="font-medium">Free Local Delivery</p>
-                  <p className="text-sm text-muted-foreground">
-                    Your order will be delivered fresh to your door
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="bg-muted/50 mb-6">
-          <CardHeader>
-            <CardTitle>Want to save on future orders?</CardTitle>
-            <CardDescription>
-              Create an account to access subscription plans, manage orders, and get exclusive perks
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button asChild className="flex-1" variant="outline">
-                <Link href="/auth/signup">
-                  Create Account
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-              <Button variant="outline" asChild className="flex-1">
-                <Link href="/plan-builder">
-                  View Subscription Plans
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {order?.order_type !== 'subscription' && (
+          <Card className="bg-muted/50 mb-6">
+            <CardHeader>
+              <CardTitle>Want to save on future orders?</CardTitle>
+              <CardDescription>
+                Create an account to access subscription plans, manage orders, and get exclusive perks
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild className="flex-1" variant="outline">
+                  <Link href="/auth/signup">
+                    Create Account
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild className="flex-1">
+                  <Link href="/plan-builder">
+                    View Subscription Plans
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="text-center">
           <Button variant="ghost" asChild>

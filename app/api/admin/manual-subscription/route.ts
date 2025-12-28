@@ -74,6 +74,16 @@ export async function POST(request: Request) {
         .maybeSingle()
 
       if (existingProfile) {
+        // Profile exists - mark as production customer and update name/email
+        await supabaseAdmin
+          .from("profiles")
+          .update({
+            is_production_customer: true,
+            full_name: customerName,
+            email: customerEmail,
+          })
+          .eq("id", existingProfile.id)
+
         profileId = existingProfile.id
       } else {
         // Auth user exists but no profile - create profile

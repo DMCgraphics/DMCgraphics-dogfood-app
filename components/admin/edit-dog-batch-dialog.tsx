@@ -72,6 +72,15 @@ export function EditDogBatchDialog({
   // Load available recipes and current plan data when dialog opens
   useEffect(() => {
     if (open) {
+      // Immediately populate form with dog data we already have
+      setFormData({
+        name: dogData.dogName,
+        weight_lbs: dogData.dogWeightLbs,
+        activity_level: dogData.activityLevel,
+        plan_type: 'full', // Will be updated from API
+        topper_level: null,
+        recipe_ids: [],
+      })
       loadRecipesAndPlanData()
     }
   }, [open, dogData.dogId])
@@ -92,15 +101,13 @@ export function EditDogBatchDialog({
         const plan = await planResponse.json()
         setPlanData(plan)
 
-        // Populate form with current data
-        setFormData({
-          name: dogData.dogName,
-          weight_lbs: dogData.dogWeightLbs,
-          activity_level: dogData.activityLevel,
+        // Update form with plan data (keeping dog data already set)
+        setFormData(prev => ({
+          ...prev,
           plan_type: plan.plan_type || 'full',
           topper_level: plan.topper_level,
           recipe_ids: plan.recipe_ids || [],
-        })
+        }))
       }
     } catch (error) {
       console.error("Error loading data:", error)

@@ -86,15 +86,20 @@ export async function GET(request: Request) {
     batchDate = getNextCookDate()
   }
 
-  // Define test customer emails (customers used for testing/development)
-  const testCustomerEmails = new Set([
-    'eyyoffl@gmail.com',          // AJ Caporino
-    'bbalick@nouripet.net',       // Blake
-    'dylanmctestnouri@gmail.com', // Dyl MC
-    'dcohen@nouripet.net',        // Dylan Cohen
-    'stantonlizz@yahoo.com',      // Elizabeth Stanton
-    'jessicaafico@gmail.com',     // Jess Fico
-    'jldavis916@gmail.com',       // Joshua Davis
+  // Define production customer emails/names (real customers only)
+  const productionCustomers = new Set([
+    'stefanie.aivalis@gmail.com', // Stefanie Aivalis (Dean)
+    'kkm141209@gmail.com',        // Keisha Russell
+    'nassty@gmail.com',           // Mike Nass
+    'brigarus@icloud.com',        // Brianna Garus
+  ])
+
+  // Also match by name for customers with null emails
+  const productionCustomerNames = new Set([
+    'Brianna Garus',
+    'Stefanie Aivalis',
+    'Keisha Russell',
+    'Mike Nass',
   ])
 
   // Get all active plans first
@@ -123,16 +128,26 @@ export async function GET(request: Request) {
   // Filter plans based on customer filter
   let filteredPlans = activePlans
   if (customerFilter === 'production') {
-    // Only production customers (exclude test customers)
+    // Only production customers (whitelist approach)
     filteredPlans = activePlans?.filter(plan => {
       const profile = profileMap.get(plan.user_id)
-      return profile && !testCustomerEmails.has(profile.email?.toLowerCase() || '')
+      if (!profile) return false
+
+      const email = profile.email?.toLowerCase() || ''
+      const name = profile.full_name || ''
+
+      return productionCustomers.has(email) || productionCustomerNames.has(name)
     }) || []
   } else if (customerFilter === 'test') {
-    // Only test customers
+    // Only test customers (not in production whitelist)
     filteredPlans = activePlans?.filter(plan => {
       const profile = profileMap.get(plan.user_id)
-      return profile && testCustomerEmails.has(profile.email?.toLowerCase() || '')
+      if (!profile) return false
+
+      const email = profile.email?.toLowerCase() || ''
+      const name = profile.full_name || ''
+
+      return !productionCustomers.has(email) && !productionCustomerNames.has(name)
     }) || []
   }
   // else 'all' - no filtering needed

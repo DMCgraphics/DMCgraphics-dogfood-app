@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, Download, Printer, Save, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarToday } from "lucide-react"
+import { CalendarIcon, Download, Printer, Save, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarToday, Pencil } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import type { BatchPlanResponse, RecipeRequirement, ConsolidatedIngredient, DogSubscription } from "@/app/api/admin/batch-planning/route"
+import { EditDogBatchDialog } from "@/components/admin/edit-dog-batch-dialog"
 
 /**
  * Calculate the next cook date based on bi-weekly schedule starting Jan 8, 2026
@@ -53,6 +54,7 @@ export default function BatchPlanningPage() {
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
   const [customerFilter, setCustomerFilter] = useState<'production' | 'test' | 'all'>('production')
+  const [editingDog, setEditingDog] = useState<DogSubscription | null>(null)
 
   useEffect(() => {
     loadBatchPlan()
@@ -280,10 +282,21 @@ export default function BatchPlanningPage() {
                 {batchPlan.dogSubscriptions.map((dog) => (
                   <div key={dog.dogId} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-semibold text-lg">{dog.dogName}</h3>
-                        <p className="text-sm text-muted-foreground">{dog.customerName}</p>
-                        <p className="text-xs text-muted-foreground">{dog.customerEmail}</p>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <h3 className="font-semibold text-lg">{dog.dogName}</h3>
+                          <p className="text-sm text-muted-foreground">{dog.customerName}</p>
+                          <p className="text-xs text-muted-foreground">{dog.customerEmail}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 print:hidden"
+                          onClick={() => setEditingDog(dog)}
+                          title="Edit dog and meal plan"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
                       <Badge variant="secondary" className="text-sm">
                         {dog.totalBiweeklyPacks} packs
@@ -397,6 +410,19 @@ export default function BatchPlanningPage() {
         <div className="text-center py-12">
           <p className="text-muted-foreground">No batch plan available. Select a date to calculate.</p>
         </div>
+      )}
+
+      {/* Edit Dog Dialog */}
+      {editingDog && (
+        <EditDogBatchDialog
+          open={!!editingDog}
+          onOpenChange={(open) => !open && setEditingDog(null)}
+          dogData={editingDog}
+          onSuccess={() => {
+            setEditingDog(null)
+            loadBatchPlan()
+          }}
+        />
       )}
     </div>
   )

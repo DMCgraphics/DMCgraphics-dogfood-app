@@ -40,7 +40,7 @@ export async function PUT(
     // Get plan details including snapshot
     const { data: plan } = await supabaseAdmin
       .from("plans")
-      .select("total_cents, stripe_subscription_id, snapshot")
+      .select("total_cents, stripe_subscription_id, snapshot, dog_id, plan_type, topper_level")
       .eq("id", planId)
       .single()
 
@@ -83,33 +83,73 @@ export async function PUT(
       .delete()
       .eq("plan_id", planId)
 
-    // Fetch recipe details
+    // Fetch recipe details including kcal data
     const { data: recipes } = await supabaseAdmin
       .from("recipes")
-      .select("id, name, slug")
+      .select("id, name, slug, kcal_per_100g")
       .in("id", recipeIds)
 
     if (!recipes || recipes.length === 0) {
       return NextResponse.json({ error: "Invalid recipe IDs" }, { status: 400 })
     }
 
+    // Get dog details for DER calculation
+    const { data: dog } = await supabaseAdmin
+      .from("dogs")
+      .select("weight_kg, activity_level")
+      .eq("id", plan.dog_id)
+      .single()
+
+    if (!dog) {
+      return NextResponse.json({ error: "Dog not found" }, { status: 404 })
+    }
+
+    // Calculate DER (Daily Energy Requirement)
+    const RER = 110 * Math.pow(parseFloat(dog.weight_kg), 0.75)
+    let activityMultiplier = 1.0
+    if (dog.activity_level === 'low') activityMultiplier = 0.8
+    else if (dog.activity_level === 'high') activityMultiplier = 1.2
+
+    const DER = RER * activityMultiplier
+
+    // Apply plan type multiplier
+    let portionMultiplier = 1.0
+    if (plan.plan_type === 'topper' && plan.topper_level) {
+      portionMultiplier = parseInt(plan.topper_level) / 100
+    }
+
+    const dailyKcalNeeded = DER * portionMultiplier
+    const dailyKcalPerRecipe = dailyKcalNeeded / recipes.length
+
     // Calculate unit price using CORRECT total_cents
     const unitPrice = Math.floor(totalCents / recipes.length)
-    const newPlanItems = recipes.map(recipe => ({
-      plan_id: planId,
-      recipe_id: recipe.id,
-      qty: 1,
-      unit_price_cents: unitPrice,
-      stripe_price_id: stripePriceId,
-      billing_interval: billingInterval,
-      meta: {
-        recipe_variety: recipes.map(r => ({
-          id: r.id,
-          name: r.name,
-          slug: r.slug
-        }))
+
+    // Create plan items with calculated size_g
+    const newPlanItems = recipes.map(recipe => {
+      const kcalPer100g = recipe.kcal_per_100g || 160
+      const kcalPerKg = kcalPer100g * 10
+
+      const dailyKg = dailyKcalPerRecipe / kcalPerKg
+      const dailyGrams = dailyKg * 1000
+      const biweeklyGrams = Math.round(dailyGrams * 14)
+
+      return {
+        plan_id: planId,
+        recipe_id: recipe.id,
+        qty: 1,
+        size_g: biweeklyGrams,
+        unit_price_cents: unitPrice,
+        stripe_price_id: stripePriceId,
+        billing_interval: billingInterval,
+        meta: {
+          recipe_variety: recipes.map(r => ({
+            id: r.id,
+            name: r.name,
+            slug: r.slug
+          }))
+        }
       }
-    }))
+    })
 
     const { error: insertError } = await supabaseAdmin
       .from("plan_items")

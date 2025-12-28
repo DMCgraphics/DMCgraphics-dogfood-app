@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarIcon, Download, Printer, Save, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarToday } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -51,15 +52,16 @@ export default function BatchPlanningPage() {
   const [loading, setLoading] = useState(false)
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
+  const [customerFilter, setCustomerFilter] = useState<'production' | 'test' | 'all'>('production')
 
   useEffect(() => {
     loadBatchPlan()
-  }, [batchDate])
+  }, [batchDate, customerFilter])
 
   async function loadBatchPlan() {
     setLoading(true)
     try {
-      const response = await fetch(`/api/admin/batch-planning?date=${batchDate.toISOString().split('T')[0]}`)
+      const response = await fetch(`/api/admin/batch-planning?date=${batchDate.toISOString().split('T')[0]}&filter=${customerFilter}`)
       if (response.ok) {
         const data = await response.json()
         setBatchPlan(data)
@@ -146,6 +148,17 @@ export default function BatchPlanningPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Select value={customerFilter} onValueChange={(value: 'production' | 'test' | 'all') => setCustomerFilter(value)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="production">Production</SelectItem>
+              <SelectItem value="test">Test Only</SelectItem>
+              <SelectItem value="all">All Customers</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Button variant="outline" size="icon" onClick={goToPreviousCookDate} title="Previous cook date (2 weeks back)">
             <ChevronLeft className="h-4 w-4" />
           </Button>

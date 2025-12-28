@@ -73,9 +73,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  // Get batch date from query params
+  // Get batch date and filter from query params
   const { searchParams } = new URL(request.url)
   const batchDateParam = searchParams.get("date")
+  const customerFilter = searchParams.get("filter") || "production" // production, test, or all
 
   let batchDate: Date
   if (batchDateParam) {
@@ -84,6 +85,17 @@ export async function GET(request: Request) {
     // Default to next cook date (bi-weekly schedule starting Jan 8, 2026)
     batchDate = getNextCookDate()
   }
+
+  // Define test customer emails (customers used for testing/development)
+  const testCustomerEmails = new Set([
+    'eyyoffl@gmail.com',          // AJ Caporino
+    'bbalick@nouripet.net',       // Blake
+    'dylanmctestnouri@gmail.com', // Dyl MC
+    'dcohen@nouripet.net',        // Dylan Cohen
+    'stantonlizz@yahoo.com',      // Elizabeth Stanton
+    'jessicaafico@gmail.com',     // Jess Fico
+    'jldavis916@gmail.com',       // Joshua Davis
+  ])
 
   // Get all active plans first
   // Note: Including "checkout_in_progress" for dev testing - remove in production
@@ -98,8 +110,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 })
   }
 
-  const activePlanIds = activePlans?.map(p => p.id) || []
-
   // Get profile data for all users with active plans
   const userIds = [...new Set(activePlans?.map(p => p.user_id).filter(Boolean))] || []
   const { data: profiles } = await supabaseAdmin
@@ -110,7 +120,26 @@ export async function GET(request: Request) {
   // Create a map of user_id to profile for easy lookup
   const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
 
-  if (activePlanIds.length === 0) {
+  // Filter plans based on customer filter
+  let filteredPlans = activePlans
+  if (customerFilter === 'production') {
+    // Only production customers (exclude test customers)
+    filteredPlans = activePlans?.filter(plan => {
+      const profile = profileMap.get(plan.user_id)
+      return profile && !testCustomerEmails.has(profile.email?.toLowerCase() || '')
+    }) || []
+  } else if (customerFilter === 'test') {
+    // Only test customers
+    filteredPlans = activePlans?.filter(plan => {
+      const profile = profileMap.get(plan.user_id)
+      return profile && testCustomerEmails.has(profile.email?.toLowerCase() || '')
+    }) || []
+  }
+  // else 'all' - no filtering needed
+
+  const filteredPlanIds = filteredPlans?.map(p => p.id) || []
+
+  if (filteredPlanIds.length === 0) {
     // No active plans, return empty response
     return NextResponse.json({
       batchDate: batchDate.toISOString().split('T')[0],
@@ -124,7 +153,7 @@ export async function GET(request: Request) {
     })
   }
 
-  // Get plan items for active plans
+  // Get plan items for filtered plans
   const { data: planItems, error } = await supabaseAdmin
     .from("plan_items")
     .select(`
@@ -146,7 +175,7 @@ export async function GET(request: Request) {
         activity_level
       )
     `)
-    .in("plan_id", activePlanIds)
+    .in("plan_id", filteredPlanIds)
 
   if (error) {
     console.error("Error fetching plan items:", error)
@@ -164,7 +193,7 @@ export async function GET(request: Request) {
   const totalBatches = recipeRequirements.reduce((sum, req) => sum + req.numberOfBatches, 0)
 
   // Build dog subscriptions list
-  const dogSubscriptions = buildDogSubscriptions(planItems, activePlans, profileMap)
+  const dogSubscriptions = buildDogSubscriptions(planItems, filteredPlans, profileMap)
 
   // Calculate ordering timeline
   const orderByDate = new Date(batchDate)

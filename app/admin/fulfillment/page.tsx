@@ -485,20 +485,16 @@ export default function FulfillmentPage() {
 
       console.log('[FULFILLMENT] Driver details:', driver)
 
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          fulfillment_status: 'driver_assigned',
-          driver_id: driverId,
-          driver_name: driver.name,
-          driver_phone: driver.phone || null,
-          driver_home_zipcode: driver.home_zipcode,
-        })
-        .eq('id', orderId)
+      const response = await fetch(`/api/admin/orders/${orderId}/assign-driver`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: driverId })
+      })
 
-      if (error) {
+      if (!response.ok) {
+        const error = await response.json()
         console.error('[FULFILLMENT] Error updating order:', error)
-        throw error
+        throw new Error(error.error || 'Failed to assign driver')
       }
 
       console.log('[FULFILLMENT] Driver assigned successfully')
@@ -511,7 +507,7 @@ export default function FulfillmentPage() {
       console.error('[FULFILLMENT] Error assigning driver:', error)
       toast({
         title: "Error",
-        description: "Failed to assign driver",
+        description: error instanceof Error ? error.message : "Failed to assign driver",
         variant: "destructive"
       })
     }

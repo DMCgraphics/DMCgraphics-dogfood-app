@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { RECIPE_BASE_BATCHES, PACK_SIZE_G, WASTE_BUFFER, getIngredientCategory, INGREDIENT_CATEGORIES } from "@/lib/batch-planning-config"
 
@@ -87,7 +87,8 @@ export async function GET(request: Request) {
 
   // Get all active plans first with user info
   // Note: Including "checkout_in_progress" for dev testing - remove in production
-  const { data: activePlans, error: plansError } = await supabase
+  // Use supabaseAdmin to bypass RLS policies for admin operations
+  const { data: activePlans, error: plansError } = await supabaseAdmin
     .from("plans")
     .select(`
       id,
@@ -122,7 +123,7 @@ export async function GET(request: Request) {
   }
 
   // Get plan items for active plans
-  const { data: planItems, error } = await supabase
+  const { data: planItems, error } = await supabaseAdmin
     .from("plan_items")
     .select(`
       qty,

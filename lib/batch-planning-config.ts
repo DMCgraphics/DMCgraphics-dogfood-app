@@ -76,7 +76,7 @@ export const RECIPE_BASE_BATCHES: { [key: string]: RecipeBaseBatch } = {
     totalPounds: 50,
     kcalPerKg: 1100,
     ingredients: {
-      'Chicken breast': 10000,
+      'Ground chicken': 10000,
       'Whole egg': 1360,
       'White rice, cooked': 3000,
       'Carrots, frozen': 2500,
@@ -140,7 +140,7 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
       'Lamb, Ground 85/15',
       'Lamb Heart, Raw',
       'Lamb Liver, Raw',
-      'Chicken breast',
+      'Ground chicken',
       'Turkey',
       'Eggs, Liquid whole',
       'Whole egg',

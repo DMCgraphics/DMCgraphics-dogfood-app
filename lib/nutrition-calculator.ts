@@ -217,7 +217,7 @@ export const mockRecipes: Recipe[] = [
     dha: 0,
     allergens: ["chicken", "egg"],
     ingredients: [
-      "Chicken breast",
+      "Ground chicken",
       "Chicken heart",
       "Chicken liver",
       "Whole egg",

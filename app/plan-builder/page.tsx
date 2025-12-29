@@ -747,6 +747,9 @@ function PlanBuilderContent() {
   useEffect(() => {
     const stepInfo = getStepInfo()
     analytics.stepViewed(currentStep, stepInfo.title)
+
+    // Scroll to top when step changes
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentStep])
 
   const updateDogProfile = (updates: Partial<DogProfile>) => {

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { ShoppingCart, Mail, Download } from "lucide-react"
+import { ShoppingCart, Mail, Download, X } from "lucide-react"
 import { generateMosnerPO, combinePOs, type POGenerationInput } from "@/lib/purchase-orders/po-generator"
 import type { BatchPlanResponse } from "@/app/api/admin/batch-planning/route"
 import jsPDF from "jspdf"
@@ -38,6 +38,7 @@ export function GeneratePODialog({
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewPO, setPreviewPO] = useState<any>(null)
   const [editableQuantities, setEditableQuantities] = useState<{ [key: string]: number }>({})
+  const [excludedItems, setExcludedItems] = useState<Set<string>>(new Set())
 
   const handlePreview = () => {
     try {
@@ -61,6 +62,9 @@ export function GeneratePODialog({
         initialQuantities[item.ingredientName] = item.orderQuantityLbs
       })
       setEditableQuantities(initialQuantities)
+
+      // Reset excluded items when previewing
+      setExcludedItems(new Set())
     } catch (error: any) {
       toast.error(error.message || "Failed to generate PO preview")
     }
@@ -76,8 +80,22 @@ export function GeneratePODialog({
     }
   }
 
+  const handleRemoveItem = (ingredientName: string) => {
+    setExcludedItems(prev => new Set([...prev, ingredientName]))
+  }
+
+  const handleRestoreItem = (ingredientName: string) => {
+    setExcludedItems(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(ingredientName)
+      return newSet
+    })
+  }
+
   const calculateTotal = () => {
-    return Object.values(editableQuantities).reduce((sum, qty) => sum + qty, 0)
+    return Object.entries(editableQuantities)
+      .filter(([name]) => !excludedItems.has(name))
+      .reduce((sum, [, qty]) => sum + qty, 0)
   }
 
   const handleDownloadPDF = () => {
@@ -150,11 +168,15 @@ export function GeneratePODialog({
       doc.text("Quantity", pageWidth - 50, yPos + 7)
       yPos += 10
 
-      // Items
+      // Items (filter out excluded items)
       doc.setFont("helvetica", "normal")
       doc.setFontSize(10)
 
-      previewPO.lineItems.forEach((item: any, idx: number) => {
+      const includedItems = previewPO.lineItems.filter(
+        (item: any) => !excludedItems.has(item.ingredientName)
+      )
+
+      includedItems.forEach((item: any, idx: number) => {
         if (yPos > pageHeight - 40) {
           doc.addPage()
           yPos = 20
@@ -225,6 +247,11 @@ export function GeneratePODialog({
     setIsGenerating(true)
 
     try {
+      // Filter out excluded items from custom quantities
+      const includedQuantities = Object.fromEntries(
+        Object.entries(editableQuantities).filter(([name]) => !excludedItems.has(name))
+      )
+
       const response = await fetch("/api/admin/purchase-orders/create", {
         method: "POST",
         headers: {
@@ -238,7 +265,7 @@ export function GeneratePODialog({
           })),
           notes,
           autoSendEmail: sendEmail,
-          customQuantities: editableQuantities,
+          customQuantities: includedQuantities,
         }),
       })
 
@@ -257,6 +284,7 @@ export function GeneratePODialog({
       setOpen(false)
       setPreviewPO(null)
       setNotes("")
+      setExcludedItems(new Set())
     } catch (error: any) {
       console.error("Error creating PO:", error)
       toast.error(error.message || "Failed to create purchase order")
@@ -337,27 +365,56 @@ export function GeneratePODialog({
               <div className="border-t pt-3">
                 <h4 className="font-medium mb-2">Items (editable):</h4>
                 <div className="space-y-2">
-                  {previewPO.lineItems.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center text-sm gap-4">
-                      <span className="flex-1">{item.ingredientName}</span>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={editableQuantities[item.ingredientName] || item.orderQuantityLbs}
-                          onChange={(e) => handleQuantityChange(item.ingredientName, e.target.value)}
-                          className="w-24 h-8 text-right font-mono"
-                        />
-                        <span className="text-muted-foreground w-8">lbs</span>
-                        {item.requiredLbs < item.orderQuantityLbs && (
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            (min)
-                          </span>
+                  {previewPO.lineItems.map((item: any, idx: number) => {
+                    const isExcluded = excludedItems.has(item.ingredientName)
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex justify-between items-center text-sm gap-4 ${
+                          isExcluded ? 'opacity-50' : ''
+                        }`}
+                      >
+                        <span className={`flex-1 ${isExcluded ? 'line-through' : ''}`}>
+                          {item.ingredientName}
+                        </span>
+                        {!isExcluded ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={editableQuantities[item.ingredientName] || item.orderQuantityLbs}
+                              onChange={(e) => handleQuantityChange(item.ingredientName, e.target.value)}
+                              className="w-24 h-8 text-right font-mono"
+                            />
+                            <span className="text-muted-foreground w-8">lbs</span>
+                            {item.requiredLbs < item.orderQuantityLbs && (
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                (min)
+                              </span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(item.ingredientName)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRestoreItem(item.ingredientName)}
+                            className="h-8 text-xs text-muted-foreground hover:text-primary"
+                          >
+                            Restore
+                          </Button>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 <div className="border-t mt-2 pt-2 flex justify-between font-semibold">
                   <span>Total:</span>

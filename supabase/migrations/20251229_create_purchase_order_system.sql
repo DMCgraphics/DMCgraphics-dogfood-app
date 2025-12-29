@@ -259,7 +259,7 @@ SELECT
 FROM vendors v
 CROSS JOIN (
   VALUES
-    ('Ground beef (90% lean/10% fat)', 'Grass-fed'),
+    ('Ground beef 85/15', 'Grass-fed'),
     ('Beef Heart, Raw', 'Grass-fed'),
     ('Beef Liver, Raw', 'Grass-fed'),
     ('Lamb, Ground 85/15', 'Pasture-raised'),

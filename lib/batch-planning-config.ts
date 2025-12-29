@@ -24,7 +24,7 @@ export const RECIPE_BASE_BATCHES: { [key: string]: RecipeBaseBatch } = {
     totalPounds: 50.04,
     kcalPerKg: 1146,
     ingredients: {
-      'Ground beef (90% lean/10% fat)': 10205.82,
+      'Ground beef 85/15': 10205.82,
       'Quinoa, cooked': 3027.73,
       'Carrots, frozen': 2267.96,
       'Beef Heart, Raw': 1814.37,
@@ -134,7 +134,7 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
     color: 'red',
     icon: '🥩',
     ingredients: [
-      'Ground beef (90% lean/10% fat)',
+      'Ground beef 85/15',
       'Beef Heart, Raw',
       'Beef Liver, Raw',
       'Lamb, Ground 85/15',

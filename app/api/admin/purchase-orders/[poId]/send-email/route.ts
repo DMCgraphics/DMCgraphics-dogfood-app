@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin-client"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 import { Resend } from "resend"
 
 export const runtime = "nodejs"
@@ -13,7 +13,7 @@ export async function POST(
 ) {
   try {
     const { poId } = await params
-    const supabase = createAdminClient()
+    const supabase = await createClient()
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -21,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
@@ -32,7 +32,7 @@ export async function POST(
     }
 
     // Fetch PO with vendor and line items
-    const { data: po, error: poError } = await supabase
+    const { data: po, error: poError } = await supabaseAdmin
       .from("purchase_orders")
       .select(`
         *,
@@ -50,7 +50,7 @@ export async function POST(
     }
 
     // Fetch line items
-    const { data: items, error: itemsError } = await supabase
+    const { data: items, error: itemsError } = await supabaseAdmin
       .from("purchase_order_items")
       .select("*")
       .eq("po_id", poId)
@@ -197,10 +197,13 @@ Phone: (203) 208-6186
 Email: orders@nouripet.net
     `.trim()
 
+    // Split email addresses (stored as comma-separated)
+    const emailRecipients = po.vendors.contact_email.split(',').map((email: string) => email.trim())
+
     // Send email via Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "NouriPet Orders <orders@nouripet.net>",
-      to: [po.vendors.contact_email],
+      to: emailRecipients,
       subject: `NouriPet Purchase Order ${po.po_number} - Pickup ${pickupDate}`,
       html: htmlEmail,
       text: textEmail,
@@ -216,7 +219,7 @@ Email: orders@nouripet.net
     }
 
     // Update PO status to 'sent'
-    await supabase
+    await supabaseAdmin
       .from("purchase_orders")
       .update({ status: "sent" })
       .eq("id", poId)

@@ -34,7 +34,7 @@ export function GeneratePODialog({
     defaultCookDate?.toISOString().split("T")[0] || new Date().toISOString().split("T")[0]
   )
   const [notes, setNotes] = useState("")
-  const [sendEmail, setSendEmail] = useState(false)
+  const [sendEmail, setSendEmail] = useState(false) // Default to false - require approval before sending
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewPO, setPreviewPO] = useState<any>(null)
 

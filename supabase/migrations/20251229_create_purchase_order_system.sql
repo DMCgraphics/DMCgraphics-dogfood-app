@@ -237,10 +237,11 @@ CREATE TRIGGER update_inventory_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- Seed Mosner Family Brands as initial vendor
-INSERT INTO vendors (name, contact_email, contact_phone, lead_time_days, minimum_order_lbs, notes)
+INSERT INTO vendors (name, contact_name, contact_email, contact_phone, lead_time_days, minimum_order_lbs, notes)
 VALUES (
   'Mosner Family Brands',
-  'orders@mosnerfamilybrands.com',
+  'Daisy Velez / Jessica Mosner',
+  'dvelez@mosnerbrands.com,jmosner@mosnerbrands.com',
   NULL,
   2,
   10.00,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin-client"
+import { createClient, supabaseAdmin } from "@/lib/supabase/server"
 import { generateMosnerPO, combinePOs, type POGenerationInput } from "@/lib/purchase-orders/po-generator"
 
 export const runtime = "nodejs"
@@ -18,7 +18,7 @@ interface CreatePORequest {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createAdminClient()
+    const supabase = await createClient()
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     // Get vendor (default to Mosner)
     let vendor
     if (vendorId) {
-      const { data: vendorData, error: vendorError } = await supabase
+      const { data: vendorData, error: vendorError } = await supabaseAdmin
         .from("vendors")
         .select("*")
         .eq("id", vendorId)
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       vendor = vendorData
     } else {
       // Default to Mosner
-      const { data: vendorData, error: vendorError } = await supabase
+      const { data: vendorData, error: vendorError } = await supabaseAdmin
         .from("vendors")
         .select("*")
         .eq("name", "Mosner Family Brands")
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     const finalPO = generatedPOs.length > 1 ? combinePOs(generatedPOs) : generatedPOs[0]
 
     // Generate PO number
-    const { data: poNumberData, error: poNumberError } = await supabase
+    const { data: poNumberData, error: poNumberError } = await supabaseAdmin
       .rpc("generate_po_number")
 
     if (poNumberError) {
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     const total_cents = subtotal_cents + tax_cents
 
     // Create purchase order
-    const { data: purchaseOrder, error: poError } = await supabase
+    const { data: purchaseOrder, error: poError } = await supabaseAdmin
       .from("purchase_orders")
       .insert({
         po_number: poNumber,
@@ -134,14 +134,14 @@ export async function POST(req: NextRequest) {
       notes: item.notes,
     }))
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await supabaseAdmin
       .from("purchase_order_items")
       .insert(lineItemsToInsert)
 
     if (itemsError) {
       console.error("Error creating PO items:", itemsError)
       // Rollback the PO
-      await supabase.from("purchase_orders").delete().eq("id", purchaseOrder.id)
+      await supabaseAdmin.from("purchase_orders").delete().eq("id", purchaseOrder.id)
       return NextResponse.json({ error: "Failed to create PO items" }, { status: 500 })
     }
 

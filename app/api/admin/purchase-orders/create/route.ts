@@ -14,6 +14,7 @@ interface CreatePORequest {
   vendorId?: string // Optional: will default to Mosner
   notes?: string
   autoSendEmail?: boolean
+  customQuantities?: { [ingredientName: string]: number }
 }
 
 export async function POST(req: NextRequest) {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body: CreatePORequest = await req.json()
-    const { recipes, vendorId, notes, autoSendEmail = false } = body
+    const { recipes, vendorId, notes, autoSendEmail = false, customQuantities } = body
 
     if (!recipes || recipes.length === 0) {
       return NextResponse.json({ error: "At least one recipe required" }, { status: 400 })
@@ -124,11 +125,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to create purchase order" }, { status: 500 })
     }
 
-    // Create line items
+    // Create line items (use custom quantities if provided)
     const lineItemsToInsert = finalPO.lineItems.map(item => ({
       po_id: purchaseOrder.id,
       ingredient_name: item.ingredientName,
-      quantity_lbs: item.orderQuantityLbs,
+      quantity_lbs: customQuantities?.[item.ingredientName] ?? item.orderQuantityLbs,
       unit_price_cents: 0, // Will be updated when vendor pricing is added
       total_price_cents: 0,
       notes: item.notes,

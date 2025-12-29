@@ -185,25 +185,25 @@ CREATE POLICY "Admin can manage inventory"
     )
   );
 
--- Function to generate sequential PO numbers
+-- Function to generate sequential PO numbers (format: PO-NPMFB-XXX)
 CREATE OR REPLACE FUNCTION generate_po_number()
 RETURNS TEXT AS $$
 DECLARE
   next_number INTEGER;
-  po_number TEXT;
+  new_po_number TEXT;
 BEGIN
   -- Get the highest PO number and increment
   SELECT COALESCE(
-    MAX(CAST(SUBSTRING(po_number FROM 'PO-(\d+)') AS INTEGER)),
+    MAX(CAST(SUBSTRING(po_number FROM 'PO-NPMFB-([0-9]+)') AS INTEGER)),
     0
   ) + 1 INTO next_number
   FROM purchase_orders
-  WHERE po_number ~ '^PO-\d+$';
+  WHERE po_number ~ '^PO-NPMFB-[0-9]+$';
 
-  -- Format as PO-00001
-  po_number := 'PO-' || LPAD(next_number::TEXT, 5, '0');
+  -- Format as PO-NPMFB-003
+  new_po_number := 'PO-NPMFB-' || LPAD(next_number::TEXT, 3, '0');
 
-  RETURN po_number;
+  RETURN new_po_number;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { Resend } from "resend"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,25 +16,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
 
-    // Submit to Formspree
-    const response = await fetch("https://formspree.io/f/xnnoolqd", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        subject,
-        message,
-        _replyto: email,
-      }),
+    // Send email via Resend to support@nouripet.net
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: "NouriPet Contact Form <hello@updates.nouripet.net>",
+      to: ["support@nouripet.net"],
+      replyTo: email,
+      subject: `Contact Form: ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Contact Form Submission</h2>
+
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 8px 0;"><strong>Name:</strong> ${name}</p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 8px 0;"><strong>Subject:</strong> ${subject}</p>
+          </div>
+
+          <div style="margin: 20px 0;">
+            <strong>Message:</strong>
+            <p style="white-space: pre-wrap; margin-top: 10px;">${message}</p>
+          </div>
+
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">
+            Reply directly to this email to respond to ${name}.
+          </p>
+        </div>
+      `,
+      text: `New Contact Form Submission\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}\n\n---\nReply directly to this email to respond to ${name}.`,
+      tags: [
+        { name: "type", value: "contact_form" },
+      ],
     })
 
-    if (!response.ok) {
-      console.error("Formspree API error:", response.status)
+    if (emailError) {
+      console.error("Resend API error:", emailError)
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 })
     }
+
+    console.log(`[contact] Email sent successfully: ${emailData?.id}`)
 
     // Save to Supabase database
     try {

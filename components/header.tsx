@@ -136,6 +136,9 @@ export function Header() {
             <Link href="/calculators" className="text-sm font-medium hover:text-primary transition-colors">
               Calculators
             </Link>
+            <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors">
+              Contact
+            </Link>
             <Link href="/shop" className="text-sm font-medium hover:text-primary transition-colors">
               Shop
             </Link>
@@ -240,6 +243,9 @@ export function Header() {
               </Link>
               <Link href="/calculators" className="block text-sm font-medium hover:text-primary transition-colors">
                 Calculators
+              </Link>
+              <Link href="/contact" className="block text-sm font-medium hover:text-primary transition-colors">
+                Contact
               </Link>
               <Link href="/shop" className="block text-sm font-medium hover:text-primary transition-colors">
                 Shop

@@ -175,9 +175,9 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <div className="font-medium mb-1">Email</div>
-                    <div className="text-sm text-muted-foreground">
-                      Fill out the form and we'll respond promptly
-                    </div>
+                    <a href="mailto:support@nouripet.net" className="text-sm text-muted-foreground hover:text-primary">
+                      support@nouripet.net
+                    </a>
                   </div>
                 </div>
               </CardContent>

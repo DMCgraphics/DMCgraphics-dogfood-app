@@ -126,14 +126,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Create line items (use custom quantities if provided)
-    const lineItemsToInsert = finalPO.lineItems.map(item => ({
-      po_id: purchaseOrder.id,
-      ingredient_name: item.ingredientName,
-      quantity_lbs: customQuantities?.[item.ingredientName] ?? item.orderQuantityLbs,
-      unit_price_cents: 0, // Will be updated when vendor pricing is added
-      total_price_cents: 0,
-      notes: item.notes,
-    }))
+    // If customQuantities is provided, only include items that are in it (user may have removed items)
+    const lineItemsToInsert = finalPO.lineItems
+      .filter(item => {
+        // If customQuantities is provided, only include items that exist in it
+        // Otherwise include all items
+        return !customQuantities || item.ingredientName in customQuantities
+      })
+      .map(item => ({
+        po_id: purchaseOrder.id,
+        ingredient_name: item.ingredientName,
+        quantity_lbs: customQuantities?.[item.ingredientName] ?? item.orderQuantityLbs,
+        unit_price_cents: 0, // Will be updated when vendor pricing is added
+        total_price_cents: 0,
+        notes: item.notes,
+      }))
 
     const { error: itemsError } = await supabaseAdmin
       .from("purchase_order_items")

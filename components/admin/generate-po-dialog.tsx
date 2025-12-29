@@ -16,22 +16,21 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { ShoppingCart, Mail } from "lucide-react"
-import { generateMosnerPO, type POGenerationInput } from "@/lib/purchase-orders/po-generator"
+import { generateMosnerPO, combinePOs, type POGenerationInput } from "@/lib/purchase-orders/po-generator"
+import type { BatchPlanResponse } from "@/app/api/admin/batch-planning/route"
 
 interface GeneratePODialogProps {
-  recipeName: string
-  batchMultiplier?: number
-  defaultCookDate?: Date
+  batchPlan: BatchPlanResponse
+  cookDate: Date
 }
 
 export function GeneratePODialog({
-  recipeName,
-  batchMultiplier = 1,
-  defaultCookDate,
+  batchPlan,
+  cookDate: defaultCookDate,
 }: GeneratePODialogProps) {
   const [open, setOpen] = useState(false)
   const [cookDate, setCookDate] = useState(
-    defaultCookDate?.toISOString().split("T")[0] || new Date().toISOString().split("T")[0]
+    defaultCookDate.toISOString().split("T")[0]
   )
   const [notes, setNotes] = useState("")
   const [sendEmail, setSendEmail] = useState(false) // Default to false - require approval before sending
@@ -40,13 +39,19 @@ export function GeneratePODialog({
 
   const handlePreview = () => {
     try {
-      const input: POGenerationInput = {
-        recipeName,
-        batchMultiplier,
-        cookDate: new Date(cookDate),
-      }
-      const po = generateMosnerPO(input)
-      setPreviewPO(po)
+      // Generate POs for each recipe in the batch
+      const generatedPOs = batchPlan.recipeRequirements.map(req => {
+        const input: POGenerationInput = {
+          recipeName: req.recipe,
+          batchMultiplier: req.batchScaleFactor,
+          cookDate: new Date(cookDate),
+        }
+        return generateMosnerPO(input)
+      })
+
+      // Combine into single PO
+      const combinedPO = generatedPOs.length > 1 ? combinePOs(generatedPOs) : generatedPOs[0]
+      setPreviewPO(combinedPO)
     } catch (error: any) {
       toast.error(error.message || "Failed to generate PO preview")
     }
@@ -62,13 +67,11 @@ export function GeneratePODialog({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          recipes: [
-            {
-              recipeName,
-              batchMultiplier,
-              cookDate,
-            },
-          ],
+          recipes: batchPlan.recipeRequirements.map(req => ({
+            recipeName: req.recipe,
+            batchMultiplier: req.batchScaleFactor,
+            cookDate,
+          })),
           notes,
           autoSendEmail: sendEmail,
         }),
@@ -100,30 +103,35 @@ export function GeneratePODialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" className="gap-2 text-sm sm:text-base">
           <ShoppingCart className="h-4 w-4" />
-          Generate PO
+          Generate Purchase Order
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Generate Purchase Order</DialogTitle>
           <DialogDescription>
-            Create a purchase order for Mosner Family Brands for {recipeName}
+            Create a purchase order for Mosner Family Brands for this batch
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="recipe">Recipe</Label>
-              <Input id="recipe" value={recipeName} disabled />
+          <div className="space-y-2">
+            <Label>Recipes in this batch</Label>
+            <div className="bg-muted/50 p-3 rounded-md space-y-1">
+              {batchPlan.recipeRequirements.map((req, idx) => (
+                <div key={idx} className="text-sm flex justify-between">
+                  <span>{req.recipe}</span>
+                  <span className="text-muted-foreground">
+                    {req.batchScaleFactor.toFixed(2)}x batch
+                  </span>
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="multiplier">Batch Multiplier</Label>
-              <Input id="multiplier" type="number" value={batchMultiplier} disabled />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
 
             <div className="space-y-2">
               <Label htmlFor="cookDate">Cook Date</Label>

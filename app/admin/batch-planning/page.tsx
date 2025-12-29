@@ -9,11 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, Download, Printer, Save, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarToday, Pencil } from "lucide-react"
+import { CalendarIcon, Download, Printer, Save, RefreshCw, ChevronLeft, ChevronRight, Calendar as CalendarToday, Pencil, ShoppingCart } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import type { BatchPlanResponse, RecipeRequirement, ConsolidatedIngredient, DogSubscription } from "@/app/api/admin/batch-planning/route"
 import { EditDogBatchDialog } from "@/components/admin/edit-dog-batch-dialog"
+import { GeneratePODialog } from "@/components/admin/generate-po-dialog"
 
 /**
  * Calculate the next cook date based on bi-weekly schedule starting Jan 8, 2026
@@ -278,6 +279,10 @@ export default function BatchPlanningPage() {
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
+            <GeneratePODialog
+              batchPlan={batchPlan}
+              cookDate={new Date(batchPlan.batchDate + 'T12:00:00')}
+            />
           </div>
 
           {/* Dog Subscriptions */}

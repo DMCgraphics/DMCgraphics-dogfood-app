@@ -77,7 +77,7 @@ export const RECIPE_BASE_BATCHES: { [key: string]: RecipeBaseBatch } = {
     kcalPerKg: 1100,
     ingredients: {
       'Ground chicken': 10000,
-      'Whole egg': 1360,
+      'Eggs, Liquid whole': 1360,
       'White rice, cooked': 3000,
       'Carrots, frozen': 2500,
       'Spinach, frozen': 1800,
@@ -99,8 +99,8 @@ export const RECIPE_BASE_BATCHES: { [key: string]: RecipeBaseBatch } = {
     totalPounds: 50,
     kcalPerKg: 1150,
     ingredients: {
-      'Turkey': 10000,
-      'Whole egg': 1360,
+      'Ground turkey': 10000,
+      'Eggs, Liquid whole': 1360,
       'Brown rice, cooked': 3000,
       'Carrots, frozen': 2500,
       'Zucchini': 2000,
@@ -141,9 +141,8 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
       'Lamb Heart, Raw',
       'Lamb Liver, Raw',
       'Ground chicken',
-      'Turkey',
+      'Ground turkey',
       'Eggs, Liquid whole',
-      'Whole egg',
     ]
   },
   {

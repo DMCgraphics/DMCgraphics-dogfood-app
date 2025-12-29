@@ -116,11 +116,13 @@ export function HeroSection() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="font-sans text-4xl lg:text-6xl font-bold tracking-tight">
-                Fresh food, <span className="text-primary">fully explained.</span>
+                Fresh food, <span className="text-primary">intelligently personalized.</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
-                Build a plan your vet would love. More than "human-grade": balanced to AAFCO, with transparent label
-                math.
+                Build a plan your vet would trust—powered by NouriPet's AI.
+              </p>
+              <p className="text-lg text-muted-foreground max-w-lg leading-relaxed">
+                Every recipe is AAFCO-balanced, transparently labeled, and tailored to your dog's age, weight, activity level, and health needs using real nutritional math (not guesswork).
               </p>
             </div>
 

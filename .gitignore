@@ -39,3 +39,5 @@ next-env.d.ts
 scripts/fix-*.ts
 scripts/*-production.ts
 scripts/*-prod.ts
+scripts/test-*.js
+scripts/test-*.ts

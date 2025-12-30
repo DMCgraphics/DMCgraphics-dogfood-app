@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const response = await fetch(`${baseUrl}/api/instagram/refresh`, {
       method: "POST",
       headers: {
-        "x-cron-secret": process.env.CRON_SECRET || "default-secret",
+        "x-cron-secret": process.env.CRON_SECRET!,
       },
     })
 

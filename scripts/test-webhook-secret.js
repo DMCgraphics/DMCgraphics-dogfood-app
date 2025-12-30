@@ -6,10 +6,8 @@
 
 const { createClient } = require('@supabase/supabase-js')
 
-// Set environment variables
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://tczvietgpixwonpqaotl.supabase.co'
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'sb_publishable_Y8anZ6O42jr1WlyFvT8fwg_m1T97GG_'
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'sb_secret_BrHc5r2vkNjLL7axDt-cng_YWCktFBz'
+// Use environment variables - set these in your .env.local file
+// Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -20,8 +18,13 @@ async function testWebhookSecret() {
   console.log('🔍 Testing Webhook Secret Configuration...\n')
 
   try {
-    const webhookSecret = 'whsec_CJDT48mfHnIfW1Zn5aYURrQqmgTFtp4X'
-    
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+    if (!webhookSecret) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET environment variable not set')
+      return
+    }
+
     console.log('📋 Webhook Secret Information:')
     console.log(`   Secret: ${webhookSecret}`)
     console.log(`   Length: ${webhookSecret.length} characters`)

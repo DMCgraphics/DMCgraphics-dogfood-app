@@ -37,9 +37,6 @@ export function AddressInput({ value, onChange, placeholder, className, required
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
       console.log("[v0] Google Maps API Key available:", !!apiKey)
-      console.log("[v0] API Key value:", apiKey ? `${apiKey.substring(0, 20)}...` : "undefined")
-      console.log("[v0] Expected new API key starts with:", "AIzaSyDBw5saJyqC6dmeDU9EjJ5hKscuguhtTSw".substring(0, 20))
-      console.log("[v0] API Key matches expected:", apiKey === "AIzaSyDBw5saJyqC6dmeDU9EjJ5hKscuguhtTSw")
 
       if (!apiKey) {
         setError("Google Maps API key not found")

@@ -1,4 +1,4 @@
-# Custom Email Setup Guide
+# Custom Email Setup Guide 
 
 This guide explains how to set up custom email authentication for your NouriPet application using your own domain instead of Supabase's default emails.
 

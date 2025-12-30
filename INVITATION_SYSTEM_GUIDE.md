@@ -1,4 +1,4 @@
-# Subscription Invitation System - User Guide
+# Subscription Invitation System - User Guide 
 
 ## Overview
 

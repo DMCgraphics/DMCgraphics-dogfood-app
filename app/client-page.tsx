@@ -7,6 +7,7 @@ import { SocialProofSection } from "@/components/social-proof-section"
 import { PrescriptionSupportCard } from "@/components/prescription-support-card"
 import { FAQSection } from "@/components/faq-section"
 import { Footer } from "@/components/footer"
+import { InstagramGrid } from "@/components/instagram-grid"
 
 export default function ClientHomePage() {
 
@@ -158,6 +159,12 @@ export default function ClientHomePage() {
 
         <SourcingSection />
         <SocialProofSection />
+
+        <section className="section-padding bg-white">
+          <div className="container max-w-6xl">
+            <InstagramGrid limit={6} showFollowButton={true} />
+          </div>
+        </section>
 
         <FAQSection />
       </main>

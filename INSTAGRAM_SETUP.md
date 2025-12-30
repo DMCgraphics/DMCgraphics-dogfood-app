@@ -1,4 +1,4 @@
-# Instagram Integration Setup Guide
+# Instagram Integration Setup Guide 
 
 This guide will help you set up the Instagram Basic Display API to show your Instagram posts on the NouriPet homepage.
 

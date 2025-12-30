@@ -1,0 +1,34 @@
+Mode,Recipe/Product Name,Size,Weight Range,Product ID,Price ID,Amount (USD),Amount (Cents),Interval,Interval Count
+"TEST","Lamb & Quinoa – Small (5–20 lbs) (Every Two Weeks)","Small","5-20 lbs","prod_Sz2AjRGkGAwYym","price_1SRg1U0R4BbWwBbfjVHM4nam","$58.00",5800,"week",2
+"TEST","Beef & Quinoa Harvest – Small (5–20 lbs) (Every Two Weeks)","Small","5-20 lbs","prod_Sz0GTlm9pNOAUv","price_1SOlze0R4BbWwBbfnGtRhmpr","$58.00",5800,"week",2
+"TEST","Beef & Quinoa Harvest – Medium (21–50 lbs) (Every Two Weeks)","Medium","21-50 lbs","prod_Sz12iqTKKxYdSo","price_1SOlzQ0R4BbWwBbfHXu1vnVC","$94.00",9400,"week",2
+"TEST","Chicken & Greens – Small (5–20 lbs) (Every Two Weeks)","Small","5-20 lbs","prod_Sz24VPx2vRsnm7","price_1SOlyb0R4BbWwBbfElVciayU","$58.00",5800,"week",2
+"TEST","Chicken & Greens – Medium (21–50 lbs) (Every Two Weeks)","Medium","21-50 lbs","prod_Sz25dNlkL0AruE","price_1SOlyG0R4BbWwBbfFa0nVZOH","$94.00",9400,"week",2
+"TEST","Chicken & Greens – Large (51–90 lbs) (Every Two Weeks)","Large","51-90 lbs","prod_Sz26YFo2v7p4Kb","price_1SOlxy0R4BbWwBbflsEWYE34","$138.00",13800,"week",2
+"TEST","Lamb & Quinoa – Medium (21–50 lbs) (Every Two Weeks)","Medium","21-50 lbs","prod_Sz2BZwanptNBcv","price_1SOlx40R4BbWwBbfsBTtag7d","$94.00",9400,"week",2
+"TEST","Lamb & Quinoa – Large (51–90 lbs) (Every Two Weeks)","Large","51-90 lbs","prod_Sz2CdTPClMKfpO","price_1SOlwj0R4BbWwBbfVVtzIQCO","$138.00",13800,"week",2
+"TEST","Turkey & Brown Rice - Small (5-20 lbs)(Every Two Weeks)","Small","5-20 lbs","prod_T4uilzxjd1nCdc","price_1SOlvp0R4BbWwBbfa5xkLVd9","$58.00",5800,"week",2
+"TEST","Turkey & Brown Rice – Medium (21–50 lbs) (Every Two Weeks)","Medium","21-50 lbs","prod_T4ujYAuckeFa37","price_1SOlvT0R4BbWwBbfPgFG1MH9","$94.00",9400,"week",2
+"TEST","Turkey & Brown Rice – XL (91+ lbs) (Every Two Weeks)","XL","91+ lbs","prod_T4umDC4kOX9jE7","price_1S8kww0R4BbWwBbfGsB8CiwP","$174.00",17400,"week",2
+"TEST","Turkey & Brown Rice – Large (51–90 lbs) (Every Two Weeks)","Large","51-90 lbs","prod_T4ukleckz2068t","price_1S8kuf0R4BbWwBbfRB6gwhiA","$138.00",13800,"week",2
+"TEST","Lamb & Quinoa – XL (91+ lbs) (Every Two Weeks)","XL","91+ lbs","prod_Sz2DEZHfrdaF5y","price_1S348p0R4BbWwBbfHoE8iLIi","$174.00",17400,"week",2
+"TEST","Chicken & Greens – XL (91+ lbs) (Every Two Weeks)","XL","91+ lbs","prod_Sz28gN2oAtOt5z","price_1S343o0R4BbWwBbf5RVMEC8L","$174.00",17400,"week",2
+"TEST","Beef & Quinoa Harvest – XL (91+ lbs) (Every Two Weeks)","XL","91+ lbs","prod_Sz24xXK3IAANUP","price_1S33zx0R4BbWwBbf1AC8sUHf","$174.00",17400,"week",2
+"TEST","Beef & Quinoa Harvest – Large (51–90 lbs) (Every Two Weeks)","Large","51-90 lbs","prod_Sz22RrEeczyIal","price_1S33yk0R4BbWwBbfKd5aOJpk","$138.00",13800,"week",2
+"PRODUCTION","Turkey & Brown Rice Comfort","Small","5-20 lbs","prod_THPwAHEaI8nHzC","price_1SSTTg0WbfuHe9kAV61mhHJq","$58.00",5800,"week",2
+"PRODUCTION","Turkey & Brown Rice Comfort","Medium","21-50 lbs","prod_THPwAHEaI8nHzC","price_1SSTTS0WbfuHe9kAF9BaE2bA","$94.00",9400,"week",2
+"PRODUCTION","Turkey & Brown Rice Comfort","Large","51-90 lbs","prod_THPwAHEaI8nHzC","price_1SSTTD0WbfuHe9kA5WzTgnc8","$138.00",13800,"week",2
+"PRODUCTION","Turkey & Brown Rice Comfort","XL","91+ lbs","prod_THPwAHEaI8nHzC","price_1SSTSv0WbfuHe9kAKV9N9wea","$174.00",17400,"week",2
+"PRODUCTION","Chicken & Garden Veggie","Small","5-20 lbs","prod_THPtT7As1RbAZS","price_1SSTSc0WbfuHe9kA13wvBCic","$58.00",5800,"week",2
+"PRODUCTION","Chicken & Garden Veggie","Medium","21-50 lbs","prod_THPtT7As1RbAZS","price_1SSTSR0WbfuHe9kAxrLok4Tp","$94.00",9400,"week",2
+"PRODUCTION","Chicken & Garden Veggie","Large","51-90 lbs","prod_THPtT7As1RbAZS","price_1SSTSA0WbfuHe9kAOWdETJi7","$138.00",13800,"week",2
+"PRODUCTION","Chicken & Garden Veggie","XL","91+ lbs","prod_THPtT7As1RbAZS","price_1SSTRw0WbfuHe9kAjsA97L9S","$174.00",17400,"week",2
+"PRODUCTION","Lamb & Pumpkin Feast","Small","5-20 lbs","prod_THPqXdCku4a2FA","price_1SSTRO0WbfuHe9kA99F2cggt","$58.00",5800,"week",2
+"PRODUCTION","Lamb & Pumpkin Feast","Medium","21-50 lbs","prod_THPqXdCku4a2FA","price_1SSTR30WbfuHe9kAWPpW1vzp","$94.00",9400,"week",2
+"PRODUCTION","Lamb & Pumpkin Feast","Large","51-90 lbs","prod_THPqXdCku4a2FA","price_1SSTQQ0WbfuHe9kAMOesqXji","$138.00",13800,"week",2
+"PRODUCTION","Lamb & Pumpkin Feast","XL","91+ lbs","prod_THPqXdCku4a2FA","price_1SSTQ30WbfuHe9kALKMu7d0w","$174.00",17400,"week",2
+"PRODUCTION","Beef & Quinoa Harvest","Small","5-20 lbs","prod_THPlHm0YhpZMxJ","price_1SSTP90WbfuHe9kAqToPhXX3","$58.00",5800,"week",2
+"PRODUCTION","Beef & Quinoa Harvest","Medium","21-50 lbs","prod_THPlHm0YhpZMxJ","price_1SSTOp0WbfuHe9kAxIvdOQph","$94.00",9400,"week",2
+"PRODUCTION","Beef & Quinoa Harvest","Large","51-90 lbs","prod_THPlHm0YhpZMxJ","price_1SSTO40WbfuHe9kAGRe8pzIp","$138.00",13800,"week",2
+"PRODUCTION","Beef & Quinoa Harvest","XL","91+ lbs","prod_THPlHm0YhpZMxJ","price_1SSTNT0WbfuHe9kAp9ywoC5R","$174.00",17400,"week",2
+"PRODUCTION","NouriPet Custom Low-Fat Plan (Chicken & Veggie)","Custom","varies","prod_T0qjOHxcOtLMMu","price_1S8qme0WbfuHe9kAzj1tsYhK","$38.00",3800,"week",2

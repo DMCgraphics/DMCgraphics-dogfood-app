@@ -995,18 +995,25 @@ export default function FulfillmentPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              defaultValue={item.quantity_on_hand}
-                              className="w-20"
-                              id={`qty-${item.id}`}
-                            />
+                            <div className="flex flex-col gap-1">
+                              <Label htmlFor={`qty-${item.id}`} className="text-xs text-muted-foreground">
+                                New Quantity
+                              </Label>
+                              <Input
+                                type="number"
+                                defaultValue={item.quantity_on_hand}
+                                className="w-24 h-10 text-base font-semibold border-2 focus:border-primary"
+                                id={`qty-${item.id}`}
+                                min="0"
+                              />
+                            </div>
                             <Button
                               size="sm"
                               onClick={() => {
                                 const input = document.getElementById(`qty-${item.id}`) as HTMLInputElement
                                 updateInventory(item.id, parseInt(input.value))
                               }}
+                              className="mt-5"
                             >
                               Update
                             </Button>

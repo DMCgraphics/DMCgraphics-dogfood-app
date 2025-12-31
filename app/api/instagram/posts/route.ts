@@ -14,20 +14,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const limit = parseInt(searchParams.get("limit") || "12", 10)
 
-    console.log("[INSTAGRAM API] Fetching posts, limit:", limit)
-
-    const { data: posts, error, count } = await supabaseAdmin
+    // Query Instagram posts from database
+    const { data: posts, error } = await supabaseAdmin
       .from("instagram_posts")
-      .select("*", { count: "exact" })
+      .select("*")
       .order("timestamp", { ascending: false })
-      .limit(Math.min(limit, 50)) // Cap at 50 posts
-
-    console.log("[INSTAGRAM API] Query result - count:", count, "posts length:", posts?.length, "error:", error?.message)
+      .limit(Math.min(limit, 50))
 
     if (error) {
-      console.error("Error fetching Instagram posts:", error)
+      console.error("[Instagram Posts API] Error:", error)
       return NextResponse.json(
-        { error: "Failed to fetch Instagram posts" },
+        { error: "Failed to fetch Instagram posts", details: error.message },
         { status: 500 }
       )
     }
@@ -37,7 +34,7 @@ export async function GET(req: NextRequest) {
       count: posts?.length || 0,
     })
   } catch (error: any) {
-    console.error("Error in GET /api/instagram/posts:", error)
+    console.error("[Instagram Posts API] Exception:", error)
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }

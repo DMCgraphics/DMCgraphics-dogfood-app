@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic"
 /**
  * Get cached Instagram posts
  * Public endpoint - returns cached posts from database
+ * Updated: 2025-12-31
  */
 export async function GET(req: NextRequest) {
   try {

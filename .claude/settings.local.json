@@ -1,6 +1,14 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__supabase-dev__list_tables",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "mcp__supabase-dev__execute_sql"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

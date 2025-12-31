@@ -13,11 +13,15 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const limit = parseInt(searchParams.get("limit") || "12", 10)
 
-    const { data: posts, error } = await supabaseAdmin
+    console.log("[INSTAGRAM API] Fetching posts, limit:", limit)
+
+    const { data: posts, error, count } = await supabaseAdmin
       .from("instagram_posts")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("timestamp", { ascending: false })
       .limit(Math.min(limit, 50)) // Cap at 50 posts
+
+    console.log("[INSTAGRAM API] Query result - count:", count, "posts length:", posts?.length, "error:", error?.message)
 
     if (error) {
       console.error("Error fetching Instagram posts:", error)

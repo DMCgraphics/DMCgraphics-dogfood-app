@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic"
 
 /**
  * Vercel Cron Job: Refresh Instagram Posts
- * Runs every 12 hours to sync latest Instagram posts
+ * Runs every 24 hours (midnight UTC) to sync latest Instagram posts
  *
  * Vercel automatically adds Authorization header with bearer token
  * This is verified by Vercel's infrastructure

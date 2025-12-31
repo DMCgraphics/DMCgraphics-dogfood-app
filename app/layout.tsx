@@ -80,6 +80,8 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
+// Cache bust for Meta Pixel env var update
+
 export default function RootLayout({
   children,
 }: Readonly<{

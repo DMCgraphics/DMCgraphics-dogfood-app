@@ -17,7 +17,7 @@ import Script from "next/script"
  * To set up:
  * 1. Add NEXT_PUBLIC_META_PIXEL_ID to .env.local
  * 2. Create Meta Pixel in Facebook Events Manager
- * 3. Add pixel ID to environment variable
+ * 3. Add pixel ID to environment variable in Vercel
  */
 
 declare global {

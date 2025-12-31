@@ -1,4 +1,4 @@
-# Data Validation Guide
+# Data Validation Guide 
 
 This guide explains how to ensure all required data is present when creating users and their associated data, preventing the "Database error deleting user" issue.
 

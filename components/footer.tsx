@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Instagram, Facebook } from "lucide-react"
 
 export function Footer() {
   return (
@@ -15,6 +16,26 @@ export function Footer() {
             <p className="text-sm text-muted-foreground max-w-xs">
               Fresh food, fully explained. Science-backed nutrition for dogs who deserve the best.
             </p>
+            <div className="flex gap-4 pt-2">
+              <Link
+                href="https://www.instagram.com/nouripet/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Follow us on Instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </Link>
+              <Link
+                href="https://www.facebook.com/p/NouriPet-61579411563580/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Follow us on Facebook"
+              >
+                <Facebook className="h-5 w-5" />
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-4">

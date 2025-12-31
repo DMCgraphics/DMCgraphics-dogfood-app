@@ -12,7 +12,10 @@
       "Bash(ls:*)",
       "Bash(/dev/null --include=*.sql)",
       "Bash(cat:*)",
-      "mcp__supabase-live__apply_migration"
+      "mcp__supabase-live__apply_migration",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate newsletter AI prompt with privacy and accuracy rules\n\nAdd guidelines to protect customer privacy:\n- Don''t mention customer names unless tagged in posts\n- Use location-based references instead \\(e.g., \"one of our Stamford customers\"\\)\n- Can mention dog names when visible\n- Don''t reference non-customer Instagram handles\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)"
     ]
   },
   "enableAllProjectMcpServers": true,

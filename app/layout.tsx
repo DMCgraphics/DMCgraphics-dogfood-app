@@ -9,6 +9,8 @@ import { CartProvider } from "@/contexts/cart-context"
 import { Toaster } from "@/components/ui/toaster"
 import { AIChatFAB } from "@/components/ai-chat-fab"
 import { PromoModalProvider } from "@/components/promo-modal-provider"
+import { MetaPixel } from "@/components/meta-pixel"
+import { ExitIntentProvider } from "@/components/exit-intent-provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -94,13 +96,16 @@ export default function RootLayout({
             gtag('config', 'G-SN1ZK2MEE5');
           `}
         </Script>
+        <MetaPixel />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <CartProvider>
-              {children}
-              <Toaster />
-              <AIChatFAB />
-              <PromoModalProvider />
+              <ExitIntentProvider>
+                {children}
+                <Toaster />
+                <AIChatFAB />
+                <PromoModalProvider />
+              </ExitIntentProvider>
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

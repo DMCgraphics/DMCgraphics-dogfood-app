@@ -5,7 +5,14 @@
       "Bash(curl:*)",
       "Bash(python3:*)",
       "mcp__supabase-dev__execute_sql",
-      "mcp__supabase-live__execute_sql"
+      "mcp__supabase-live__execute_sql",
+      "mcp__supabase-live__list_tables",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(/dev/null --include=*.sql)",
+      "Bash(cat:*)",
+      "mcp__supabase-live__apply_migration"
     ]
   },
   "enableAllProjectMcpServers": true,

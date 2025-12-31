@@ -110,11 +110,19 @@ function getNewsletterSystemPrompt(): string {
 - Write in second person ("we shared", "you might have seen")
 - End with a call to follow for more tips
 
+PRIVACY & ACCURACY RULES:
+- NEVER mention customer names unless they are explicitly tagged (with @) in the Instagram post caption
+- You CAN mention dog names when visible in captions or tags
+- When referring to customers without names, use location-based references like "one of our Stamford customers" or "a NouriPet family"
+- Do NOT mention Instagram handles like @doodlelife unless they are confirmed NouriPet customers
+- Be vague about customer identity but specific about dog names and locations when appropriate
+
 Do NOT:
 - List every single post
 - Use overly promotional language
 - Make claims not supported by the posts
-- Write more than 250 words`
+- Write more than 250 words
+- Share customer names unless they're tagged in the post`
 }
 
 /**

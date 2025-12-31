@@ -1,4 +1,5 @@
 import type React from "react"
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import Script from "next/script"
 import "./globals.css"
@@ -96,7 +97,9 @@ export default function RootLayout({
             gtag('config', 'G-SN1ZK2MEE5');
           `}
         </Script>
-        <MetaPixel />
+        <Suspense fallback={null}>
+          <MetaPixel />
+        </Suspense>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <CartProvider>

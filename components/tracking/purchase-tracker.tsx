@@ -15,20 +15,27 @@ interface PurchaseTrackerProps {
  */
 export function PurchaseTracker({ value, subscriptionId, planId }: PurchaseTrackerProps) {
   useEffect(() => {
-    // Track purchase/subscription completion
-    metaPixelEvents.subscribe({
-      value,
-      currency: "USD",
-      predicted_ltv: value * 12, // Estimate lifetime value as 12 months of subscription
-    })
+    if (typeof window === "undefined") return
 
-    // Also track as a purchase event
-    metaPixelEvents.purchase({
-      value,
-      currency: "USD",
-      content_ids: subscriptionId ? [subscriptionId] : planId ? [planId] : undefined,
-      content_type: "product",
-    })
+    try {
+      // Track purchase/subscription completion
+      metaPixelEvents.subscribe({
+        value,
+        currency: "USD",
+        predicted_ltv: value * 12, // Estimate lifetime value as 12 months of subscription
+      })
+
+      // Also track as a purchase event
+      metaPixelEvents.purchase({
+        value,
+        currency: "USD",
+        content_ids: subscriptionId ? [subscriptionId] : planId ? [planId] : undefined,
+        content_type: "product",
+      })
+    } catch (error) {
+      // Silently fail - don't break the page if tracking fails
+      console.warn("[PurchaseTracker] Failed to track event:", error)
+    }
   }, [value, subscriptionId, planId])
 
   return null // This component doesn't render anything

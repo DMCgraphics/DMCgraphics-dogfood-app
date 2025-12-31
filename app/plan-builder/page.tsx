@@ -2456,7 +2456,7 @@ function PlanBuilderContent() {
       {/* Track plan builder view for Meta Pixel */}
       <PlanBuilderTracker
         step={currentStep + 1}
-        estimatedValue={dogsData[currentDogIndex]?.totalWeeklyCost}
+        estimatedValue={allDogsData[currentDogIndex]?.totalWeeklyCost}
       />
 
       <WizardLayout

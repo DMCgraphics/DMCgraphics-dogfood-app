@@ -29,10 +29,17 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    return NextResponse.json({
-      posts: posts || [],
-      count: posts?.length || 0,
-    })
+    return NextResponse.json(
+      {
+        posts: posts || [],
+        count: posts?.length || 0,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
+    )
   } catch (error: any) {
     console.error("[Instagram Posts API] Exception:", error)
     return NextResponse.json(

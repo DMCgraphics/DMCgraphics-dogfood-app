@@ -1,6 +1,7 @@
 // app/checkout/success/page.tsx
 import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
+import { PurchaseTracker } from "@/components/tracking/purchase-tracker"
 
 function reqEnv(name: string) {
   const v = process.env[name]
@@ -39,6 +40,15 @@ export default async function SuccessPage({ searchParams }: { searchParams: { se
 
   return (
     <div className="mx-auto max-w-xl p-6">
+      {/* Track purchase completion for Meta Pixel */}
+      {plan && (
+        <PurchaseTracker
+          value={(plan.total_cents ?? 0) / 100}
+          subscriptionId={plan.stripe_subscription_id}
+          planId={plan.id}
+        />
+      )}
+
       <h1 className="text-2xl font-semibold mb-2">Payment complete 🎉</h1>
       {searchParams.session_id && <p className="text-sm text-gray-500 mb-2">Session: {searchParams.session_id}</p>}
       {plan ? (

@@ -24,6 +24,7 @@ import { Plus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { mockAddOns } from "@/lib/nutrition-calculator"
 import { calculateBiweeklyPricing, getStripePricingBiweeklyForDog } from "@/lib/stripe-pricing"
+import { PlanBuilderTracker } from "@/components/tracking/plan-builder-tracker"
 
 interface DogPlanData {
   dogProfile: Partial<DogProfile>
@@ -2451,6 +2452,12 @@ function PlanBuilderContent() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
+      {/* Track plan builder view for Meta Pixel */}
+      <PlanBuilderTracker
+        step={currentStep + 1}
+        estimatedValue={dogsData[currentDogIndex]?.totalWeeklyCost}
+      />
 
       <WizardLayout
         currentStep={currentStep}

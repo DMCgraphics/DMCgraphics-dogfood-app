@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import ZipGate from "@/components/ZipGate"
+import { CheckoutTracker } from "@/components/tracking/checkout-tracker"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -154,6 +155,9 @@ export default async function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Track checkout initiation for Meta Pixel */}
+      <CheckoutTracker total={total} itemCount={lineItems.length} />
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4">

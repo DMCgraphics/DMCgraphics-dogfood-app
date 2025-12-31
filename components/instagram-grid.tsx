@@ -31,7 +31,14 @@ export function InstagramGrid({ limit = 6, showFollowButton = true }: InstagramG
     async function fetchPosts() {
       try {
         setLoading(true)
-        const response = await fetch(`/api/instagram/posts?limit=${limit}`)
+        const response = await fetch(`/api/instagram/posts?limit=${limit}`, {
+          cache: 'no-store',
+          next: { revalidate: 0 },
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        })
         const data = await response.json()
 
         if (!response.ok) {

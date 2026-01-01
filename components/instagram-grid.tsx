@@ -64,7 +64,7 @@ export function InstagramGrid({ limit = 6, showFollowButton = true }: InstagramG
           {Array.from({ length: limit }).map((_, i) => (
             <div
               key={i}
-              className="aspect-square bg-gray-200 animate-pulse rounded-lg"
+              className="aspect-square bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg"
             />
           ))}
         </div>
@@ -81,8 +81,8 @@ export function InstagramGrid({ limit = 6, showFollowButton = true }: InstagramG
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Instagram className="h-6 w-6 text-purple-600" />
-          <h2 className="text-2xl font-bold text-gray-900">
+          <Instagram className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Follow Our Journey
           </h2>
         </div>
@@ -108,7 +108,7 @@ export function InstagramGrid({ limit = 6, showFollowButton = true }: InstagramG
             href={post.permalink}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100 hover:opacity-90 transition-opacity"
+            className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 hover:opacity-90 transition-opacity"
           >
             <Image
               src={post.media_type === "VIDEO" && post.thumbnail_url
@@ -141,7 +141,7 @@ export function InstagramGrid({ limit = 6, showFollowButton = true }: InstagramG
           href="https://www.instagram.com/nouripet/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-purple-600 hover:text-purple-700 font-medium inline-flex items-center gap-2"
+          className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium inline-flex items-center gap-2"
         >
           View more on Instagram
           <Instagram className="h-4 w-4" />

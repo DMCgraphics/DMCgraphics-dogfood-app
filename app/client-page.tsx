@@ -160,7 +160,7 @@ export default function ClientHomePage() {
         <SourcingSection />
         <SocialProofSection />
 
-        <section className="section-padding bg-white">
+        <section className="section-padding bg-white dark:bg-gray-950">
           <div className="container max-w-6xl">
             <InstagramGrid limit={6} showFollowButton={true} />
           </div>

@@ -13,41 +13,43 @@ export interface NewsletterSubscriber {
  */
 export async function getActiveNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
   try {
+    // Get active subscriptions with user IDs
+    const { data: activeSubs, error: subsError } = await supabaseAdmin
+      .from("subscriptions")
+      .select("user_id")
+      .in("status", ["active", "trialing", "past_due"])
+
+    if (subsError) {
+      console.error("[Subscribers] Query error:", subsError)
+      throw new Error(`Failed to fetch active subscriptions: ${subsError.message}`)
+    }
+
+    if (!activeSubs || activeSubs.length === 0) {
+      console.log("[Subscribers] No active subscriptions found")
+      return []
+    }
+
+    // Get unique user IDs
+    const userIds = [...new Set(activeSubs.map(sub => sub.user_id))]
+
+    // Get profiles for those users who are opted in
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select(`
-        id,
-        email,
-        full_name,
-        marketing_opt_in,
-        subscriptions!inner (
-          id,
-          status
-        )
-      `)
+      .select("id, email, full_name, marketing_opt_in")
+      .in("id", userIds)
       .eq("marketing_opt_in", true)
-      .in("subscriptions.status", ["active", "trialing", "past_due"])
 
     if (error) {
       console.error("[Subscribers] Query error:", error)
       throw new Error(`Failed to fetch subscribers: ${error.message}`)
     }
 
-    // Deduplicate users (in case multiple subscriptions)
-    const uniqueSubscribers = new Map<string, NewsletterSubscriber>()
-
-    data?.forEach((profile: any) => {
-      if (!uniqueSubscribers.has(profile.id)) {
-        uniqueSubscribers.set(profile.id, {
-          id: profile.id,
-          email: profile.email,
-          full_name: profile.full_name || "Valued Customer",
-          marketing_opt_in: profile.marketing_opt_in,
-        })
-      }
-    })
-
-    const subscribers = Array.from(uniqueSubscribers.values())
+    const subscribers = (data || []).map((profile: any) => ({
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name || "Valued Customer",
+      marketing_opt_in: profile.marketing_opt_in,
+    }))
 
     console.log(`[Subscribers] Found ${subscribers.length} eligible subscribers`)
 

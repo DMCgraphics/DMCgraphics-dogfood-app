@@ -12,9 +12,12 @@ export const dynamic = "force-dynamic"
  */
 export async function GET(req: NextRequest) {
   try {
-    // Verify this is a Vercel cron request
+    // Verify cron secret to prevent unauthorized access
     const authHeader = req.headers.get("authorization")
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const cronSecret = process.env.CRON_SECRET
+
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      console.error("Cron: Unauthorized - auth header:", authHeader ? "present" : "missing")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

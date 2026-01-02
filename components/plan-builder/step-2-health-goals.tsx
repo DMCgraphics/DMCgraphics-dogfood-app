@@ -89,11 +89,6 @@ export function Step2HealthGoals({ goals, onUpdate, dogProfile }: Step2Props) {
 
   return (
     <div className="space-y-6">
-      {/* AI Confidence Indicator */}
-      {dogProfile && dogProfile.name && dogProfile.weight && dogProfile.age && (
-        <LiveConfidenceIndicator dogProfile={dogProfile} healthGoals={goals} />
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>Health & Wellness Goals</CardTitle>

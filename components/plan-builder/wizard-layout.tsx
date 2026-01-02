@@ -5,6 +5,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { AIStepGuidance, AIProgressBreadcrumbs } from "./ai-step-guidance"
+import { CompletionTimeBadge } from "./completion-time-badge"
 import type { MultiDogProfile } from "@/lib/multi-dog-types"
 
 interface WizardLayoutProps {
@@ -99,26 +100,28 @@ export function WizardLayout({
         {/* AI Progress Breadcrumbs - only show after step 0 */}
         {dogProfile && currentStep > 0 && (
           <div className="mb-8">
-            <AIProgressBreadcrumbs
-              currentStep={currentStep}
-              completedSteps={completedSteps}
-            />
+            {/* Progress chips - scrollable on mobile */}
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible">
+              <AIProgressBreadcrumbs
+                currentStep={currentStep}
+                completedSteps={completedSteps}
+              />
+            </div>
           </div>
         )}
 
         {/* Step Header */}
-        <div className="mb-8 space-y-2">
-          <h1 className="font-manrope text-2xl lg:text-3xl font-bold">{stepTitle}</h1>
-          <p className="text-muted-foreground">{stepDescription}</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div className="space-y-2 flex-1">
+            <h1 className="font-manrope text-2xl lg:text-3xl font-bold">{stepTitle}</h1>
+            <p className="text-muted-foreground">{stepDescription}</p>
+          </div>
+          {dogProfile && currentStep > 0 && (
+            <div className="flex-shrink-0">
+              <CompletionTimeBadge currentStep={currentStep} totalSteps={totalSteps} />
+            </div>
+          )}
         </div>
-
-        {/* AI Step Guidance - only show after step 0 */}
-        {dogProfile && currentStep > 0 && (
-          <AIStepGuidance
-            step={currentStep}
-            dogProfile={dogProfile}
-          />
-        )}
 
         {/* Step Content */}
         <div className="mb-8">{children}</div>

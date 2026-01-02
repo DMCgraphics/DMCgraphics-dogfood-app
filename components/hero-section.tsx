@@ -111,7 +111,7 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative section-padding overflow-hidden">
+    <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-32 overflow-hidden">
       <div className="container">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Check, Leaf, Sparkles, Grid3X3 } from "lucide-react"
+import { Check, Leaf, Sparkles, Grid3X3, Heart, Star } from "lucide-react"
 import { mockRecipes, type DogProfile } from "@/lib/nutrition-calculator"
 import { AIRecommendationCard } from "./ai-recommendation-card"
 import { MultipleMealSelector } from "./multiple-meal-selector"
@@ -12,6 +12,7 @@ import { generateAIMealRecommendations } from "@/lib/ai-meal-recommendations"
 import type { MultiDogProfile } from "@/lib/multi-dog-types"
 import { TransparencyCard } from "./transparency-card"
 import { WhatIfSimulator } from "./what-if-simulator"
+import { getRecipeSocialProof } from "@/lib/recipe-social-proof-data"
 
 interface Step4Props {
   selectedRecipe: string | null
@@ -245,6 +246,13 @@ export function Step4RecipeSelection({
                         <Check className="h-4 w-4" />
                       </div>
                     )}
+                    {/* Popularity Badge */}
+                    {getRecipeSocialProof(recipe.id) && (
+                      <Badge className="absolute bottom-2 right-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-xs font-semibold border-0">
+                        <Heart className="h-3 w-3 mr-1 fill-current" />
+                        {getRecipeSocialProof(recipe.id)!.popularityScore}% love this
+                      </Badge>
+                    )}
                     {recipe.comingSoon && (
                       <span className="absolute top-2 left-2 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1">
                         Coming Soon
@@ -314,6 +322,35 @@ export function Step4RecipeSelection({
                       <div className="text-sm font-medium">Sourced from:</div>
                       <div className="text-xs text-muted-foreground">{recipe.sourcing.join(" • ")}</div>
                     </div>
+
+                    {/* Customer Social Proof */}
+                    {getRecipeSocialProof(recipe.id) && (
+                      <div className="space-y-2 pt-4 border-t">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Happy customers:
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {/* Customer Photo */}
+                          <img
+                            src={getRecipeSocialProof(recipe.id)!.customerPhotos[0]}
+                            alt="Happy dog enjoying this recipe"
+                            className="w-14 h-14 rounded-full object-cover border-2 border-primary/20"
+                          />
+                          {/* Rating Info */}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                              <span className="text-sm font-semibold">
+                                {getRecipeSocialProof(recipe.id)!.averageRating}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {getRecipeSocialProof(recipe.id)!.reviewCount} reviews
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

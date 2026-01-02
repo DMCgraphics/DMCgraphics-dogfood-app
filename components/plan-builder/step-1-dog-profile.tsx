@@ -22,11 +22,6 @@ export function Step1DogProfile({ profile, onUpdate }: Step1Props) {
 
   return (
     <div className="space-y-6">
-      {/* AI Confidence Indicator */}
-      {profile.name && (
-        <LiveConfidenceIndicator dogProfile={profile} />
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>Tell us about your dog</CardTitle>

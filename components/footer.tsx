@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Instagram, Facebook } from "lucide-react"
+import { Instagram, Facebook, Award, Stethoscope, MapPin, Lock, ShieldCheck, Truck } from "lucide-react"
 
 export function Footer() {
   return (
@@ -87,7 +87,60 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        {/* Trust Badges Section */}
+        <div className="border-t mt-12 pt-8 pb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Award className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-xs font-medium">AAFCO Certified</div>
+              <div className="text-xs text-muted-foreground">Complete & Balanced</div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Stethoscope className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-xs font-medium">Vet Approved</div>
+              <div className="text-xs text-muted-foreground">Nutritionist Formulated</div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-xs font-medium">Local Business</div>
+              <div className="text-xs text-muted-foreground">Westchester & Fairfield</div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-xs font-medium">Secure Checkout</div>
+              <div className="text-xs text-muted-foreground">SSL Encrypted</div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-xs font-medium">Money-Back</div>
+              <div className="text-xs text-muted-foreground">100% Satisfaction</div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Truck className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-xs font-medium">Free Delivery</div>
+              <div className="text-xs text-muted-foreground">Local Area</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-sm text-muted-foreground">© 2025 NouriPet. All rights reserved.</div>
           <div className="flex gap-6 text-sm">
             <Link href="/privacy" className="hover:text-primary transition-colors">

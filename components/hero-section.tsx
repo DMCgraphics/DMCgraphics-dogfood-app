@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase/client"
 import { DogSelectionModal } from "@/components/modals/dog-selection-modal"
 import { SubscriptionManagementModal } from "@/components/modals/subscription-management-modal"
 import { useAuth } from "@/contexts/auth-context"
+import { LimitedSlotsNotification } from "@/components/limited-slots-notification"
 
 export function HeroSection() {
   const { user, hasSubscription, isLoading: authLoading } = useAuth()
@@ -115,30 +116,50 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
+              {/* Trust badge - Money back guarantee */}
+              <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-full px-4 py-2 text-sm font-medium text-green-800 dark:text-green-200">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                100% Satisfaction Guarantee - Full Refund if Not Satisfied
+              </div>
+
               <h1 className="font-sans text-4xl lg:text-6xl font-bold tracking-tight">
                 Fresh food, <span className="text-primary">intelligently personalized.</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Build a plan your vet would trust—powered by NouriPet's AI. Every recipe is AAFCO-balanced, transparently labeled, and tailored to your dog's age, weight, activity level, and health needs using real nutritional math (not guesswork).
               </p>
+
+              {/* Pricing and social proof */}
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <div className="flex items-center gap-2 text-lg">
+                  <span className="font-bold text-primary">From $29/week</span>
+                  <span className="text-muted-foreground">for small dogs</span>
+                </div>
+                <div className="h-4 w-px bg-border"></div>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">500+</span> happy local dogs
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               {user ? (
                 <Button size="lg" className="text-lg px-8" onClick={handlePlanBuilderClick}>
                   {authLoading || loading
-                    ? "Build Your Dog's Plan"
+                    ? "Start Your Plan Today"
                     : hasActiveSubscription
                       ? "Manage Subscription"
                       : hasExistingPlan
-                        ? "Resume Building Plan"
-                        : "Build Your Dog's Plan"}
+                        ? "Complete Your Plan"
+                        : "Start Your Plan Today"}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               ) : (
                 <Button asChild size="lg" className="text-lg px-8" onClick={handlePlanBuilderClick}>
                   <Link href="/plan-builder">
-                    Build Your Dog's Plan
+                    Start Your Plan Today
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -152,6 +173,9 @@ export function HeroSection() {
                 <Link href="/recipes">Learn More</Link>
               </Button>
             </div>
+
+            {/* Limited slots notification */}
+            <LimitedSlotsNotification variant="inline" className="animate-in fade-in duration-500" />
 
             <div className="flex items-center gap-8 pt-4">
               <div className="text-center">

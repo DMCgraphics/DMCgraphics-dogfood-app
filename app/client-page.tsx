@@ -1,10 +1,13 @@
 "use client"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
+import { PricingCalculator } from "@/components/pricing-calculator"
+import { ComparisonSection } from "@/components/comparison-section"
 import { MetricsSection } from "@/components/metrics-section"
 import { SourcingSection } from "@/components/sourcing-section"
 import { SocialProofSection } from "@/components/social-proof-section"
 import { PrescriptionSupportCard } from "@/components/prescription-support-card"
+import { PricingFAQSection } from "@/components/pricing-faq-section"
 import { FAQSection } from "@/components/faq-section"
 import { Footer } from "@/components/footer"
 import { InstagramGrid } from "@/components/instagram-grid"
@@ -147,6 +150,8 @@ export default function ClientHomePage() {
       <Header />
       <main>
         <HeroSection />
+        <PricingCalculator />
+        <ComparisonSection />
         <MetricsSection />
 
         <section className="section-padding bg-muted/30">
@@ -166,6 +171,7 @@ export default function ClientHomePage() {
           </div>
         </section>
 
+        <PricingFAQSection />
         <FAQSection />
       </main>
       <Footer />

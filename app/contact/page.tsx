@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,10 +20,42 @@ export default function ContactPage() {
     subject: "",
     message: "",
   })
+  const [honeypot, setHoneypot] = useState("")
+  const formMountTimeRef = useRef<number>(0)
+
+  // Track when form mounts for timing detection
+  useEffect(() => {
+    formMountTimeRef.current = Date.now()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+
+    // Calculate submission time
+    const submissionTime = Date.now()
+    const timeElapsed = (submissionTime - formMountTimeRef.current) / 1000
+
+    // Honeypot check (client-side)
+    if (honeypot) {
+      toast.error("Failed to send message. Please try again.")
+      setIsSubmitting(false)
+      return
+    }
+
+    // Message length check (client-side)
+    if (formData.message.length < 50) {
+      toast.error("Please write at least 50 characters so we can better understand your question.")
+      setIsSubmitting(false)
+      return
+    }
+
+    // Timing check (client-side)
+    if (timeElapsed < 3) {
+      toast.error("Please take a moment to review your message before submitting.")
+      setIsSubmitting(false)
+      return
+    }
 
     try {
       const response = await fetch("/api/contact", {
@@ -31,7 +63,11 @@ export default function ContactPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          honeypot,
+          submissionTimeSeconds: Math.round(timeElapsed),
+        }),
       })
 
       if (response.ok) {
@@ -93,6 +129,19 @@ export default function ContactPage() {
                     </div>
                   </div>
 
+                  {/* Honeypot field - hidden from users, catches bots */}
+                  <div className="absolute -left-[9999px] opacity-0 pointer-events-none" aria-hidden="true">
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject *</Label>
                     <Select
@@ -114,7 +163,18 @@ export default function ContactPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">Message *</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="message">Message *</Label>
+                      <span
+                        className={`text-sm ${
+                          formData.message.length < 50
+                            ? "text-destructive font-medium"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {formData.message.length} / 50 characters
+                      </span>
+                    </div>
                     <Textarea
                       id="message"
                       required

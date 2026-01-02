@@ -20,7 +20,9 @@
       "Bash(npm run build:*)",
       "WebFetch(domain:nouripet.net)",
       "Bash(git pull:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(node -e:*)",
+      "mcp__supabase-dev__apply_migration"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -30,30 +30,36 @@ export function ExitIntentPopup({ open, onOpenChange }: ExitIntentPopupProps) {
     try {
       // Track lead capture in Meta Pixel
       metaPixelEvents.lead({
-        content_name: "Exit Intent - Free Feeding Guide",
-        value: 5, // Estimate lead value
+        content_name: "Exit Intent - Free Nutrition Guide",
+        value: 10, // Estimate lead value
       })
 
-      // TODO: Send to your email marketing system (Resend, Mailchimp, etc.)
-      // For now, just store in localStorage and show success
-      const leads = JSON.parse(localStorage.getItem("nouripet-exit-intent-leads") || "[]")
-      leads.push({
-        email,
-        timestamp: new Date().toISOString(),
-        source: "exit-intent",
+      // Send nutrition guide via API
+      const response = await fetch("/api/emails/nutrition-guide", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
       })
-      localStorage.setItem("nouripet-exit-intent-leads", JSON.stringify(leads))
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to send nutrition guide")
+      }
 
       setSubmitted(true)
 
-      // Auto-close after 3 seconds
+      // Auto-close after 5 seconds
       setTimeout(() => {
         onOpenChange(false)
         setEmail("")
         setSubmitted(false)
-      }, 3000)
+      }, 5000)
     } catch (error) {
       console.error("Error submitting exit intent form:", error)
+      // Show error to user but still mark as submitted to avoid retry loops
+      alert("Sorry, there was an error sending your guide. Please try again or contact support@nouripet.net")
     } finally {
       setLoading(false)
     }
@@ -76,7 +82,7 @@ export function ExitIntentPopup({ open, onOpenChange }: ExitIntentPopupProps) {
                   Get our <span className="font-bold text-primary">Free Dog Nutrition Guide</span>
                 </p>
                 <p className="text-sm">
-                  Plus <span className="font-semibold">10% off</span> your first order
+                  Plus <span className="font-semibold">15% off</span> your first month
                 </p>
               </DialogDescription>
             </DialogHeader>
@@ -107,7 +113,7 @@ export function ExitIntentPopup({ open, onOpenChange }: ExitIntentPopupProps) {
                 ) : (
                   <>
                     <FileText className="mr-2 h-4 w-4" />
-                    Get My Free Guide + 10% Off
+                    Get My Free Guide + 15% Off
                   </>
                 )}
               </Button>
@@ -137,7 +143,7 @@ export function ExitIntentPopup({ open, onOpenChange }: ExitIntentPopupProps) {
               We've sent the Free Dog Nutrition Guide to <span className="font-semibold">{email}</span>
             </DialogDescription>
             <p className="text-sm text-muted-foreground">
-              Your 10% off code: <span className="font-mono font-bold text-primary">WELCOME10</span>
+              Your 15% off code: <span className="font-mono font-bold text-primary">NOURI15</span>
             </p>
           </div>
         )}

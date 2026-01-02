@@ -11,7 +11,7 @@ import { MultipleMealSelector } from "./multiple-meal-selector"
 import { generateAIMealRecommendations } from "@/lib/ai-meal-recommendations"
 import type { MultiDogProfile } from "@/lib/multi-dog-types"
 import { TransparencyCard } from "./transparency-card"
-import { WhatIfSimulator } from "./what-if-simulator"
+// import { WhatIfSimulator } from "./what-if-simulator"
 import { getRecipeSocialProof } from "@/lib/recipe-social-proof-data"
 
 interface Step4Props {
@@ -154,8 +154,8 @@ export function Step4RecipeSelection({
                 dogProfile={dogProfile}
               />
 
-              {/* What If Simulator */}
-              {dogProfile && dogProfile.name && dogProfile.weight && (
+              {/* What If Simulator - Hidden for now */}
+              {/* {dogProfile && dogProfile.name && dogProfile.weight && (
                 <WhatIfSimulator
                   dogProfile={{
                     id: "current-dog",
@@ -179,7 +179,7 @@ export function Step4RecipeSelection({
                     confidence: aiRecommendation.confidence,
                   }}
                 />
-              )}
+              )} */}
             </div>
           )}
         </div>
@@ -188,16 +188,17 @@ export function Step4RecipeSelection({
       {allowMultipleSelection && (
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h4 className="font-semibold">Meal Selection Mode</h4>
                 <p className="text-sm text-muted-foreground">Choose one recipe or multiple for variety</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <Button
                   variant={selectionMode === "single" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectionMode("single")}
+                  className="flex-1 sm:flex-none"
                 >
                   Single Recipe
                 </Button>
@@ -205,6 +206,7 @@ export function Step4RecipeSelection({
                   variant={selectionMode === "multiple" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectionMode("multiple")}
+                  className="flex-1 sm:flex-none"
                 >
                   <Grid3X3 className="h-4 w-4 mr-1" />
                   Multiple Recipes

@@ -100,8 +100,10 @@ export function WizardLayout({
         {/* AI Progress Breadcrumbs - only show after step 0 */}
         {dogProfile && currentStep > 0 && (
           <div className="mb-8">
-            {/* Progress chips - scrollable on mobile */}
-            <div className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible">
+            {/* Progress chips - scrollable on mobile, hidden scrollbar */}
+            <div
+              className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
               <AIProgressBreadcrumbs
                 currentStep={currentStep}
                 completedSteps={completedSteps}

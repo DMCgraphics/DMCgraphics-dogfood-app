@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Sparkles, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { MultiDogProfile } from "@/lib/multi-dog-types"
@@ -87,6 +88,19 @@ export function AIProgressBreadcrumbs({
     { number: 4, label: "Plan Preview" },
   ]
 
+  const currentStepRef = React.useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to current step on mobile
+  React.useEffect(() => {
+    if (currentStepRef.current) {
+      currentStepRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      })
+    }
+  }, [currentStep])
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {steps.map((step, index) => {
@@ -95,7 +109,11 @@ export function AIProgressBreadcrumbs({
         const isUpcoming = step.number > currentStep
 
         return (
-          <div key={step.number} className="flex items-center gap-2 flex-shrink-0">
+          <div
+            key={step.number}
+            className="flex items-center gap-2 flex-shrink-0"
+            ref={isCurrent ? currentStepRef : null}
+          >
             <div
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap",
